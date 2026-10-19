@@ -118,7 +118,7 @@ tr:hover td{background:var(--surface-2)}
 </head>
 <body>
 <header>
-  <div class="brand"><i>R$</i> FinançaPro</div>
+  <div class="brand"><i>R$</i> Rita Lugarini - Finanças</div>
   <div class="hdr-actions">
     <span id="demoBadge" class="badge hidden">MODO DEMO</span>
     <button class="btn btn-icon hidden" id="homeBtn" title="Início">🏠</button>
@@ -478,7 +478,7 @@ function buildPDF(){
     headStyles:{fillColor:[15,92,86],textColor:255,fontStyle:'bold'}, footStyles:{fillColor:[240,237,230],textColor:[20,32,31],fontStyle:'bold'},
     alternateRowStyles:{fillColor:[250,249,246]}, columnStyles:{3:{halign:'right'},5:{halign:'center'}},
     didParseCell:d=>{ if(d.section==='body'&&d.column.index===3){ d.cell.styles.textColor = list[d.row.index] && natOf(list[d.row.index])==='R'?[31,157,107]:[214,73,63]; d.cell.styles.fontStyle='bold'; } },
-    didDrawPage:()=>{ const H=doc.internal.pageSize.getHeight(); doc.setFontSize(8); doc.setTextColor(140); doc.text('FinançaPro · Dados sincronizados com Google Sheets',14,H-8);
+    didDrawPage:()=>{ const H=doc.internal.pageSize.getHeight(); doc.setFontSize(8); doc.setTextColor(140); doc.text('Rita Lugarini · Dados sincronizados com Google Sheets',14,H-8);
       doc.text(`Página ${doc.internal.getNumberOfPages()}`,W-14,H-8,{align:'right'}); }, margin:{top:14,bottom:14} });
   return doc;
 }
