@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>RITA LUGARINI · Receitas & Despesas</title>
+<title>FinançaPro · Receitas & Despesas</title>
 <meta name="description" content="Gestão de receitas e despesas integrada ao Google Sheets, com dashboard, PDF e Excel." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet" />
@@ -113,15 +113,29 @@ tr:hover td{background:var(--surface-2)}
 .loader{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(5,15,14,.5)}
 .loader i{width:52px;height:52px;border-radius:50%;border:5px solid rgba(255,255,255,.25);border-top-color:#f2b955;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* Auth */
+.auth{position:fixed;inset:0;z-index:80;background:rgba(5,15,14,.78);backdrop-filter:blur(8px);display:grid;place-items:center;padding:16px;animation:fadeUp .25s}
+.auth .card{width:min(420px,100%)}
+.auth h3{font-family:'Fraunces';font-size:1.5rem;margin-bottom:6px}
+.auth .sub{color:var(--muted);font-size:.9rem;margin-bottom:16px;line-height:1.45}
+.auth .field{margin-bottom:12px}
+.auth .go{width:100%;justify-content:center;margin-top:4px}
+.auth-err{color:var(--expense);font-size:.85rem;font-weight:600;min-height:1.3em;margin-bottom:4px}
+.auth-links{display:flex;justify-content:space-between;gap:10px;margin-top:14px;flex-wrap:wrap}
+.link{background:none;border:none;color:var(--primary);cursor:pointer;font-weight:600;text-decoration:underline;padding:0;font-size:.88rem}
+.pw{position:relative}.pw input{padding-right:46px}
+.pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:1.05rem;padding:4px 6px}
 @media (max-width:860px){.charts{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.hdr-actions .lbl{display:none}.float-ico{display:none}}
 </style>
 </head>
 <body>
 <header>
-  <div class="brand"><i>R$</i> Rita Lugarini - Finanças</div>
+  <div class="brand"><i>R$</i> FinançaPro</div>
   <div class="hdr-actions">
     <span id="demoBadge" class="badge hidden">MODO DEMO</span>
     <button class="btn btn-icon hidden" id="homeBtn" title="Início">🏠</button>
+    <button class="btn btn-icon hidden" id="pwBtn" title="Alterar senha">🔑</button>
+    <button class="btn hidden" id="outBtn" title="Encerrar sessão">🔒 <span class="lbl">Sair</span></button>
     <button class="btn btn-icon" id="themeBtn" title="Alternar tema">🌙</button>
   </div>
 </header>
@@ -204,7 +218,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="form-grid">
       <div class="full seg" id="natSeg"><button type="button" data-n="R" class="inc">↑ Receita</button><button type="button" data-n="D" class="exp on">↓ Despesa</button></div>
       <div class="field"><label>Data</label><input type="date" id="iData" required></div>
-      <div class="field"><label>Valor (R$)</label><input type="number" id="iValor" step="0.01" min="0.01" required></div>
+      <div class="field"><label>Valor (R$)</label><input id="iValor" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" required></div>
       <div class="field full"><label>Descrição</label><input id="iDesc" maxlength="120" required></div>
       <div class="field expOnly"><label>Tipo Despesa</label><select id="iTDesp"><option>Variável</option><option>Fixa</option></select></div>
       <div class="field expOnly" id="parcWrap"><label>Qt Parcelas</label><input type="number" id="iParc" min="1" max="120" value="1"><div class="hint" id="parcHint"></div></div>
@@ -228,11 +242,28 @@ tr:hover td{background:var(--surface-2)}
 
 <div class="loader hidden" id="loader"><i></i></div>
 
+<!-- AUTH -->
+<div class="auth hidden" id="auth">
+  <form class="card" id="authForm">
+    <h3 id="aTitle"></h3>
+    <p class="sub" id="aSub"></p>
+    <div class="field hidden" id="aCodeF"><label>Código recebido por e-mail</label><input id="aCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></div>
+    <div class="field hidden" id="aOldF"><label>Senha atual</label><input type="password" id="aOld" autocomplete="current-password"></div>
+    <div class="field hidden" id="aPwF"><label id="aPwL">Senha</label><div class="pw"><input type="password" id="aPw" autocomplete="current-password"><button type="button" id="aEye" title="Mostrar/ocultar senha">👁</button></div></div>
+    <div class="field hidden" id="aPw2F"><label>Confirmar senha</label><input type="password" id="aPw2" autocomplete="new-password"></div>
+    <div class="auth-err" id="aErr" role="alert"></div>
+    <button class="btn btn-primary go" id="aSubmit" type="submit">Entrar</button>
+    <div class="auth-links"><button type="button" class="link" id="aForgot">Esqueci minha senha</button><button type="button" class="link" id="aCancel">Voltar</button></div>
+  </form>
+</div>
+
 <script>
 /* ===================== CONFIG ===================== */
 const API = '/api/sheets';
 const PAGE = 15;
-const DEFAULT_PAY = ['Pix','Dinheiro','Cartão de Crédito','Cartão de Débito','Boleto','Transferência','Débito Automático'];
+const CARD_BRANDS = ['Visa','Mastercard','Elo','American Express','Hipercard','Diners Club'];
+const DEFAULT_PAY = ['Pix','Dinheiro','Cartão de Crédito','Cartão de Débito','Boleto','Transferência','Débito Automático',
+  ...CARD_BRANDS.map(b=>`Cartão de Crédito - ${b}`)];
 const CAPTIONS = [
   ['Controle total','Suas finanças, <em>organizadas</em>.','Receitas e despesas sincronizadas em tempo real com o Google Sheets.'],
   ['Economia inteligente','Saiba para onde vai <em>cada real</em>.','Filtros inteligentes por período, natureza, classificação e forma de pagamento.'],
@@ -273,12 +304,15 @@ function go(i, user){ slides[cur].classList.remove('active'); cur=(i+slides.leng
 go(0); timer = setInterval(()=>go(cur+1), 6000);
 
 /* ===================== API ===================== */
-function headers(){ const h={'Content-Type':'application/json'}; const k=sessionStorage.getItem('fp-key'); if(k) h['x-access-key']=k; return h; }
+function headers(){ const h={'Content-Type':'application/json'}; const k=sessionStorage.getItem('fp-key'); if(k) h['x-access-key']=k; const s=sessionStorage.getItem('fp-sess'); if(s) h['x-session']=s; return h; }
 async function api(method, body){
   if (demo) return demoApi(method, body);
   const r = await fetch(API, { method, headers: headers(), body: body?JSON.stringify(body):undefined });
   let j; try { j = await r.json(); } catch { throw new Error(`Servidor indisponível [${r.status}]`); }
   if (r.status===401 && /acesso/i.test(j.error||'')) { const k = prompt('Informe a chave de acesso:'); if (k){ sessionStorage.setItem('fp-key',k); return api(method, body); } }
+  if (j.code==='AUTH_REQUIRED' && !String(body?.action||'').startsWith('auth_')) {
+    sessionStorage.removeItem('fp-sess'); authBtns(); await ensureAuth(); loading(true); return api(method, body);
+  }
   if (!r.ok || j.ok===false) throw new Error(j.error || `Erro [${r.status}]`);
   return j;
 }
@@ -305,18 +339,88 @@ function demoApi(method, b){
   return { ok:true, data:d };
 }
 
+function offerDemo(e){
+  if (!demo && confirm(`Não foi possível conectar à planilha:\n${e.message}\n\nDeseja abrir no MODO DEMONSTRAÇÃO (dados locais)?`)) { demo = true; $('#demoBadge').classList.remove('hidden'); authBtns(); return true; }
+  return false;
+}
 async function load(){
+  try { await ensureAuth(); }
+  catch (e) { loading(false); if (e.cancel) return false; if (offerDemo(e)) return load(); return false; }
   loading(true);
   try { const j = await api('GET'); rows = j.data || []; }
   catch (e) {
     loading(false);
-    if (!demo && confirm(`Não foi possível conectar à planilha:\n${e.message}\n\nDeseja abrir no MODO DEMONSTRAÇÃO (dados locais)?`)) { demo = true; $('#demoBadge').classList.remove('hidden'); return load(); }
+    if (e.cancel) return false;
+    if (offerDemo(e)) return load();
     if (!demo) return false;
   }
   loading(false);
   $('#sync').textContent = `${demo?'Dados de demonstração':'Sincronizado com Google Sheets'} · ${new Date().toLocaleString('pt-BR')}`;
   fillPay(); render(); return true;
 }
+
+/* ===================== MÁSCARA R$ ===================== */
+const centsToBRL = c => (c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function maskBRL(el){
+  const d = el.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,11);   // até R$ 999.999.999,99
+  el.value = d ? centsToBRL(+d) : '';
+  try { el.setSelectionRange(el.value.length, el.value.length); } catch {}
+}
+const getValor = () => { const d = $('#iValor').value.replace(/\D/g,''); return d ? +d/100 : 0; };
+
+/* ===================== AUTH (senha + recuperação por e-mail) ===================== */
+let authCtx = null;
+function authBtns(){ const on = !demo && !!sessionStorage.getItem('fp-sess'); $('#pwBtn').classList.toggle('hidden',!on); $('#outBtn').classList.toggle('hidden',!on); }
+function showAuth(mode, extra){
+  authCtx = { ...authCtx, ...extra, mode };
+  const c = authCtx, mk = c.masked ? ` (${c.masked})` : '';
+  const cfg = {
+    login:   ['Acesso protegido','Informe a senha para abrir os dados financeiros.',['aPwF'],'Entrar','Senha','current-password'],
+    request: [c.configured?'Recuperar senha':'Criar senha de acesso','Para confirmar que você é o proprietário da planilha, enviaremos um código de 6 dígitos ao e-mail de recuperação cadastrado pelo responsável pelo sistema.',[],'Enviar código','','new-password'],
+    code:    [c.configured?'Redefinir senha':'Criar senha de acesso',`Digite o código enviado ao e-mail${mk} (vale por 15 minutos) e escolha a senha. Mínimo de 8 caracteres.`,['aCodeF','aPwF','aPw2F'],'Salvar senha','Nova senha','new-password'],
+    change:  ['Alterar senha','Mínimo de 8 caracteres.',['aOldF','aPwF','aPw2F'],'Alterar senha','Nova senha','new-password'],
+  }[mode];
+  $('#aTitle').textContent = cfg[0]; $('#aSub').textContent = cfg[1]; $('#aSubmit').textContent = cfg[3]; $('#aPwL').textContent = cfg[4]; $('#aPw').autocomplete = cfg[5];
+  ['aCodeF','aOldF','aPwF','aPw2F'].forEach(id=>$('#'+id).classList.toggle('hidden', !cfg[2].includes(id)));
+  $('#aForgot').classList.toggle('hidden', mode!=='login');
+  ['aCode','aOld','aPw','aPw2'].forEach(id=>{ $('#'+id).value=''; $('#'+id).type = id==='aCode'?'text':'password'; });
+  $('#aErr').textContent = ''; $('#auth').classList.remove('hidden'); loading(false);
+  setTimeout(()=>{ const f = $('#authForm').querySelector('.field:not(.hidden) input'); (f || $('#aSubmit')).focus(); }, 50);
+}
+function closeAuth(cancel){ const c = authCtx; authCtx = null; $('#auth').classList.add('hidden'); if (cancel && c?.rej) c.rej(Object.assign(new Error('Login cancelado'),{cancel:true})); }
+async function ensureAuth(){
+  if (demo || sessionStorage.getItem('fp-sess')) { authBtns(); return; }
+  const st = await api('POST',{action:'auth_status'});
+  await new Promise((res,rej)=>{ authCtx = { res, rej, configured:!!st.configured }; showAuth(st.configured?'login':'request'); });
+}
+const pwErr = (p,p2) => p.length<8 ? 'A senha deve ter ao menos 8 caracteres.' : p!==p2 ? 'As senhas não coincidem.' : '';
+$('#aEye').onclick = () => { const t = $('#aPw').type==='password'?'text':'password'; ['aPw','aPw2','aOld'].forEach(i=>$('#'+i).type=t); };
+$('#aForgot').onclick = () => showAuth('request');
+$('#aCancel').onclick = () => { if ((authCtx.mode==='request'||authCtx.mode==='code') && authCtx.configured) return showAuth('login'); closeAuth(true); };
+$('#authForm').onsubmit = async e => {
+  e.preventDefault(); const m = authCtx.mode, btn = $('#aSubmit'); $('#aErr').textContent = ''; btn.disabled = true;
+  const ok = sess => { sessionStorage.setItem('fp-sess', sess); const c = authCtx; authCtx = null; $('#auth').classList.add('hidden'); authBtns(); c?.res?.(); };
+  try {
+    if (m==='login') { const j = await api('POST',{action:'auth_login',password:$('#aPw').value}); ok(j.session); }
+    else if (m==='request') { const j = await api('POST',{action:'auth_code_request'}); showAuth('code',{masked:j.email}); }
+    else if (m==='code') {
+      const er = pwErr($('#aPw').value,$('#aPw2').value); if (er) throw new Error(er);
+      const j = await api('POST',{action:'auth_code_confirm',code:$('#aCode').value.trim(),password:$('#aPw').value}); ok(j.session); toast('Senha definida com sucesso.');
+    }
+    else if (m==='change') {
+      const er = pwErr($('#aPw').value,$('#aPw2').value); if (er) throw new Error(er);
+      const j = await api('POST',{action:'auth_change',oldPassword:$('#aOld').value,password:$('#aPw').value});
+      sessionStorage.setItem('fp-sess', j.session); closeAuth(false); toast('Senha alterada.');
+    }
+  } catch (ex) { $('#aErr').textContent = ex.message; }
+  finally { btn.disabled = false; }
+};
+$('#pwBtn').onclick = () => { authCtx = null; showAuth('change'); };
+$('#outBtn').onclick = async () => {
+  try { await api('POST',{action:'auth_logout'}); } catch {}
+  sessionStorage.removeItem('fp-sess'); authBtns(); rows = []; render(); $('#homeBtn').onclick(); toast('Sessão encerrada.');
+};
+authBtns();
 
 /* ===================== NAV ===================== */
 $('#loadBtn').onclick = async () => { if (await load() !== false){ $('#home').classList.add('hidden'); $('#dash').classList.remove('hidden'); $('#homeBtn').classList.remove('hidden'); clearInterval(timer); } };
@@ -412,13 +516,14 @@ $('#natSeg').onclick = e => e.target.dataset.n && setNat(e.target.dataset.n);
 function updParc(){
   const fixa = nat==='D' && $('#iTDesp').value==='Fixa';
   $('#parcWrap').classList.toggle('hidden', !fixa);
-  const n = +$('#iParc').value||1, v = +$('#iValor').value||0;
+  const n = +$('#iParc').value||1, v = getValor();
   $('#parcHint').textContent = editing ? 'Edição altera apenas esta linha.' : (fixa && n>1 ? `Serão geradas ${n} linhas mensais de ${brl(v)} (total ${brl(v*n)}).` : '');
 }
-['#iTDesp','#iParc','#iValor'].forEach(s=>$(s).addEventListener('input',updParc));
+$('#iValor').addEventListener('input',()=>{ maskBRL($('#iValor')); updParc(); });
+['#iTDesp','#iParc'].forEach(s=>$(s).addEventListener('input',updParc));
 function openForm(r){
   editing = r || null; $('#formTitle').textContent = r ? 'Editar lançamento' : 'Novo lançamento';
-  $('#iData').value = r ? brToISO(r.data) : isoDate(new Date()); $('#iValor').value = r?.valor ?? ''; $('#iDesc').value = r?.descricao ?? '';
+  $('#iData').value = r ? brToISO(r.data) : isoDate(new Date()); $('#iValor').value = r ? centsToBRL(Math.round(r.valor*100)) : ''; $('#iDesc').value = r?.descricao ?? '';
   $('#iTDesp').value = r?.tipoDespesa || 'Variável'; $('#iParc').value = r?.parcelas || 1; $('#iParc').disabled = !!r;
   $('#iTRec').value = r?.tipoReceita || 'Fixa'; $('#iPay').value = r?.formaPagto ?? '';
   setNat(r ? natOf(r) : 'D'); $('#formModal').classList.remove('hidden'); $('#iDesc').focus();
@@ -430,7 +535,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySele
 
 $('#form').onsubmit = async e => {
   e.preventDefault();
-  const valor = Math.round(parseFloat($('#iValor').value)*100)/100, desc = $('#iDesc').value.trim(), pay = $('#iPay').value.trim();
+  const valor = getValor(), desc = $('#iDesc').value.trim(), pay = $('#iPay').value.trim();
   if (!(valor>0) || !desc || !pay) return toast('Preencha todos os campos corretamente.');
   const isD = nat==='D', fixa = isD && $('#iTDesp').value==='Fixa', n = fixa ? Math.max(1, Math.min(120, parseInt($('#iParc').value)||1)) : '';
   const base = { descricao:desc, valor, tipoDespesa:isD?$('#iTDesp').value:'', parcelas:fixa?n:'', formaPagto:pay, tipoReceita:isD?'':$('#iTRec').value };
@@ -478,7 +583,7 @@ function buildPDF(){
     headStyles:{fillColor:[15,92,86],textColor:255,fontStyle:'bold'}, footStyles:{fillColor:[240,237,230],textColor:[20,32,31],fontStyle:'bold'},
     alternateRowStyles:{fillColor:[250,249,246]}, columnStyles:{3:{halign:'right'},5:{halign:'center'}},
     didParseCell:d=>{ if(d.section==='body'&&d.column.index===3){ d.cell.styles.textColor = list[d.row.index] && natOf(list[d.row.index])==='R'?[31,157,107]:[214,73,63]; d.cell.styles.fontStyle='bold'; } },
-    didDrawPage:()=>{ const H=doc.internal.pageSize.getHeight(); doc.setFontSize(8); doc.setTextColor(140); doc.text('Rita Lugarini · Dados sincronizados com Google Sheets',14,H-8);
+    didDrawPage:()=>{ const H=doc.internal.pageSize.getHeight(); doc.setFontSize(8); doc.setTextColor(140); doc.text('FinançaPro · Dados sincronizados com Google Sheets',14,H-8);
       doc.text(`Página ${doc.internal.getNumberOfPages()}`,W-14,H-8,{align:'right'}); }, margin:{top:14,bottom:14} });
   return doc;
 }
