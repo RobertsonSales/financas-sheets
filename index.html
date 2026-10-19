@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FinançaPro · Receitas & Despesas</title>
+<meta name="description" content="Gestão de receitas e despesas integrada ao Google Sheets, com dashboard, PDF e Excel." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<style>
+:root{
+  --bg:#f5f3ee;--surface:#ffffff;--surface-2:#f0ede6;--text:#14201f;--muted:#5f6b69;--border:#e2ddd2;
+  --primary:#0f5c56;--primary-2:#14857b;--on-primary:#ffffff;--accent:#e8a33d;
+  --income:#1f9d6b;--expense:#d6493f;--shadow:0 10px 30px -12px rgba(15,60,55,.25);
+  --radius:16px;--grad:linear-gradient(135deg,var(--primary),var(--primary-2));
+}
+[data-theme="dark"]{
+  --bg:#0c1413;--surface:#131e1d;--surface-2:#1a2928;--text:#e9f0ee;--muted:#93a5a2;--border:#243634;
+  --primary:#2bb3a3;--primary-2:#5fd4c4;--on-primary:#06201d;--accent:#f2b955;
+  --income:#3ccf91;--expense:#ff6b5f;--shadow:0 10px 30px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);transition:background .3s,color .3s;min-height:100vh}
+h1,h2,.brand{font-family:'Fraunces',Georgia,serif}
+button,input,select{font:inherit;color:inherit}
+.hidden{display:none!important}
+/* Header */
+header{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:14px clamp(16px,4vw,40px);background:color-mix(in oklab,var(--bg) 80%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.brand{font-size:1.35rem;font-weight:800;display:flex;gap:10px;align-items:center}
+.brand i{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;color:var(--on-primary);font-style:normal;font-family:'Plus Jakarta Sans'}
+.hdr-actions{display:flex;gap:8px;align-items:center}
+.badge{font-size:.72rem;padding:4px 10px;border-radius:999px;background:var(--accent);color:#2b1a00;font-weight:700}
+.btn{border:1px solid var(--border);background:var(--surface);padding:10px 16px;border-radius:12px;cursor:pointer;font-weight:600;display:inline-flex;gap:8px;align-items:center;transition:transform .15s,box-shadow .2s,background .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.btn-primary{background:var(--grad);color:var(--on-primary);border:none}
+.btn-danger{color:var(--expense)}
+.btn-icon{padding:9px 11px}
+.btn-sm{padding:6px 10px;font-size:.85rem;border-radius:9px}
+/* Hero carousel */
+.hero{position:relative;height:calc(100vh - 64px);min-height:520px;overflow:hidden}
+.slide{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease}
+.slide.active{opacity:1}
+.slide img{width:100%;height:100%;object-fit:cover;transform:scale(1.15);}
+.slide.active img{animation:kenburns 7s ease-out forwards}
+@keyframes kenburns{from{transform:scale(1.15) translate(2%,1%)}to{transform:scale(1) translate(0,0)}}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,rgba(6,25,23,.92) 15%,rgba(6,25,23,.45) 60%,rgba(6,25,23,.2))}
+.hero-content{position:absolute;z-index:2;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 clamp(20px,7vw,110px);color:#fff;max-width:900px}
+.hero-content small{letter-spacing:.2em;text-transform:uppercase;color:#f2b955;font-weight:700}
+.hero-content h1{font-size:clamp(2.2rem,6vw,4.6rem);line-height:1.02;margin:14px 0 18px}
+.hero-content p{font-size:clamp(1rem,1.6vw,1.2rem);opacity:.85;max-width:560px;margin-bottom:30px}
+.slide-caption{animation:fadeUp .9s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.cta{font-size:1.1rem;padding:16px 28px;border-radius:14px;background:#f2b955;color:#1f1400;border:none;font-weight:800;cursor:pointer;width:fit-content;box-shadow:0 12px 30px -8px rgba(242,185,85,.6);transition:transform .2s}
+.cta:hover{transform:translateY(-3px) scale(1.02)}
+.dots{position:absolute;z-index:3;bottom:28px;left:clamp(20px,7vw,110px);display:flex;gap:10px}
+.dots button{width:34px;height:5px;border-radius:9px;border:none;background:rgba(255,255,255,.35);cursor:pointer;transition:all .3s}
+.dots button.on{background:#f2b955;width:56px}
+.float-ico{position:absolute;z-index:2;right:8%;top:22%;font-size:4rem;animation:float 5s ease-in-out infinite;opacity:.9}
+.float-ico.b{top:60%;right:20%;font-size:3rem;animation-delay:-2s}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-22px) rotate(5deg)}}
+/* Dashboard */
+main{padding:24px clamp(14px,4vw,40px) 60px;max-width:1400px;margin:auto}
+.title-row{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between;margin-bottom:20px}
+.title-row h2{font-size:clamp(1.6rem,3vw,2.2rem)}
+.title-row .muted{color:var(--muted);font-size:.9rem}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
+.kpi span{color:var(--muted);font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.kpi b{display:block;font-size:1.65rem;margin-top:6px;font-family:'Fraunces'}
+.kpi.inc b{color:var(--income)}.kpi.exp b{color:var(--expense)}
+.kpi .bar{height:4px;border-radius:4px;margin-top:12px;background:var(--surface-2);overflow:hidden}
+.kpi .bar i{display:block;height:100%;background:var(--grad);transition:width .6s}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.field label{display:block;font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.field input,.field select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);outline:none}
+.field input:focus,.field select:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 25%,transparent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.chip{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:.82rem;font-weight:600}
+.chip.on{background:var(--grad);color:var(--on-primary);border-color:transparent}
+.charts{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:18px}
+.charts .card{min-height:300px}
+.charts h3{font-size:.95rem;margin-bottom:10px}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:820px}
+th{text-align:left;padding:12px 10px;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--border)}
+tr:hover td{background:var(--surface-2)}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.pill{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:999px}
+.pill.inc{background:color-mix(in oklab,var(--income) 15%,transparent);color:var(--income)}
+.pill.exp{background:color-mix(in oklab,var(--expense) 15%,transparent);color:var(--expense)}
+.empty{text-align:center;padding:40px;color:var(--muted)}
+.pager{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:var(--muted);font-size:.85rem;gap:8px;flex-wrap:wrap}
+/* Modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(5,15,14,.6);backdrop-filter:blur(4px);display:grid;place-items:center;padding:16px;animation:fadeUp .25s}
+.modal .card{width:min(620px,100%);max-height:92vh;overflow:auto}
+.modal.wide .card{width:min(1000px,100%);height:90vh;display:flex;flex-direction:column}
+.modal iframe{flex:1;border:none;border-radius:10px;background:#fff;margin-top:12px}
+.modal h3{font-family:'Fraunces';font-size:1.4rem;margin-bottom:14px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .full{grid-column:1/-1}
+.seg{display:flex;background:var(--surface-2);border-radius:12px;padding:4px}
+.seg button{flex:1;border:none;background:none;padding:10px;border-radius:9px;cursor:pointer;font-weight:700}
+.seg button.on.inc{background:var(--income);color:#fff}.seg button.on.exp{background:var(--expense);color:#fff}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.toast{position:fixed;bottom:22px;right:22px;z-index:60;background:var(--text);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:600;box-shadow:var(--shadow);animation:fadeUp .3s}
+.loader{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(5,15,14,.5)}
+.loader i{width:52px;height:52px;border-radius:50%;border:5px solid rgba(255,255,255,.25);border-top-color:#f2b955;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (max-width:860px){.charts{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.hdr-actions .lbl{display:none}.float-ico{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><i>R$</i> FinançaPro</div>
+  <div class="hdr-actions">
+    <span id="demoBadge" class="badge hidden">MODO DEMO</span>
+    <button class="btn btn-icon hidden" id="homeBtn" title="Início">🏠</button>
+    <button class="btn btn-icon" id="themeBtn" title="Alternar tema">🌙</button>
+  </div>
+</header>
+
+<!-- HOME -->
+<section class="hero" id="home">
+  <div class="slide active"><img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1920&q=75" alt="Calculadora e planejamento financeiro"></div>
+  <div class="slide"><img src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=1920&q=75" alt="Dinheiro e economia"></div>
+  <div class="slide"><img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1920&q=75" alt="Dashboard financeiro em notebook"></div>
+  <div class="slide"><img src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=1920&q=75" alt="Pagamento com cartão"></div>
+  <div class="float-ico">💰</div><div class="float-ico b">📊</div>
+  <div class="hero-content">
+    <div class="slide-caption" id="caption"></div>
+    <button class="cta" id="loadBtn">Carregar dados da planilha →</button>
+  </div>
+  <div class="dots" id="dots"></div>
+</section>
+
+<!-- DASHBOARD -->
+<main id="dash" class="hidden">
+  <div class="title-row">
+    <div><h2>Painel financeiro</h2><div class="muted" id="sync">—</div></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="newBtn">＋ Novo lançamento</button>
+      <button class="btn" id="reloadBtn">⟳ <span class="lbl">Atualizar</span></button>
+      <button class="btn" id="pdfBtn">📄 PDF</button>
+      <button class="btn" id="xlsBtn">📗 Excel</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="card kpi inc"><span>Receitas</span><b id="kInc">R$ 0,00</b><div class="bar"><i id="kIncBar"></i></div></div>
+    <div class="card kpi exp"><span>Despesas</span><b id="kExp">R$ 0,00</b><div class="bar"><i id="kExpBar"></i></div></div>
+    <div class="card kpi"><span>Saldo</span><b id="kBal">R$ 0,00</b><div class="hint" id="kBalHint"></div></div>
+    <div class="card kpi"><span>Lançamentos</span><b id="kCount">0</b><div class="hint" id="kCountHint"></div></div>
+  </div>
+
+  <div class="chips" id="quick">
+    <button class="chip on" data-q="all">Tudo</button>
+    <button class="chip" data-q="month">Este mês</button>
+    <button class="chip" data-q="prev">Mês anterior</button>
+    <button class="chip" data-q="90">Últimos 90 dias</button>
+    <button class="chip" data-q="year">Este ano</button>
+    <button class="chip" data-q="future">Futuros (parcelas)</button>
+  </div>
+  <div class="card filters">
+    <div class="field"><label>Buscar</label><input id="fText" placeholder="Descrição, forma..."></div>
+    <div class="field"><label>De</label><input type="date" id="fFrom"></div>
+    <div class="field"><label>Até</label><input type="date" id="fTo"></div>
+    <div class="field"><label>Natureza</label><select id="fNat"><option value="">Todas</option><option value="R">Receitas</option><option value="D">Despesas</option></select></div>
+    <div class="field"><label>Classificação</label><select id="fCls"><option value="">Todas</option><option>Fixa</option><option>Variável</option><option>Extra</option></select></div>
+    <div class="field"><label>Forma pagto</label><select id="fPay"><option value="">Todas</option></select></div>
+    <div class="field" style="align-self:end"><button class="btn" id="clearBtn" style="width:100%">Limpar filtros</button></div>
+  </div>
+
+  <div class="charts">
+    <div class="card"><h3>Fluxo mensal</h3><canvas id="chMonth"></canvas></div>
+    <div class="card"><h3>Despesas por forma de pagamento</h3><canvas id="chPay"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th data-s="data">Data ↕</th><th data-s="descricao">Descrição ↕</th><th data-s="nat">Natureza</th>
+          <th data-s="valor" class="num">Valor ↕</th><th data-s="tipoDespesa">Tipo Despesa</th><th data-s="parcelas">Qt Parc.</th>
+          <th data-s="formaPagto">Forma Pagto</th><th data-s="tipoReceita">Tipo Receita</th><th></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pager"><span id="pgInfo"></span><div class="actions"><button class="btn btn-sm" id="pgPrev">‹ Anterior</button><button class="btn btn-sm" id="pgNext">Próxima ›</button></div></div>
+  </div>
+</main>
+
+<!-- FORM MODAL -->
+<div class="modal hidden" id="formModal">
+  <form class="card" id="form">
+    <h3 id="formTitle">Novo lançamento</h3>
+    <div class="form-grid">
+      <div class="full seg" id="natSeg"><button type="button" data-n="R" class="inc">↑ Receita</button><button type="button" data-n="D" class="exp on">↓ Despesa</button></div>
+      <div class="field"><label>Data</label><input type="date" id="iData" required></div>
+      <div class="field"><label>Valor (R$)</label><input type="number" id="iValor" step="0.01" min="0.01" required></div>
+      <div class="field full"><label>Descrição</label><input id="iDesc" maxlength="120" required></div>
+      <div class="field expOnly"><label>Tipo Despesa</label><select id="iTDesp"><option>Variável</option><option>Fixa</option></select></div>
+      <div class="field expOnly" id="parcWrap"><label>Qt Parcelas</label><input type="number" id="iParc" min="1" max="120" value="1"><div class="hint" id="parcHint"></div></div>
+      <div class="field incOnly hidden"><label>Tipo Receita</label><select id="iTRec"><option>Fixa</option><option>Extra</option></select></div>
+      <div class="field"><label>Forma Pagto</label><input id="iPay" list="payList" required><datalist id="payList"></datalist></div>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn" data-close>Cancelar</button><button class="btn btn-primary" type="submit">Salvar</button></div>
+  </form>
+</div>
+
+<!-- PDF MODAL -->
+<div class="modal wide hidden" id="pdfModal">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <h3 style="margin:0">Pré-visualização do relatório</h3>
+      <div class="actions"><button class="btn btn-primary" id="pdfDl">⬇ Baixar PDF</button><button class="btn" data-close>Fechar</button></div>
+    </div>
+    <iframe id="pdfFrame" title="PDF"></iframe>
+  </div>
+</div>
+
+<div class="loader hidden" id="loader"><i></i></div>
+
+<script>
+/* ===================== CONFIG ===================== */
+const API = '/api/sheets';
+const PAGE = 15;
+const DEFAULT_PAY = ['Pix','Dinheiro','Cartão de Crédito','Cartão de Débito','Boleto','Transferência','Débito Automático'];
+const CAPTIONS = [
+  ['Controle total','Suas finanças, <em>organizadas</em>.','Receitas e despesas sincronizadas em tempo real com o Google Sheets.'],
+  ['Economia inteligente','Saiba para onde vai <em>cada real</em>.','Filtros inteligentes por período, natureza, classificação e forma de pagamento.'],
+  ['Visão analítica','Dashboards que <em>falam</em> com você.','Gráficos de fluxo mensal e distribuição de gastos num piscar de olhos.'],
+  ['Relatórios profissionais','PDF e Excel <em>prontos</em> para enviar.','Exporte com layout corporativo, totais e resumo automático.'],
+];
+
+/* ===================== STATE ===================== */
+let rows = [], demo = false, sortKey = 'data', sortDir = -1, page = 1, editing = null, nat = 'D', charts = {}, pdfDoc = null;
+const $ = s => document.querySelector(s);
+const brl = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const parseBR = s => { const [d,m,y] = String(s).split('/').map(Number); return new Date(y, (m||1)-1, d||1); };
+const toBR = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+const isoToBR = iso => { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
+const brToISO = br => { const [d,m,y] = br.split('/'); return `${y}-${m}-${d}`; };
+const isoDate = d => d.toISOString().slice(0,10);
+const natOf = r => r.tipoReceita ? 'R' : 'D';
+const clsOf = r => r.tipoReceita || r.tipoDespesa;
+const addMonths = (d, n) => { const r = new Date(d.getFullYear(), d.getMonth()+n, 1); r.setDate(Math.min(d.getDate(), new Date(r.getFullYear(), r.getMonth()+1, 0).getDate())); return r; };
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now()+''+Math.random());
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast = m => { const t = document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),3200); };
+const loading = on => $('#loader').classList.toggle('hidden', !on);
+
+/* ===================== THEME ===================== */
+function setTheme(t){ document.documentElement.dataset.theme = t; localStorage.setItem('fp-theme', t); $('#themeBtn').textContent = t==='dark'?'☀️':'🌙'; if (!$('#dash').classList.contains('hidden')) renderCharts(filtered()); }
+$('#themeBtn').onclick = () => setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+setTheme(localStorage.getItem('fp-theme') || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+
+/* ===================== CAROUSEL ===================== */
+const slides = [...document.querySelectorAll('.slide')]; let cur = 0, timer;
+slides.forEach((_,i)=>{ const b=document.createElement('button'); b.setAttribute('aria-label','Slide '+(i+1)); b.onclick=()=>go(i,true); $('#dots').appendChild(b); });
+function go(i, user){ slides[cur].classList.remove('active'); cur=(i+slides.length)%slides.length; slides[cur].classList.add('active');
+  [...$('#dots').children].forEach((d,k)=>d.classList.toggle('on',k===cur));
+  const [a,b,c] = CAPTIONS[cur]; const cap=$('#caption'); cap.style.animation='none'; cap.offsetHeight; cap.style.animation='';
+  cap.innerHTML = `<small>${a}</small><h1>${b}</h1><p>${c}</p>`;
+  if (user){ clearInterval(timer); timer=setInterval(()=>go(cur+1),6000); } }
+go(0); timer = setInterval(()=>go(cur+1), 6000);
+
+/* ===================== API ===================== */
+function headers(){ const h={'Content-Type':'application/json'}; const k=sessionStorage.getItem('fp-key'); if(k) h['x-access-key']=k; return h; }
+async function api(method, body){
+  if (demo) return demoApi(method, body);
+  const r = await fetch(API, { method, headers: headers(), body: body?JSON.stringify(body):undefined });
+  let j; try { j = await r.json(); } catch { throw new Error(`Servidor indisponível [${r.status}]`); }
+  if (r.status===401 && /acesso/i.test(j.error||'')) { const k = prompt('Informe a chave de acesso:'); if (k){ sessionStorage.setItem('fp-key',k); return api(method, body); } }
+  if (!r.ok || j.ok===false) throw new Error(j.error || `Erro [${r.status}]`);
+  return j;
+}
+function demoSeed(){
+  const t = new Date(), m = (o,d)=>toBR(new Date(t.getFullYear(), t.getMonth()+o, d));
+  const s = [
+    [m(-2,5),'Salário',6500,'','','Transferência','Fixa'],[m(-1,5),'Salário',6500,'','','Transferência','Fixa'],[m(0,5),'Salário',6500,'','','Transferência','Fixa'],
+    [m(-1,18),'Freelance site',1800,'','','Pix','Extra'],[m(-2,10),'Aluguel',1900,'Fixa',1,'Boleto',''],[m(-1,10),'Aluguel',1900,'Fixa',1,'Boleto',''],
+    [m(0,10),'Aluguel',1900,'Fixa',1,'Boleto',''],[m(-2,14),'Supermercado',742.3,'Variável','','Cartão de Débito',''],[m(-1,12),'Supermercado',688.9,'Variável','','Cartão de Débito',''],
+    [m(0,3),'Combustível',310,'Variável','','Cartão de Crédito',''],[m(-1,22),'Restaurante',185.5,'Variável','','Pix',''],
+  ];
+  const rs = s.map(a=>({data:a[0],descricao:a[1],valor:a[2],tipoDespesa:a[3],parcelas:a[4],formaPagto:a[5],tipoReceita:a[6],id:uid()}));
+  for (let i=0;i<6;i++) rs.push({data:toBR(addMonths(new Date(t.getFullYear(),t.getMonth()-1,15),i)),descricao:`Notebook (${i+1}/6)`,valor:450,tipoDespesa:'Fixa',parcelas:6,formaPagto:'Cartão de Crédito',tipoReceita:'',id:uid()});
+  return rs;
+}
+function demoApi(method, b){
+  let d = JSON.parse(localStorage.getItem('fp-demo') || 'null') || demoSeed();
+  if (method==='POST'){
+    if (b.action==='create') d.push(...b.rows.map(r=>({...r,id:uid()})));
+    if (b.action==='update') d = d.map(r=>r.id===b.row.id?b.row:r);
+    if (b.action==='delete') d = d.filter(r=>!b.ids.includes(r.id));
+  }
+  localStorage.setItem('fp-demo', JSON.stringify(d));
+  return { ok:true, data:d };
+}
+
+async function load(){
+  loading(true);
+  try { const j = await api('GET'); rows = j.data || []; }
+  catch (e) {
+    loading(false);
+    if (!demo && confirm(`Não foi possível conectar à planilha:\n${e.message}\n\nDeseja abrir no MODO DEMONSTRAÇÃO (dados locais)?`)) { demo = true; $('#demoBadge').classList.remove('hidden'); return load(); }
+    if (!demo) return false;
+  }
+  loading(false);
+  $('#sync').textContent = `${demo?'Dados de demonstração':'Sincronizado com Google Sheets'} · ${new Date().toLocaleString('pt-BR')}`;
+  fillPay(); render(); return true;
+}
+
+/* ===================== NAV ===================== */
+$('#loadBtn').onclick = async () => { if (await load() !== false){ $('#home').classList.add('hidden'); $('#dash').classList.remove('hidden'); $('#homeBtn').classList.remove('hidden'); clearInterval(timer); } };
+$('#homeBtn').onclick = () => { $('#dash').classList.add('hidden'); $('#home').classList.remove('hidden'); $('#homeBtn').classList.add('hidden'); timer=setInterval(()=>go(cur+1),6000); };
+$('#reloadBtn').onclick = load;
+
+/* ===================== FILTERS ===================== */
+function fillPay(){
+  const set = [...new Set([...DEFAULT_PAY, ...rows.map(r=>r.formaPagto).filter(Boolean)])].sort();
+  const sel = $('#fPay'), v = sel.value;
+  sel.innerHTML = '<option value="">Todas</option>' + set.map(p=>`<option>${esc(p)}</option>`).join(''); sel.value = v;
+  $('#payList').innerHTML = set.map(p=>`<option value="${esc(p)}">`).join('');
+}
+function filtered(){
+  const q = $('#fText').value.trim().toLowerCase(), from = $('#fFrom').value, to = $('#fTo').value;
+  const n = $('#fNat').value, c = $('#fCls').value, p = $('#fPay').value;
+  const fd = from ? new Date(from+'T00:00') : null, td = to ? new Date(to+'T23:59') : null;
+  return rows.filter(r => {
+    const d = parseBR(r.data);
+    if (fd && d < fd) return false; if (td && d > td) return false;
+    if (n && natOf(r) !== n) return false; if (c && clsOf(r) !== c) return false; if (p && r.formaPagto !== p) return false;
+    if (q && !`${r.descricao} ${r.formaPagto} ${clsOf(r)} ${r.valor}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+['#fText','#fFrom','#fTo','#fNat','#fCls','#fPay'].forEach(s=>$(s).addEventListener('input',()=>{ page=1; render(); }));
+$('#clearBtn').onclick = () => { ['#fText','#fFrom','#fTo','#fNat','#fCls','#fPay'].forEach(s=>$(s).value=''); setChip('all'); page=1; render(); };
+function setChip(q){ document.querySelectorAll('#quick .chip').forEach(c=>c.classList.toggle('on',c.dataset.q===q)); }
+$('#quick').onclick = e => {
+  const q = e.target.dataset.q; if (!q) return; setChip(q);
+  const t = new Date(), y=t.getFullYear(), m=t.getMonth(); let a='', b='';
+  if (q==='month'){ a=new Date(y,m,1); b=new Date(y,m+1,0); }
+  if (q==='prev'){ a=new Date(y,m-1,1); b=new Date(y,m,0); }
+  if (q==='90'){ a=new Date(t-90*864e5); b=t; }
+  if (q==='year'){ a=new Date(y,0,1); b=new Date(y,11,31); }
+  if (q==='future'){ a=new Date(t.getTime()+864e5); b=''; }
+  const f = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : '';
+  $('#fFrom').value=f(a); $('#fTo').value=f(b); page=1; render();
+};
+
+/* ===================== RENDER ===================== */
+function totals(list){ const inc = list.filter(r=>natOf(r)==='R').reduce((s,r)=>s+ +r.valor,0); const exp = list.filter(r=>natOf(r)==='D').reduce((s,r)=>s+ +r.valor,0); return {inc,exp,bal:inc-exp}; }
+function sorted(list){
+  return [...list].sort((a,b)=>{ let x=a[sortKey], y=b[sortKey];
+    if (sortKey==='data'){ x=parseBR(x); y=parseBR(y); } else if (sortKey==='valor'||sortKey==='parcelas'){ x=+x||0; y=+y||0; } else if (sortKey==='nat'){ x=natOf(a); y=natOf(b); } else { x=String(x).toLowerCase(); y=String(y).toLowerCase(); }
+    return (x>y?1:x<y?-1:0)*sortDir; });
+}
+document.querySelectorAll('th[data-s]').forEach(th=>th.onclick=()=>{ const k=th.dataset.s; sortDir = sortKey===k?-sortDir:-1; sortKey=k; render(); });
+function render(){
+  const list = sorted(filtered()), t = totals(list), max = Math.max(t.inc,t.exp,1);
+  $('#kInc').textContent=brl(t.inc); $('#kExp').textContent=brl(t.exp); $('#kBal').textContent=brl(t.bal);
+  $('#kBal').style.color = t.bal>=0?'var(--income)':'var(--expense)';
+  $('#kIncBar').style.width = (t.inc/max*100)+'%'; $('#kExpBar').style.width=(t.exp/max*100)+'%';
+  $('#kBalHint').textContent = t.inc ? `Comprometimento: ${(t.exp/t.inc*100).toFixed(1)}% da receita` : '';
+  $('#kCount').textContent = list.length; $('#kCountHint').textContent = `de ${rows.length} no total`;
+  const pages = Math.max(1, Math.ceil(list.length/PAGE)); page = Math.min(page, pages);
+  const slice = list.slice((page-1)*PAGE, page*PAGE);
+  $('#tbody').innerHTML = slice.length ? slice.map(r=>{ const n=natOf(r); return `<tr>
+    <td>${esc(r.data)}</td><td>${esc(r.descricao)}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${n==='R'?'Receita':'Despesa'}</span></td>
+    <td class="num" style="color:var(--${n==='R'?'income':'expense'})">${n==='R'?'':'− '}${brl(+r.valor)}</td>
+    <td>${esc(r.tipoDespesa)}</td><td>${esc(r.parcelas)}</td><td>${esc(r.formaPagto)}</td><td>${esc(r.tipoReceita)}</td>
+    <td style="white-space:nowrap"><button class="btn btn-sm" data-e="${esc(r.id)}" title="Editar">✏️</button> <button class="btn btn-sm btn-danger" data-d="${esc(r.id)}" title="Excluir">🗑</button></td></tr>`; }).join('')
+    : `<tr><td colspan="9" class="empty">Nenhum lançamento encontrado para os filtros atuais.</td></tr>`;
+  $('#pgInfo').textContent = `Página ${page} de ${pages} · ${list.length} registros`;
+  $('#pgPrev').disabled = page<=1; $('#pgNext').disabled = page>=pages;
+  renderCharts(list);
+}
+$('#pgPrev').onclick=()=>{page--;render();}; $('#pgNext').onclick=()=>{page++;render();};
+
+function renderCharts(list){
+  const css = getComputedStyle(document.documentElement), col = v => css.getPropertyValue(v).trim();
+  Chart.defaults.color = col('--muted'); Chart.defaults.borderColor = col('--border'); Chart.defaults.font.family='Plus Jakarta Sans';
+  const months = {};
+  list.forEach(r=>{ const d=parseBR(r.data), k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; months[k] ??= {R:0,D:0}; months[k][natOf(r)] += +r.valor; });
+  const keys = Object.keys(months).sort(), labels = keys.map(k=>{ const [y,m]=k.split('-'); return new Date(y,m-1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}); });
+  charts.m?.destroy();
+  charts.m = new Chart($('#chMonth'), { data:{ labels, datasets:[
+    {type:'bar',label:'Receitas',data:keys.map(k=>months[k].R),backgroundColor:col('--income'),borderRadius:6},
+    {type:'bar',label:'Despesas',data:keys.map(k=>months[k].D),backgroundColor:col('--expense'),borderRadius:6},
+    {type:'line',label:'Saldo',data:keys.map(k=>months[k].R-months[k].D),borderColor:col('--accent'),backgroundColor:col('--accent'),tension:.35,pointRadius:4}]},
+    options:{responsive:true,plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${brl(c.raw)}`}}},scales:{y:{ticks:{callback:v=>brl(v).replace(',00','')}}}}});
+  const pay = {}; list.filter(r=>natOf(r)==='D').forEach(r=>pay[r.formaPagto||'—']=(pay[r.formaPagto||'—']||0)+ +r.valor);
+  charts.p?.destroy();
+  charts.p = new Chart($('#chPay'), { type:'doughnut', data:{ labels:Object.keys(pay), datasets:[{ data:Object.values(pay), borderWidth:0,
+    backgroundColor:['#0f5c56','#e8a33d','#d6493f','#2bb3a3','#6b7fd7','#8c6d4f','#c45ab3','#7aa33a'] }]},
+    options:{cutout:'65%',plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>`${c.label}: ${brl(c.raw)}`}}}}});
+}
+
+/* ===================== FORM / CRUD ===================== */
+function setNat(n){ nat=n; document.querySelectorAll('#natSeg button').forEach(b=>b.classList.toggle('on',b.dataset.n===n));
+  document.querySelectorAll('.expOnly').forEach(e=>e.classList.toggle('hidden',n!=='D')); document.querySelectorAll('.incOnly').forEach(e=>e.classList.toggle('hidden',n!=='R')); updParc(); }
+$('#natSeg').onclick = e => e.target.dataset.n && setNat(e.target.dataset.n);
+function updParc(){
+  const fixa = nat==='D' && $('#iTDesp').value==='Fixa';
+  $('#parcWrap').classList.toggle('hidden', !fixa);
+  const n = +$('#iParc').value||1, v = +$('#iValor').value||0;
+  $('#parcHint').textContent = editing ? 'Edição altera apenas esta linha.' : (fixa && n>1 ? `Serão geradas ${n} linhas mensais de ${brl(v)} (total ${brl(v*n)}).` : '');
+}
+['#iTDesp','#iParc','#iValor'].forEach(s=>$(s).addEventListener('input',updParc));
+function openForm(r){
+  editing = r || null; $('#formTitle').textContent = r ? 'Editar lançamento' : 'Novo lançamento';
+  $('#iData').value = r ? brToISO(r.data) : isoDate(new Date()); $('#iValor').value = r?.valor ?? ''; $('#iDesc').value = r?.descricao ?? '';
+  $('#iTDesp').value = r?.tipoDespesa || 'Variável'; $('#iParc').value = r?.parcelas || 1; $('#iParc').disabled = !!r;
+  $('#iTRec').value = r?.tipoReceita || 'Fixa'; $('#iPay').value = r?.formaPagto ?? '';
+  setNat(r ? natOf(r) : 'D'); $('#formModal').classList.remove('hidden'); $('#iDesc').focus();
+}
+$('#newBtn').onclick = () => openForm();
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.add('hidden'));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.add('hidden'); }));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal').forEach(m=>m.classList.add('hidden')); });
+
+$('#form').onsubmit = async e => {
+  e.preventDefault();
+  const valor = Math.round(parseFloat($('#iValor').value)*100)/100, desc = $('#iDesc').value.trim(), pay = $('#iPay').value.trim();
+  if (!(valor>0) || !desc || !pay) return toast('Preencha todos os campos corretamente.');
+  const isD = nat==='D', fixa = isD && $('#iTDesp').value==='Fixa', n = fixa ? Math.max(1, Math.min(120, parseInt($('#iParc').value)||1)) : '';
+  const base = { descricao:desc, valor, tipoDespesa:isD?$('#iTDesp').value:'', parcelas:fixa?n:'', formaPagto:pay, tipoReceita:isD?'':$('#iTRec').value };
+  loading(true);
+  try {
+    if (editing) { await api('POST', { action:'update', row:{ ...editing, ...base, parcelas: fixa ? editing.parcelas || n : '', data: isoToBR($('#iData').value) } }); toast('Lançamento atualizado.'); }
+    else {
+      const d0 = new Date($('#iData').value+'T12:00');
+      const list = fixa && n>1 ? Array.from({length:n},(_,i)=>({ ...base, data:toBR(addMonths(d0,i)), descricao:`${desc} (${i+1}/${n})` })) : [{ ...base, data:toBR(d0) }];
+      await api('POST', { action:'create', rows:list }); toast(list.length>1?`${list.length} parcelas registradas.`:'Lançamento registrado.');
+    }
+    $('#formModal').classList.add('hidden'); loading(false); await load();
+  } catch (err) { loading(false); toast('Erro: '+err.message); }
+};
+$('#tbody').onclick = async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.e) return openForm(rows.find(r=>r.id===b.dataset.e));
+  const r = rows.find(x=>x.id===b.dataset.d); if (!r) return;
+  const m = r.descricao.match(/^(.*) \(\d+\/(\d+)\)$/);
+  let ids = [r.id];
+  if (m && confirm(`"${r.descricao}" faz parte de um parcelamento.\nOK = excluir TODAS as parcelas · Cancelar = só esta`)) ids = rows.filter(x=>x.descricao.startsWith(m[1]+' (') && x.descricao.endsWith(`/${m[2]})`)).map(x=>x.id);
+  else if (!m && !confirm(`Excluir "${r.descricao}"?`)) return;
+  loading(true);
+  try { await api('POST',{action:'delete',ids}); loading(false); toast(`${ids.length} registro(s) excluído(s).`); await load(); } catch(err){ loading(false); toast('Erro: '+err.message); }
+};
+
+/* ===================== EXPORT PDF ===================== */
+function filterDesc(){ const p=[]; if($('#fFrom').value)p.push('De '+isoToBR($('#fFrom').value)); if($('#fTo').value)p.push('Até '+isoToBR($('#fTo').value));
+  if($('#fNat').value)p.push($('#fNat').value==='R'?'Receitas':'Despesas'); if($('#fCls').value)p.push($('#fCls').value); if($('#fPay').value)p.push($('#fPay').value); if($('#fText').value)p.push(`"${$('#fText').value}"`);
+  return p.length?p.join(' · '):'Todos os lançamentos'; }
+function buildPDF(){
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+  const list = sorted(filtered()), t = totals(list), W = doc.internal.pageSize.getWidth();
+  doc.setFillColor(15,92,86); doc.rect(0,0,W,30,'F'); doc.setFillColor(232,163,61); doc.rect(0,30,W,1.5,'F');
+  doc.setTextColor(255); doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.text('Relatório de Receitas e Despesas',14,15);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.text(`Filtros: ${filterDesc()}`,14,23); doc.text(`Emitido em ${new Date().toLocaleString('pt-BR')}`,W-14,23,{align:'right'});
+  const cards = [['RECEITAS',brl(t.inc),[31,157,107]],['DESPESAS',brl(t.exp),[214,73,63]],['SALDO',brl(t.bal),t.bal>=0?[31,157,107]:[214,73,63]],['LANÇAMENTOS',String(list.length),[15,92,86]]];
+  const cw = (W-28-18)/4;
+  cards.forEach(([l,v,c],i)=>{ const x=14+i*(cw+6); doc.setFillColor(245,243,238); doc.roundedRect(x,38,cw,20,3,3,'F'); doc.setFillColor(...c); doc.rect(x,38,1.5,20,'F');
+    doc.setTextColor(95,107,105); doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text(l,x+6,45); doc.setTextColor(...c); doc.setFontSize(14); doc.text(v,x+6,53); });
+  doc.autoTable({ startY:66, head:[['Data','Descrição','Natureza','Valor','Tipo Despesa','Qt Parc.','Forma Pagto','Tipo Receita']],
+    body:list.map(r=>[r.data,r.descricao,natOf(r)==='R'?'Receita':'Despesa',brl(+r.valor),r.tipoDespesa,r.parcelas,r.formaPagto,r.tipoReceita]),
+    foot:[['','TOTAL RECEITAS','',brl(t.inc),'','','',''],['','TOTAL DESPESAS','',brl(t.exp),'','','',''],['','SALDO','',brl(t.bal),'','','','']],
+    theme:'grid', styles:{fontSize:8.5,cellPadding:2.4,lineColor:[226,221,210],lineWidth:.1},
+    headStyles:{fillColor:[15,92,86],textColor:255,fontStyle:'bold'}, footStyles:{fillColor:[240,237,230],textColor:[20,32,31],fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[250,249,246]}, columnStyles:{3:{halign:'right'},5:{halign:'center'}},
+    didParseCell:d=>{ if(d.section==='body'&&d.column.index===3){ d.cell.styles.textColor = list[d.row.index] && natOf(list[d.row.index])==='R'?[31,157,107]:[214,73,63]; d.cell.styles.fontStyle='bold'; } },
+    didDrawPage:()=>{ const H=doc.internal.pageSize.getHeight(); doc.setFontSize(8); doc.setTextColor(140); doc.text('FinançaPro · Dados sincronizados com Google Sheets',14,H-8);
+      doc.text(`Página ${doc.internal.getNumberOfPages()}`,W-14,H-8,{align:'right'}); }, margin:{top:14,bottom:14} });
+  return doc;
+}
+$('#pdfBtn').onclick = () => { pdfDoc = buildPDF(); $('#pdfFrame').src = pdfDoc.output('bloburl'); $('#pdfModal').classList.remove('hidden'); };
+$('#pdfDl').onclick = () => pdfDoc?.save(`relatorio-financeiro-${isoDate(new Date())}.pdf`);
+
+/* ===================== EXPORT EXCEL ===================== */
+$('#xlsBtn').onclick = () => {
+  const list = sorted(filtered()), t = totals(list), X = XLSX;
+  const border = { top:{style:'thin',color:{rgb:'E2DDD2'}}, bottom:{style:'thin',color:{rgb:'E2DDD2'}}, left:{style:'thin',color:{rgb:'E2DDD2'}}, right:{style:'thin',color:{rgb:'E2DDD2'}} };
+  const H = ['Data','Descrição','Valor','Tipo Despesa','Qt Parcelas','Forma Pagto','Tipo Receita'];
+  const aoa = [['Relatório de Receitas e Despesas'],[`Filtros: ${filterDesc()} · Emitido em ${new Date().toLocaleString('pt-BR')}`],[],H,
+    ...list.map(r=>[r.data,r.descricao,natOf(r)==='R'?+r.valor:-r.valor,r.tipoDespesa,r.parcelas===''?'':+r.parcelas,r.formaPagto,r.tipoReceita]),
+    [],['','Total Receitas',t.inc],['','Total Despesas',-t.exp],['','Saldo',t.bal]];
+  const ws = X.utils.aoa_to_sheet(aoa), last = 4 + list.length;
+  ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}}];
+  ws['!cols'] = [{wch:12},{wch:38},{wch:15},{wch:14},{wch:12},{wch:20},{wch:14}];
+  ws['!rows'] = [{hpt:30},{hpt:18},{},{hpt:22}];
+  ws['!autofilter'] = { ref:`A4:G${last}` }; ws['!freeze'] = { xSplit:0, ySplit:4 };
+  ws.A1.s = { font:{bold:true,sz:18,color:{rgb:'FFFFFF'}}, fill:{fgColor:{rgb:'0F5C56'}}, alignment:{vertical:'center'} };
+  ws.A2.s = { font:{italic:true,sz:10,color:{rgb:'5F6B69'}} };
+  H.forEach((_,c)=>{ const a=X.utils.encode_cell({r:3,c}); ws[a].s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'0F5C56'}},alignment:{horizontal:'center',vertical:'center'},border}; });
+  for (let r=4;r<last;r++) for (let c=0;c<7;c++){ const a=X.utils.encode_cell({r,c}); ws[a] ??= {t:'s',v:''};
+    const neg = c===2 && ws[a].v<0; ws[a].s = { border, fill:{fgColor:{rgb:r%2?'FAF9F6':'FFFFFF'}}, alignment:{horizontal:[0,4].includes(c)?'center':c===2?'right':'left'},
+      font:{color:{rgb:c===2?(neg?'D6493F':'1F9D6B'):'14201F'},bold:c===2} }; if (c===2) ws[a].z='"R$" #,##0.00;[Red]-"R$" #,##0.00'; }
+  [last+1,last+2,last+3].forEach((r,i)=>{ ['B','C'].forEach(col=>{ const a=col+(r+1); if(ws[a]) ws[a].s={font:{bold:true,sz:12,color:{rgb:i===2?(t.bal>=0?'1F9D6B':'D6493F'):'14201F'}},fill:{fgColor:{rgb:'F0EDE6'}},border,alignment:{horizontal:col==='C'?'right':'left'}}; });
+    const c=ws['C'+(r+1)]; if(c) c.z='"R$" #,##0.00;[Red]-"R$" #,##0.00'; });
+  // Aba resumo mensal
+  const mm = {}; list.forEach(r=>{ const d=parseBR(r.data), k=`${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`, s=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`; mm[s] ??= {k,R:0,D:0}; mm[s][natOf(r)] += +r.valor; });
+  const rs = [['Mês','Receitas','Despesas','Saldo'], ...Object.keys(mm).sort().map(s=>[mm[s].k,mm[s].R,mm[s].D,mm[s].R-mm[s].D])];
+  const ws2 = X.utils.aoa_to_sheet(rs); ws2['!cols']=[{wch:12},{wch:16},{wch:16},{wch:16}];
+  for (let r=0;r<rs.length;r++) for (let c=0;c<4;c++){ const a=X.utils.encode_cell({r,c}); ws2[a].s = r===0 ? {font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'0F5C56'}},border,alignment:{horizontal:'center'}} : {border,font:{color:{rgb:c===1?'1F9D6B':c===2?'D6493F':'14201F'},bold:c===3},alignment:{horizontal:c?'right':'center'}}; if(r&&c) ws2[a].z='"R$" #,##0.00;[Red]-"R$" #,##0.00'; }
+  const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Lançamentos'); X.utils.book_append_sheet(wb, ws2, 'Resumo Mensal');
+  X.writeFile(wb, `financas-${isoDate(new Date())}.xlsx`); toast('Planilha Excel exportada.');
+};
+</script>
+</body>
+</html>
