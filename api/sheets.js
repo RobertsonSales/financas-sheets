@@ -42,7 +42,9 @@ export default async function handler(req, res) {
       return res.status(unauthorized ? 401 : 200).json(data);
     } catch {
       console.error('Resposta inválida do Apps Script', r.status, text.slice(0, 500));
-      return res.status(502).json({ ok: false, error: `Resposta inválida do Apps Script [${r.status}]` });
+      // Mostra um trecho do texto devolvido (sem HTML) para facilitar o diagnóstico
+      const hint = text.replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+      return res.status(502).json({ ok: false, error: `Resposta inválida do Apps Script [${r.status}]${hint ? ': ' + hint : ''}` });
     }
   } catch (e) {
     console.error(e);
