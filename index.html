@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Finanças Plus · Receitas & Despesas</title>
+<title>Finanças Lugarini · Receitas & Despesas</title>
 <meta name="description" content="Gestão de receitas e despesas integrada ao Google Sheets, com dashboard, PDF e Excel." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet" />
@@ -158,7 +158,7 @@ tr:hover td{background:var(--surface-2)}
 <!-- DASHBOARD -->
 <main id="dash" class="hidden">
   <div class="title-row">
-    <div><h2>Gestão financeira completa</h2><div class="muted" id="sync">—</div></div>
+    <div><h2>Painel financeiro</h2><div class="muted" id="sync">—</div></div>
     <div class="actions">
       <button class="btn btn-primary" id="newBtn">＋ Novo lançamento</button>
       <button class="btn" id="reloadBtn">⟳ <span class="lbl">Atualizar</span></button>
@@ -188,6 +188,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="field"><label>Até</label><input type="date" id="fTo"></div>
     <div class="field"><label>Natureza</label><select id="fNat"><option value="">Todas</option><option value="R">Receitas</option><option value="D">Despesas</option></select></div>
     <div class="field"><label>Classificação</label><select id="fCls"><option value="">Todas</option><option>Fixa</option><option>Variável</option><option>Extra</option></select></div>
+    <div class="field"><label>Categoria</label><select id="fCat"><option value="">Todas</option></select></div>
     <div class="field"><label>Forma pagto</label><select id="fPay"><option value="">Todas</option></select></div>
     <div class="field" style="align-self:end"><button class="btn" id="clearBtn" style="width:100%">Limpar filtros</button></div>
   </div>
@@ -201,7 +202,7 @@ tr:hover td{background:var(--surface-2)}
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th data-s="data">Data ↕</th><th data-s="descricao">Descrição ↕</th><th data-s="nat">Natureza</th>
+          <th data-s="data">Data ↕</th><th data-s="descricao">Descrição ↕</th><th data-s="categoria">Categoria ↕</th><th data-s="nat">Natureza</th>
           <th data-s="valor" class="num">Valor ↕</th><th data-s="tipoDespesa">Tipo Despesa</th><th data-s="parcelas">Qt Parc.</th>
           <th data-s="formaPagto">Forma Pagto</th><th data-s="tipoReceita">Tipo Receita</th><th></th>
         </tr></thead>
@@ -224,6 +225,7 @@ tr:hover td{background:var(--surface-2)}
       <div class="field expOnly"><label>Tipo Despesa</label><select id="iTDesp"><option>Variável</option><option>Fixa</option></select></div>
       <div class="field expOnly" id="parcWrap"><label>Qt Parcelas</label><input type="number" id="iParc" min="1" max="120" value="1"><div class="hint" id="parcHint"></div></div>
       <div class="field incOnly hidden"><label>Tipo Receita</label><select id="iTRec"><option>Fixa</option><option>Extra</option></select></div>
+      <div class="field"><label>Categoria</label><select id="iCat" required></select></div>
       <div class="field"><label>Forma Pagto</label><input id="iPay" list="payList" required><datalist id="payList"></datalist></div>
     </div>
     <div class="modal-foot"><button type="button" class="btn" data-close>Cancelar</button><button class="btn btn-primary" type="submit">Salvar</button></div>
@@ -265,6 +267,13 @@ tr:hover td{background:var(--surface-2)}
 const API = '/api/sheets';
 const PAGE = 15;
 const CARD_BRANDS = ['Visa','Mastercard','Elo','American Express','Hipercard','Diners Club'];
+const CATS = {
+  D: ['Moradia','Alimentação','Supermercado','Restaurantes e Delivery','Transporte','Combustível','Saúde','Farmácia','Educação','Lazer','Viagens',
+      'Vestuário','Contas (água, luz, gás)','Internet e Telefone','Assinaturas e Streaming','Impostos e Taxas','Seguros','Cuidados Pessoais',
+      'Pets','Presentes e Doações','Manutenção e Reparos','Empréstimos e Financiamentos','Tarifas Bancárias','Investimentos','Outras Despesas'],
+  R: ['Salário','Pró-labore','13º Salário','Férias','Freelance / Serviços','Vendas','Aluguéis Recebidos','Rendimentos de Investimentos',
+      'Dividendos','Aposentadoria / Pensão','Bônus e Comissões','Reembolsos','Restituição de IR','Presentes Recebidos','Outras Receitas']
+};
 const DEFAULT_PAY = ['Pix','Dinheiro','Cartão de Crédito','Cartão de Débito','Boleto','Transferência','Débito Automático',
   ...CARD_BRANDS.map(b=>`Cartão de Crédito - ${b}`)];
 const CAPTIONS = [
@@ -454,21 +463,30 @@ function fillPay(){
   const sel = $('#fPay'), v = sel.value;
   sel.innerHTML = '<option value="">Todas</option>' + set.map(p=>`<option>${esc(p)}</option>`).join(''); sel.value = v;
   $('#payList').innerHTML = set.map(p=>`<option value="${esc(p)}">`).join('');
+  const cs = [...new Set([...CATS.D, ...CATS.R, ...rows.map(r=>r.categoria).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const fc = $('#fCat'), cv = fc.value;
+  fc.innerHTML = '<option value="">Todas</option><option value="__none">(Sem categoria)</option>' + cs.map(p=>`<option>${esc(p)}</option>`).join(''); fc.value = cv;
+}
+function fillCatSel(n, v){
+  const list = [...CATS[n]]; if (v && !list.includes(v)) list.unshift(v);
+  $('#iCat').innerHTML = '<option value="">Selecione...</option>' + list.map(p=>`<option>${esc(p)}</option>`).join('');
+  $('#iCat').value = v || '';
 }
 function filtered(){
   const q = $('#fText').value.trim().toLowerCase(), from = $('#fFrom').value, to = $('#fTo').value;
-  const n = $('#fNat').value, c = $('#fCls').value, p = $('#fPay').value;
+  const n = $('#fNat').value, c = $('#fCls').value, p = $('#fPay').value, k = $('#fCat').value;
   const fd = from ? new Date(from+'T00:00') : null, td = to ? new Date(to+'T23:59') : null;
   return rows.filter(r => {
     const d = parseBR(r.data);
     if (fd && d < fd) return false; if (td && d > td) return false;
     if (n && natOf(r) !== n) return false; if (c && clsOf(r) !== c) return false; if (p && r.formaPagto !== p) return false;
-    if (q && !`${r.descricao} ${r.formaPagto} ${clsOf(r)} ${r.valor}`.toLowerCase().includes(q)) return false;
+    if (k && (k==='__none' ? !!r.categoria : r.categoria !== k)) return false;
+    if (q && !`${r.descricao} ${r.categoria||''} ${r.formaPagto} ${clsOf(r)} ${r.valor}`.toLowerCase().includes(q)) return false;
     return true;
   });
 }
-['#fText','#fFrom','#fTo','#fNat','#fCls','#fPay'].forEach(s=>$(s).addEventListener('input',()=>{ page=1; render(); }));
-$('#clearBtn').onclick = () => { ['#fText','#fFrom','#fTo','#fNat','#fCls','#fPay'].forEach(s=>$(s).value=''); setChip('all'); page=1; render(); };
+['#fText','#fFrom','#fTo','#fNat','#fCls','#fPay','#fCat'].forEach(s=>$(s).addEventListener('input',()=>{ page=1; render(); }));
+$('#clearBtn').onclick = () => { ['#fText','#fFrom','#fTo','#fNat','#fCls','#fPay','#fCat'].forEach(s=>$(s).value=''); setChip('all'); page=1; render(); };
 function setChip(q){ document.querySelectorAll('#quick .chip').forEach(c=>c.classList.toggle('on',c.dataset.q===q)); }
 $('#quick').onclick = e => {
   const q = e.target.dataset.q; if (!q) return; setChip(q);
@@ -500,11 +518,11 @@ function render(){
   const pages = Math.max(1, Math.ceil(list.length/PAGE)); page = Math.min(page, pages);
   const slice = list.slice((page-1)*PAGE, page*PAGE);
   $('#tbody').innerHTML = slice.length ? slice.map(r=>{ const n=natOf(r); return `<tr>
-    <td>${esc(r.data)}</td><td>${esc(r.descricao)}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${n==='R'?'Receita':'Despesa'}</span></td>
+    <td>${esc(r.data)}</td><td>${esc(r.descricao)}</td><td>${esc(r.categoria||'—')}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${n==='R'?'Receita':'Despesa'}</span></td>
     <td class="num" style="color:var(--${n==='R'?'income':'expense'})">${n==='R'?'':'− '}${brl(+r.valor)}</td>
     <td>${esc(r.tipoDespesa)}</td><td>${esc(r.parcelas)}</td><td>${esc(r.formaPagto)}</td><td>${esc(r.tipoReceita)}</td>
     <td style="white-space:nowrap"><button class="btn btn-sm" data-e="${esc(r.id)}" title="Editar">✏️</button> <button class="btn btn-sm btn-danger" data-d="${esc(r.id)}" title="Excluir">🗑</button></td></tr>`; }).join('')
-    : `<tr><td colspan="9" class="empty">Nenhum lançamento encontrado para os filtros atuais.</td></tr>`;
+    : `<tr><td colspan="10" class="empty">Nenhum lançamento encontrado para os filtros atuais.</td></tr>`;
   $('#pgInfo').textContent = `Página ${page} de ${pages} · ${list.length} registros`;
   $('#pgPrev').disabled = page<=1; $('#pgNext').disabled = page>=pages;
   renderCharts(list);
@@ -531,7 +549,7 @@ function renderCharts(list){
 }
 
 /* ===================== FORM / CRUD ===================== */
-function setNat(n){ nat=n; document.querySelectorAll('#natSeg button').forEach(b=>b.classList.toggle('on',b.dataset.n===n));
+function setNat(n, keepCat){ const prev = keepCat ?? (n===nat ? $('#iCat').value : ''); nat=n; fillCatSel(n, prev); document.querySelectorAll('#natSeg button').forEach(b=>b.classList.toggle('on',b.dataset.n===n));
   document.querySelectorAll('.expOnly').forEach(e=>e.classList.toggle('hidden',n!=='D')); document.querySelectorAll('.incOnly').forEach(e=>e.classList.toggle('hidden',n!=='R')); updParc(); }
 $('#natSeg').onclick = e => e.target.dataset.n && setNat(e.target.dataset.n);
 function updParc(){
@@ -547,7 +565,7 @@ function openForm(r){
   $('#iData').value = r ? brToISO(r.data) : isoDate(new Date()); $('#iValor').value = r ? centsToBRL(Math.round(r.valor*100)) : ''; $('#iDesc').value = r?.descricao ?? '';
   $('#iTDesp').value = r?.tipoDespesa || 'Variável'; $('#iParc').value = r?.parcelas || 1; $('#iParc').disabled = !!r;
   $('#iTRec').value = r?.tipoReceita || 'Fixa'; $('#iPay').value = r?.formaPagto ?? '';
-  setNat(r ? natOf(r) : 'D'); $('#formModal').classList.remove('hidden'); $('#iDesc').focus();
+  nat = ''; setNat(r ? natOf(r) : 'D', r?.categoria || ''); $('#formModal').classList.remove('hidden'); $('#iDesc').focus();
 }
 $('#newBtn').onclick = () => openForm();
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.add('hidden'));
@@ -557,9 +575,11 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySele
 $('#form').onsubmit = async e => {
   e.preventDefault();
   const valor = getValor(), desc = $('#iDesc').value.trim(), pay = $('#iPay').value.trim();
+  const cat = $('#iCat').value;
+  if (!cat) return toast('Escolha uma categoria.');
   if (!(valor>0) || !desc || !pay) return toast('Preencha todos os campos corretamente.');
   const isD = nat==='D', fixa = isD && $('#iTDesp').value==='Fixa', n = fixa ? Math.max(1, Math.min(120, parseInt($('#iParc').value)||1)) : '';
-  const base = { descricao:desc, valor, tipoDespesa:isD?$('#iTDesp').value:'', parcelas:fixa?n:'', formaPagto:pay, tipoReceita:isD?'':$('#iTRec').value };
+  const base = { descricao:desc, valor, tipoDespesa:isD?$('#iTDesp').value:'', parcelas:fixa?n:'', formaPagto:pay, tipoReceita:isD?'':$('#iTRec').value, categoria:cat };
   loading(true);
   try {
     if (editing) { await api('POST', { action:'update', row:{ ...editing, ...base, parcelas: fixa ? editing.parcelas || n : '', data: isoToBR($('#iData').value) } }); toast('Lançamento atualizado.'); }
@@ -597,9 +617,9 @@ function buildPDF(){
   const cw = (W-28-18)/4;
   cards.forEach(([l,v,c],i)=>{ const x=14+i*(cw+6); doc.setFillColor(245,243,238); doc.roundedRect(x,38,cw,20,3,3,'F'); doc.setFillColor(...c); doc.rect(x,38,1.5,20,'F');
     doc.setTextColor(95,107,105); doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text(l,x+6,45); doc.setTextColor(...c); doc.setFontSize(14); doc.text(v,x+6,53); });
-  doc.autoTable({ startY:66, head:[['Data','Descrição','Natureza','Valor','Tipo Despesa','Qt Parc.','Forma Pagto','Tipo Receita']],
-    body:list.map(r=>[r.data,r.descricao,natOf(r)==='R'?'Receita':'Despesa',brl(+r.valor),r.tipoDespesa,r.parcelas,r.formaPagto,r.tipoReceita]),
-    foot:[['','TOTAL RECEITAS','',brl(t.inc),'','','',''],['','TOTAL DESPESAS','',brl(t.exp),'','','',''],['','SALDO','',brl(t.bal),'','','','']],
+  doc.autoTable({ startY:66, head:[['Data','Descrição','Natureza','Valor','Tipo Despesa','Qt Parc.','Forma Pagto','Tipo Receita','Categoria']],
+    body:list.map(r=>[r.data,r.descricao,natOf(r)==='R'?'Receita':'Despesa',brl(+r.valor),r.tipoDespesa,r.parcelas,r.formaPagto,r.tipoReceita,r.categoria||'']),
+    foot:[['','TOTAL RECEITAS','',brl(t.inc),'','','','',''],['','TOTAL DESPESAS','',brl(t.exp),'','','','',''],['','SALDO','',brl(t.bal),'','','','','']],
     theme:'grid', styles:{fontSize:8.5,cellPadding:2.4,lineColor:[226,221,210],lineWidth:.1},
     headStyles:{fillColor:[15,92,86],textColor:255,fontStyle:'bold'}, footStyles:{fillColor:[240,237,230],textColor:[20,32,31],fontStyle:'bold'},
     alternateRowStyles:{fillColor:[250,249,246]}, columnStyles:{3:{halign:'right'},5:{halign:'center'}},
@@ -615,19 +635,19 @@ $('#pdfDl').onclick = () => pdfDoc?.save(`relatorio-financeiro-${isoDate(new Dat
 $('#xlsBtn').onclick = () => {
   const list = sorted(filtered()), t = totals(list), X = XLSX;
   const border = { top:{style:'thin',color:{rgb:'E2DDD2'}}, bottom:{style:'thin',color:{rgb:'E2DDD2'}}, left:{style:'thin',color:{rgb:'E2DDD2'}}, right:{style:'thin',color:{rgb:'E2DDD2'}} };
-  const H = ['Data','Descrição','Valor','Tipo Despesa','Qt Parcelas','Forma Pagto','Tipo Receita'];
+  const H = ['Data','Descrição','Valor','Tipo Despesa','Qt Parcelas','Forma Pagto','Tipo Receita','Categoria'];
   const aoa = [['Relatório de Receitas e Despesas'],[`Filtros: ${filterDesc()} · Emitido em ${new Date().toLocaleString('pt-BR')}`],[],H,
-    ...list.map(r=>[r.data,r.descricao,natOf(r)==='R'?+r.valor:-r.valor,r.tipoDespesa,r.parcelas===''?'':+r.parcelas,r.formaPagto,r.tipoReceita]),
+    ...list.map(r=>[r.data,r.descricao,natOf(r)==='R'?+r.valor:-r.valor,r.tipoDespesa,r.parcelas===''?'':+r.parcelas,r.formaPagto,r.tipoReceita,r.categoria||'']),
     [],['','Total Receitas',t.inc],['','Total Despesas',-t.exp],['','Saldo',t.bal]];
   const ws = X.utils.aoa_to_sheet(aoa), last = 4 + list.length;
   ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}}];
-  ws['!cols'] = [{wch:12},{wch:38},{wch:15},{wch:14},{wch:12},{wch:20},{wch:14}];
+  ws['!cols'] = [{wch:12},{wch:38},{wch:15},{wch:14},{wch:12},{wch:20},{wch:14},{wch:24}];
   ws['!rows'] = [{hpt:30},{hpt:18},{},{hpt:22}];
   ws['!autofilter'] = { ref:`A4:G${last}` }; ws['!freeze'] = { xSplit:0, ySplit:4 };
   ws.A1.s = { font:{bold:true,sz:18,color:{rgb:'FFFFFF'}}, fill:{fgColor:{rgb:'0F5C56'}}, alignment:{vertical:'center'} };
   ws.A2.s = { font:{italic:true,sz:10,color:{rgb:'5F6B69'}} };
   H.forEach((_,c)=>{ const a=X.utils.encode_cell({r:3,c}); ws[a].s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'0F5C56'}},alignment:{horizontal:'center',vertical:'center'},border}; });
-  for (let r=4;r<last;r++) for (let c=0;c<7;c++){ const a=X.utils.encode_cell({r,c}); ws[a] ??= {t:'s',v:''};
+  for (let r=4;r<last;r++) for (let c=0;c<8;c++){ const a=X.utils.encode_cell({r,c}); ws[a] ??= {t:'s',v:''};
     const neg = c===2 && ws[a].v<0; ws[a].s = { border, fill:{fgColor:{rgb:r%2?'FAF9F6':'FFFFFF'}}, alignment:{horizontal:[0,4].includes(c)?'center':c===2?'right':'left'},
       font:{color:{rgb:c===2?(neg?'D6493F':'1F9D6B'):'14201F'},bold:c===2} }; if (c===2) ws[a].z='"R$" #,##0.00;[Red]-"R$" #,##0.00'; }
   [last+1,last+2,last+3].forEach((r,i)=>{ ['B','C'].forEach(col=>{ const a=col+(r+1); if(ws[a]) ws[a].s={font:{bold:true,sz:12,color:{rgb:i===2?(t.bal>=0?'1F9D6B':'D6493F'):'14201F'}},fill:{fgColor:{rgb:'F0EDE6'}},border,alignment:{horizontal:col==='C'?'right':'left'}}; });
