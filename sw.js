@@ -1,4 +1,4 @@
-const VERSION = 'financas-plus-v1';
+const VERSION = 'financas-plus-v2';
 const SHELL = [
   '/',
   '/index.html',
