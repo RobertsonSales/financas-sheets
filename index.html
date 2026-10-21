@@ -33,15 +33,16 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{background:var(--bg);overflow-x:hidden}
-body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);transition:background .3s,color .3s;min-height:100vh}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);transition:background .3s,color .3s;min-height:100vh;overflow-x:hidden}
 h1,h2,.brand{font-family:'Fraunces',Georgia,serif}
 button,input,select{font:inherit;color:inherit}
 .hidden{display:none!important}
 /* Header */
-header{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) clamp(12px,4vw,40px) 10px;background:color-mix(in oklab,var(--bg) 80%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
-.brand{font-size:1.35rem;font-weight:800;display:flex;gap:10px;align-items:center}
+header{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;min-width:0;padding:calc(10px + env(safe-area-inset-top)) clamp(12px,4vw,40px) 10px;background:color-mix(in oklab,var(--bg) 80%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.brand{font-size:1.35rem;font-weight:800;display:flex;gap:10px;align-items:center;min-width:0}
 .brand i{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;color:var(--on-primary);font-style:normal;font-family:'Plus Jakarta Sans'}
-.hdr-actions{display:flex;gap:8px;align-items:center}
+.hdr-actions{display:flex;gap:8px;align-items:center;min-width:0;max-width:72%;overflow:hidden}
+.hdr-actions .muted{min-width:0;max-width:28vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .badge{font-size:.72rem;padding:4px 10px;border-radius:999px;background:var(--accent);color:#2b1a00;font-weight:700}
 .btn{border:1px solid var(--border);background:var(--surface);padding:10px 16px;border-radius:12px;cursor:pointer;font-weight:600;display:inline-flex;gap:8px;align-items:center;transition:transform .15s,box-shadow .2s,background .2s}
 .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
@@ -130,15 +131,23 @@ tr:hover td{background:var(--surface-2)}
 .auth .field{margin-bottom:12px}
 .auth .go{width:100%;justify-content:center;margin-top:4px}
 .auth-err{color:var(--expense);font-size:.85rem;font-weight:600;min-height:1.3em;margin-bottom:4px}
+.auth-progress{margin:4px 0 12px;min-height:38px}
+.auth-progress[hidden]{display:none}
+.auth-progress-head{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:.78rem;font-weight:700;margin-bottom:6px}
+.auth-progress-track{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.auth-progress-bar{height:100%;width:0;border-radius:inherit;background:var(--grad);transition:width .25s ease}
 .auth-links{display:flex;justify-content:space-between;gap:10px;margin-top:14px;flex-wrap:wrap}
 .link{background:none;border:none;color:var(--primary);cursor:pointer;font-weight:600;text-decoration:underline;padding:0;font-size:.88rem}
 .pw{position:relative}.pw input{padding-right:46px}
 .pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:1.05rem;padding:4px 6px}
 @media (max-width:860px){.charts{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.hdr-actions .lbl{display:none}.float-ico{display:none}}
 @media (max-width:600px){
-  header{gap:8px;align-items:center}.brand{font-size:1.05rem;gap:7px}.brand i{width:30px;height:30px;border-radius:8px;font-size:.82rem}.hdr-actions{gap:4px}.hdr-actions .badge{display:none}.btn{min-height:44px;padding:10px 12px}.btn-icon{padding:9px 10px;min-width:44px;justify-content:center}
+  header{gap:6px;align-items:center;padding-left:10px;padding-right:10px}.brand{font-size:1.05rem;gap:7px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.brand i{flex:0 0 30px;width:30px;height:30px;border-radius:8px;font-size:.82rem}.hdr-actions{gap:3px;max-width:none;flex:0 1 auto;overflow:visible}.hdr-actions .muted{max-width:30vw;font-size:.75rem!important}.hdr-actions .badge{display:none}.hdr-actions .btn{flex:0 0 auto}.btn{min-height:44px;padding:10px 12px}.btn-icon{padding:9px 10px;min-width:44px;justify-content:center}
   .hero{height:calc(100svh - 51px);min-height:560px}.hero-content{padding:24px 20px 90px;justify-content:flex-end}.hero-content h1{font-size:clamp(2.15rem,11vw,3.3rem)}.hero-content p{margin-bottom:22px}.cta{width:100%;justify-content:center;text-align:center}.dots{left:20px;bottom:24px}
-  main{padding-top:18px}.title-row{align-items:stretch}.title-row>div:first-child{width:100%}.actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.actions .btn{justify-content:center;width:100%}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{padding:14px;border-radius:14px}.kpi b{font-size:1.25rem}.kpi span{font-size:.7rem}.filters{grid-template-columns:1fr 1fr;gap:10px}.filters .field:first-child,.filters .field:last-child{grid-column:1/-1}.chips{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;margin-right:-4px}.chip{white-space:nowrap}.charts .card{min-height:260px}.table-wrap{margin:0 -14px;padding:0 14px;overscroll-behavior-x:contain}table{min-width:760px;font-size:.82rem}.pager{align-items:stretch;flex-direction:column}.pager .actions{display:flex}.pager .actions .btn{flex:1}.modal{padding:8px}.modal .card,.modal.wide .card{max-height:calc(100svh - 16px);height:auto;width:100%;padding:14px}.modal.wide .card{height:calc(100svh - 16px)}.modal-foot{position:sticky;bottom:0;background:var(--surface);padding-top:10px}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));text-align:center}.auth{padding:8px}.auth .card{max-height:calc(100svh - 16px);overflow:auto}
+  main{width:100%;min-width:0;padding-top:18px}.title-row{align-items:stretch}.title-row>div:first-child{width:100%;min-width:0}.title-row h2{overflow-wrap:anywhere}.actions{width:100%;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.actions .btn{justify-content:center;width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{padding:14px;border-radius:14px;min-width:0}.kpi b{font-size:1.25rem;overflow-wrap:anywhere}.kpi span{font-size:.7rem}.filters{grid-template-columns:1fr 1fr;gap:10px}.filters .field{min-width:0}.filters .field:first-child,.filters .field:last-child{grid-column:1/-1}.chips{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;margin-right:-4px}.chip{white-space:nowrap}.charts .card{min-height:260px}.table-wrap{width:100%;max-width:100%;margin:0 -14px;padding:0 14px;overscroll-behavior-x:contain}table{min-width:760px;font-size:.82rem}.pager{align-items:stretch;flex-direction:column}.pager .actions{display:flex}.pager .actions .btn{flex:1}.modal{padding:8px}.modal .card,.modal.wide .card{max-height:calc(100svh - 16px);height:auto;width:100%;padding:14px}.modal.wide .card{height:calc(100svh - 16px)}.modal-foot{position:sticky;bottom:0;background:var(--surface);padding-top:10px}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));text-align:center}.auth{padding:8px}.auth .card{max-height:calc(100svh - 16px);overflow:auto}
+}
+@media (max-width:430px){
+  .brand{font-size:.95rem}.hdr-actions .muted{max-width:24vw;font-size:.7rem!important}.hdr-actions{gap:2px}.hdr-actions .btn-icon{min-width:40px;padding-left:7px;padding-right:7px}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
@@ -274,6 +283,10 @@ tr:hover td{background:var(--surface-2)}
     <div class="field hidden" id="aPwF"><label id="aPwL">Senha</label><div class="pw"><input type="password" id="aPw" autocomplete="current-password"><button type="button" id="aEye" title="Mostrar/ocultar senha">👁</button></div></div>
     <div class="field hidden" id="aPw2F"><label>Confirmar senha</label><input type="password" id="aPw2" autocomplete="new-password"></div>
     <div class="auth-err" id="aErr" role="alert"></div>
+    <div class="auth-progress" id="authProgress" hidden aria-live="polite">
+      <div class="auth-progress-head"><span id="authProgressText">Validando dados…</span><span id="authProgressPct">0%</span></div>
+      <div class="auth-progress-track" role="progressbar" aria-label="Progresso do login" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="auth-progress-bar" id="authProgressBar"></div></div>
+    </div>
     <button class="btn btn-primary go" id="aSubmit" type="submit">Entrar</button>
     <div class="auth-links"><button type="button" class="link" id="aForgot">Esqueci minha senha</button><button type="button" class="link" id="aSignup">Criar conta</button><button type="button" class="link" id="aCancel">Voltar</button></div>
   </form>
@@ -317,6 +330,19 @@ const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now()+''+Math.
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toast = m => { const t = document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),3200); };
 const loading = on => $('#loader').classList.toggle('hidden', !on);
+function setAuthProgress(value, text){
+  const box = $('#authProgress'), bar = $('#authProgressBar'), pct = $('#authProgressPct'), label = $('#authProgressText'), track = box?.querySelector('[role="progressbar"]');
+  if (!box || !bar || !pct || !label || !track) return;
+  const v = Math.max(0, Math.min(100, value));
+  box.hidden = false; bar.style.width = `${v}%`; pct.textContent = `${v}%`; label.textContent = text;
+  track.setAttribute('aria-valuenow', String(v));
+}
+function resetAuthProgress(){
+  const box = $('#authProgress'), bar = $('#authProgressBar'), pct = $('#authProgressPct'), track = box?.querySelector('[role="progressbar"]');
+  if (!box || !bar || !pct || !track) return;
+  box.hidden = true; bar.style.width = '0%'; pct.textContent = '0%'; track.setAttribute('aria-valuenow','0');
+}
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /* ===================== THEME ===================== */
 function setTheme(t){ document.documentElement.dataset.theme = t; localStorage.setItem('fp-theme', t); $('#themeBtn').textContent = t==='dark'?'☀️':'🌙'; if (!$('#dash').classList.contains('hidden')) renderCharts(filtered()); }
@@ -428,7 +454,7 @@ function showAuth(mode, extra){
   $('#aForgot').classList.toggle('hidden', mode!=='login'); $('#aSignup').classList.toggle('hidden', mode!=='login');
   ['aCode','aOld','aPw','aPw2'].forEach(id=>{ $('#'+id).value=''; $('#'+id).type = id==='aCode'?'text':'password'; });
   if (c.email) $('#aEmail').value = c.email;
-  $('#aErr').textContent = ''; $('#auth').classList.remove('hidden'); loading(false);
+  $('#aErr').textContent = ''; resetAuthProgress(); $('#auth').classList.remove('hidden'); loading(false);
   setTimeout(()=>{ const f = [...$('#authForm').querySelectorAll('.field:not(.hidden) input')].find(i=>!i.value); (f || $('#aSubmit')).focus(); }, 50);
 }
 function closeAuth(cancel){ const c = authCtx; authCtx = null; $('#auth').classList.add('hidden'); if (cancel && c?.rej) c.rej(Object.assign(new Error('Login cancelado'),{cancel:true})); }
@@ -444,6 +470,7 @@ $('#aSignup').onclick = () => showAuth('signup', { email: $('#aEmail').value.tri
 $('#aCancel').onclick = () => { if (['request','signup','code'].includes(authCtx.mode) && authCtx.res) return showAuth('login'); closeAuth(true); };
 $('#authForm').onsubmit = async e => {
   e.preventDefault(); const m = authCtx.mode, btn = $('#aSubmit'); $('#aErr').textContent = ''; btn.disabled = true;
+  if (m==='login') setAuthProgress(8,'Validando dados…');
   const ok = j => {
     // Troca de usuário: descarta dados do usuário anterior
     if (sessionStorage.getItem('fp-user') && sessionStorage.getItem('fp-user') !== j.email) { rows = []; }
@@ -451,7 +478,18 @@ $('#authForm').onsubmit = async e => {
     const c = authCtx; authCtx = null; $('#auth').classList.add('hidden'); authBtns(); c?.res?.();
   };
   try {
-    if (m==='login') { const j = await api('POST',{action:'auth_login',email:emailVal(),password:$('#aPw').value}); ok(j); }
+    if (m==='login') {
+      const email = emailVal();
+      if (!$('#aPw').value) throw new Error('Informe sua senha.');
+      setAuthProgress(25,'Dados válidos · preparando acesso…');
+      setAuthProgress(45,'Conectando ao servidor…');
+      const j = await api('POST',{action:'auth_login',email,password:$('#aPw').value});
+      setAuthProgress(82,'Sessão autorizada · carregando painel…');
+      await wait(160);
+      setAuthProgress(100,'Login concluído');
+      await wait(220);
+      ok(j);
+    }
     else if (m==='request' || m==='signup') {
       const email = emailVal();
       const j = await api('POST',{action:'auth_code_request',email});
@@ -467,7 +505,10 @@ $('#authForm').onsubmit = async e => {
       const j = await api('POST',{action:'auth_change',oldPassword:$('#aOld').value,password:$('#aPw').value});
       sessionStorage.setItem('fp-sess', j.session); closeAuth(false); toast('Senha alterada.');
     }
-  } catch (ex) { $('#aErr').textContent = ex.message; }
+  } catch (ex) {
+    $('#aErr').textContent = ex.message;
+    if (m==='login') { setAuthProgress(0,'Não foi possível entrar'); setTimeout(resetAuthProgress,2200); }
+  }
   finally { btn.disabled = false; }
 };
 $('#pwBtn').onclick = () => { authCtx = null; showAuth('change'); };
