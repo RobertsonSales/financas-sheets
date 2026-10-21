@@ -2,7 +2,15 @@
 <html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f5c56" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Finanças Plus" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" href="/icons/icon-192.png" type="image/png" />
+<link rel="apple-touch-icon" href="/icons/icon-192.png" />
 <title>Finanças Plus · Receitas & Despesas</title>
 <meta name="description" content="Gestão de receitas e despesas em tempo real, com dashboard, PDF e Excel." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -24,12 +32,13 @@
   --income:#3ccf91;--expense:#ff6b5f;--shadow:0 10px 30px -12px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);overflow-x:hidden}
 body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);transition:background .3s,color .3s;min-height:100vh}
 h1,h2,.brand{font-family:'Fraunces',Georgia,serif}
 button,input,select{font:inherit;color:inherit}
 .hidden{display:none!important}
 /* Header */
-header{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:14px clamp(16px,4vw,40px);background:color-mix(in oklab,var(--bg) 80%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+header{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) clamp(12px,4vw,40px) 10px;background:color-mix(in oklab,var(--bg) 80%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
 .brand{font-size:1.35rem;font-weight:800;display:flex;gap:10px;align-items:center}
 .brand i{width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center;color:var(--on-primary);font-style:normal;font-family:'Plus Jakarta Sans'}
 .hdr-actions{display:flex;gap:8px;align-items:center}
@@ -41,7 +50,7 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-
 .btn-icon{padding:9px 11px}
 .btn-sm{padding:6px 10px;font-size:.85rem;border-radius:9px}
 /* Hero carousel */
-.hero{position:relative;height:calc(100vh - 64px);min-height:520px;overflow:hidden}
+.hero{position:relative;height:calc(100svh - 64px);min-height:520px;overflow:hidden}
 .slide{position:absolute;inset:0;opacity:0;transition:opacity 1.2s ease}
 .slide.active{opacity:1}
 .slide img{width:100%;height:100%;object-fit:cover;transform:scale(1.15);}
@@ -63,7 +72,7 @@ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-
 .float-ico.b{top:60%;right:20%;font-size:3rem;animation-delay:-2s}
 @keyframes float{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-22px) rotate(5deg)}}
 /* Dashboard */
-main{padding:24px clamp(14px,4vw,40px) 60px;max-width:1400px;margin:auto}
+main{padding:24px clamp(12px,4vw,40px) calc(60px + env(safe-area-inset-bottom));max-width:1400px;margin:auto}
 .title-row{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between;margin-bottom:20px}
 .title-row h2{font-size:clamp(1.6rem,3vw,2.2rem)}
 .title-row .muted{color:var(--muted);font-size:.9rem}
@@ -97,7 +106,7 @@ tr:hover td{background:var(--surface-2)}
 .empty{text-align:center;padding:40px;color:var(--muted)}
 .pager{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:var(--muted);font-size:.85rem;gap:8px;flex-wrap:wrap}
 /* Modal */
-.modal{position:fixed;inset:0;z-index:50;background:rgba(5,15,14,.6);backdrop-filter:blur(4px);display:grid;place-items:center;padding:16px;animation:fadeUp .25s}
+.modal{position:fixed;overscroll-behavior:contain;inset:0;z-index:50;background:rgba(5,15,14,.6);backdrop-filter:blur(4px);display:grid;place-items:center;padding:16px;animation:fadeUp .25s}
 .modal .card{width:min(620px,100%);max-height:92vh;overflow:auto}
 .modal.wide .card{width:min(1000px,100%);height:90vh;display:flex;flex-direction:column}
 .modal iframe{flex:1;border:none;border-radius:10px;background:#fff;margin-top:12px}
@@ -126,6 +135,13 @@ tr:hover td{background:var(--surface-2)}
 .pw{position:relative}.pw input{padding-right:46px}
 .pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:1.05rem;padding:4px 6px}
 @media (max-width:860px){.charts{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.hdr-actions .lbl{display:none}.float-ico{display:none}}
+@media (max-width:600px){
+  header{gap:8px;align-items:center}.brand{font-size:1.05rem;gap:7px}.brand i{width:30px;height:30px;border-radius:8px;font-size:.82rem}.hdr-actions{gap:4px}.hdr-actions .badge{display:none}.btn{min-height:44px;padding:10px 12px}.btn-icon{padding:9px 10px;min-width:44px;justify-content:center}
+  .hero{height:calc(100svh - 51px);min-height:560px}.hero-content{padding:24px 20px 90px;justify-content:flex-end}.hero-content h1{font-size:clamp(2.15rem,11vw,3.3rem)}.hero-content p{margin-bottom:22px}.cta{width:100%;justify-content:center;text-align:center}.dots{left:20px;bottom:24px}
+  main{padding-top:18px}.title-row{align-items:stretch}.title-row>div:first-child{width:100%}.actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.actions .btn{justify-content:center;width:100%}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{padding:14px;border-radius:14px}.kpi b{font-size:1.25rem}.kpi span{font-size:.7rem}.filters{grid-template-columns:1fr 1fr;gap:10px}.filters .field:first-child,.filters .field:last-child{grid-column:1/-1}.chips{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;margin-right:-4px}.chip{white-space:nowrap}.charts .card{min-height:260px}.table-wrap{margin:0 -14px;padding:0 14px;overscroll-behavior-x:contain}table{min-width:760px;font-size:.82rem}.pager{align-items:stretch;flex-direction:column}.pager .actions{display:flex}.pager .actions .btn{flex:1}.modal{padding:8px}.modal .card,.modal.wide .card{max-height:calc(100svh - 16px);height:auto;width:100%;padding:14px}.modal.wide .card{height:calc(100svh - 16px)}.modal-foot{position:sticky;bottom:0;background:var(--surface);padding-top:10px}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));text-align:center}.auth{padding:8px}.auth .card{max-height:calc(100svh - 16px);overflow:auto}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
 </style>
 </head>
 <body>
@@ -137,7 +153,8 @@ tr:hover td{background:var(--surface-2)}
     <span class="muted hidden" id="userLbl" style="font-size:.85rem"></span>
     <button class="btn btn-icon hidden" id="pwBtn" title="Alterar senha">🔑</button>
     <button class="btn hidden" id="outBtn" title="Encerrar sessão">🔒 <span class="lbl">Sair</span></button>
-    <button class="btn btn-icon" id="themeBtn" title="Alternar tema">🌙</button>
+    <button class="btn btn-icon hidden" id="installBtn" title="Instalar aplicativo">⬇️</button>
+    <button class="btn btn-icon" id="themeBtn" title="Alternar tema" aria-label="Alternar tema">🌙</button>
   </div>
 </header>
 
@@ -158,7 +175,7 @@ tr:hover td{background:var(--surface-2)}
 <!-- DASHBOARD -->
 <main id="dash" class="hidden">
   <div class="title-row">
-    <div><h2>Painel financeiro completo</h2><div class="muted" id="sync">—</div></div>
+    <div><h2>Painel financeiro</h2><div class="muted" id="sync">—</div></div>
     <div class="actions">
       <button class="btn btn-primary" id="newBtn">＋ Novo lançamento</button>
       <button class="btn" id="reloadBtn">⟳ <span class="lbl">Atualizar</span></button>
@@ -284,6 +301,7 @@ const CAPTIONS = [
 ];
 
 /* ===================== STATE ===================== */
+let deferredInstallPrompt = null;
 let rows = [], demo = false, sortKey = 'data', sortDir = -1, page = 1, editing = null, nat = 'D', charts = {}, pdfDoc = null;
 const $ = s => document.querySelector(s);
 const brl = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -304,6 +322,12 @@ const loading = on => $('#loader').classList.toggle('hidden', !on);
 function setTheme(t){ document.documentElement.dataset.theme = t; localStorage.setItem('fp-theme', t); $('#themeBtn').textContent = t==='dark'?'☀️':'🌙'; if (!$('#dash').classList.contains('hidden')) renderCharts(filtered()); }
 $('#themeBtn').onclick = () => setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
 setTheme(localStorage.getItem('fp-theme') || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+
+/* ===================== PWA ===================== */
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstallPrompt = e; $('#installBtn').classList.remove('hidden'); });
+window.addEventListener('appinstalled', () => { deferredInstallPrompt = null; $('#installBtn').classList.add('hidden'); toast('Aplicativo instalado.'); });
+$('#installBtn').onclick = async () => { if (!deferredInstallPrompt) return; deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; $('#installBtn').classList.add('hidden'); };
 
 /* ===================== CAROUSEL ===================== */
 const slides = [...document.querySelectorAll('.slide')]; let cur = 0, timer;
@@ -352,6 +376,7 @@ function demoApi(method, b){
 }
 
 function offerDemo(e){
+  if (!demo && !navigator.onLine) { toast('Sem conexão. O modo demonstração usa dados locais; nada será enviado à planilha.'); }
   if (!demo && confirm(`Não foi possível conectar à planilha:\n${e.message}\n\nDeseja abrir no MODO DEMONSTRAÇÃO (dados locais)?`)) { demo = true; $('#demoBadge').classList.remove('hidden'); authBtns(); return true; }
   return false;
 }
@@ -456,6 +481,8 @@ authBtns();
 $('#loadBtn').onclick = async () => { if (await load() !== false){ $('#home').classList.add('hidden'); $('#dash').classList.remove('hidden'); $('#homeBtn').classList.remove('hidden'); clearInterval(timer); } };
 $('#homeBtn').onclick = () => { $('#dash').classList.add('hidden'); $('#home').classList.remove('hidden'); $('#homeBtn').classList.add('hidden'); timer=setInterval(()=>go(cur+1),6000); };
 $('#reloadBtn').onclick = load;
+window.addEventListener('online', () => toast('Conexão restabelecida.'));
+window.addEventListener('offline', () => toast('Você está offline. A planilha não pode ser sincronizada.'));
 
 /* ===================== FILTERS ===================== */
 function fillPay(){
