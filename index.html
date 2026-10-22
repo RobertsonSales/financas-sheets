@@ -231,8 +231,8 @@ tr:hover td{background:var(--surface-2)}
     <div class="field"><label>Até</label><input type="date" id="fTo"></div>
     <div class="field"><label>Natureza</label><select id="fNat"><option value="">Todas</option><option value="R">Receitas</option><option value="D">Despesas</option></select></div>
     <div class="field"><label>Classificação</label><select id="fCls"><option value="">Todas</option><option>Fixa</option><option>Variável</option><option>Extra</option></select></div>
-    <div class="field"><label>Categoria</label><div class="ms" id="fCat"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas (sem filtro)</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
-    <div class="field"><label>Forma pagto</label><div class="ms" id="fPay"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas (sem filtro)</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
+    <div class="field"><label>Categoria</label><div class="ms" id="fCat"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
+    <div class="field"><label>Forma pagto</label><div class="ms" id="fPay"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
     <div class="field" style="align-self:end"><button class="btn" id="clearBtn" style="width:100%">Limpar filtros</button></div>
   </div>
 
@@ -544,24 +544,30 @@ window.addEventListener('offline', () => toast('Você está offline. A planilha 
 
 /* ===================== FILTERS ===================== */
 /* ---- Filtro multisseleção (Categoria / Forma pagto) ----
-   sel vazio = sem restrição ("Todas"); com itens = mostra somente os marcados. */
+   all=true  => tudo marcado, sem restrição ("Todas").
+   all=false => só passam os itens de sel; sel vazio = nada marcado (a tabela fica vazia até o operador marcar algo). */
 const NO_CAT = '__none';
 const MS = {};
 function initMulti(rootSel, allLabel, onChange){
   const root = $(rootSel), btn = root.querySelector('.ms-btn'), panel = root.querySelector('.ms-panel'),
         search = root.querySelector('.ms-search'), allCb = root.querySelector('.ms-all input'),
         list = root.querySelector('.ms-list'), lbl = root.querySelector('.ms-lbl');
-  const st = { items:[], sel:new Set() };
+  const st = { items:[], sel:new Set(), all:true };
   const textOf = v => (st.items.find(i=>i.v===v)||{}).t || v;
+  const isOn = v => st.all || st.sel.has(v);
+  function sync(){   // atualiza marcações, rótulo e "Todas" sem reconstruir a lista (preserva a rolagem)
+    list.querySelectorAll('input[type=checkbox]').forEach(i => i.checked = isOn(i.value));
+    allCb.checked = st.all; allCb.indeterminate = !st.all && st.sel.size > 0;
+    const n = st.sel.size;
+    lbl.textContent = st.all ? allLabel : n === 0 ? 'Nenhuma' : n === 1 ? textOf([...st.sel][0]) : `${n} selecionadas`;
+    btn.classList.toggle('on', !st.all);
+  }
   function draw(){
     const q = search.value.trim().toLowerCase();
     const vis = st.items.filter(i => !q || i.t.toLowerCase().includes(q));
-    list.innerHTML = vis.length ? vis.map(i=>`<label class="ms-opt" role="option"><input type="checkbox" value="${esc(i.v)}" ${st.sel.has(i.v)?'checked':''}> <span>${esc(i.t)}</span></label>`).join('')
+    list.innerHTML = vis.length ? vis.map(i=>`<label class="ms-opt" role="option"><input type="checkbox" value="${esc(i.v)}"> <span>${esc(i.t)}</span></label>`).join('')
                                 : '<div class="ms-empty">Nenhum item encontrado.</div>';
-    allCb.checked = st.sel.size === 0;
-    const n = st.sel.size;
-    lbl.textContent = n === 0 ? allLabel : n === 1 ? textOf([...st.sel][0]) : `${n} selecionadas`;
-    btn.classList.toggle('on', n > 0);
+    sync();
   }
   const open = () => {
     panel.classList.remove('hidden'); btn.setAttribute('aria-expanded','true');
@@ -575,21 +581,24 @@ function initMulti(rootSel, allLabel, onChange){
   document.addEventListener('click', e => { if (!root.contains(e.target)) close(); });
   document.addEventListener('keydown', e => { if (e.key==='Escape') close(); });
   search.addEventListener('input', draw);
-  allCb.onchange = () => { st.sel.clear(); draw(); onChange(); };            // "Todas" = remove a restrição
+  // "Todas": marcada => seleciona tudo; desmarcada => limpa tudo para o operador marcar só o que quiser
+  allCb.onchange = () => { st.all = allCb.checked; st.sel.clear(); sync(); onChange(); };
   list.addEventListener('change', e => {
     const cb = e.target.closest('input[type=checkbox]'); if (!cb) return;
+    if (st.all) { st.all = false; st.sel = new Set(st.items.map(i=>i.v)); }   // parte de "tudo marcado" e tira este item
     cb.checked ? st.sel.add(cb.value) : st.sel.delete(cb.value);
-    if (st.items.length && st.sel.size === st.items.length) st.sel.clear();   // todos marcados = sem filtro
-    // mantém a lista aberta e a rolagem; só atualiza o rótulo e o "Todas"
-    allCb.checked = st.sel.size === 0;
-    const n = st.sel.size; lbl.textContent = n===0 ? allLabel : n===1 ? textOf([...st.sel][0]) : `${n} selecionadas`; btn.classList.toggle('on', n>0);
-    if (st.sel.size === 0) list.querySelectorAll('input').forEach(i=>i.checked=false);
-    onChange();
+    if (st.items.length && st.sel.size === st.items.length) { st.all = true; st.sel.clear(); }   // marcou todos = "Todas"
+    sync(); onChange();
   });
   Object.assign(st, {
     close,
-    setItems(items){ st.items = items; st.sel = new Set([...st.sel].filter(v => items.some(i=>i.v===v))); draw(); },
-    clear(){ st.sel.clear(); draw(); },
+    setItems(items){
+      st.items = items;
+      if (!st.all) { st.sel = new Set([...st.sel].filter(v => items.some(i=>i.v===v))); if (items.length && st.sel.size === items.length) { st.all = true; st.sel.clear(); } }
+      draw();
+    },
+    clear(){ st.all = true; st.sel.clear(); sync(); },   // usado por "Limpar filtros"
+    pass(v){ return st.all || st.sel.has(v); },
     labels(){ return [...st.sel].map(textOf); }
   });
   return st;
@@ -612,14 +621,14 @@ function fillCatSel(n, v){
 }
 function filtered(mode){   // mode='before' => lançamentos anteriores à data inicial (para o saldo inicial)
   const q = $('#fText').value.trim().toLowerCase(), from = $('#fFrom').value, to = $('#fTo').value;
-  const n = $('#fNat').value, c = $('#fCls').value, pSel = MS.fPay.sel, kSel = MS.fCat.sel;
+  const n = $('#fNat').value, c = $('#fCls').value, pSel = MS.fPay, kSel = MS.fCat;
   const fd = from ? new Date(from+'T00:00') : null, td = to ? new Date(to+'T23:59') : null;
   return rows.filter(r => {
     const d = parseBR(r.data);
     if (mode==='before'){ if (!fd || d >= fd) return false; } else { if (fd && d < fd) return false; if (td && d > td) return false; }
     if (n && natOf(r) !== n) return false; if (c && clsOf(r) !== c) return false;
-    if (pSel.size && !pSel.has(r.formaPagto)) return false;
-    if (kSel.size && !kSel.has(r.categoria || NO_CAT)) return false;
+    if (!pSel.pass(r.formaPagto)) return false;
+    if (!kSel.pass(r.categoria || NO_CAT)) return false;
     if (q && !`${r.descricao} ${r.categoria||''} ${r.formaPagto} ${clsOf(r)} ${r.valor}`.toLowerCase().includes(q)) return false;
     return true;
   });
@@ -756,7 +765,7 @@ $('#tbody').onclick = async e => {
 
 /* ===================== EXPORT PDF ===================== */
 function filterDesc(){ const p=[]; if($('#fFrom').value)p.push('De '+isoToBR($('#fFrom').value)); if($('#fTo').value)p.push('Até '+isoToBR($('#fTo').value));
-  if($('#fNat').value)p.push($('#fNat').value==='R'?'Receitas':'Despesas'); if($('#fCls').value)p.push($('#fCls').value); if(MS.fCat.sel.size)p.push('Categoria: '+MS.fCat.labels().join(', ')); if(MS.fPay.sel.size)p.push('Forma: '+MS.fPay.labels().join(', ')); if($('#fText').value)p.push(`"${$('#fText').value}"`);
+  if($('#fNat').value)p.push($('#fNat').value==='R'?'Receitas':'Despesas'); if($('#fCls').value)p.push($('#fCls').value); if(!MS.fCat.all)p.push('Categoria: '+(MS.fCat.labels().join(', ')||'nenhuma')); if(!MS.fPay.all)p.push('Forma: '+(MS.fPay.labels().join(', ')||'nenhuma')); if($('#fText').value)p.push(`"${$('#fText').value}"`);
   return p.length?p.join(' · '):'Todos os lançamentos'; }
 function buildPDF(){
   const { jsPDF } = window.jspdf, doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
