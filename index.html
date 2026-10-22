@@ -140,6 +140,21 @@ tr:hover td{background:var(--surface-2)}
 .link{background:none;border:none;color:var(--primary);cursor:pointer;font-weight:600;text-decoration:underline;padding:0;font-size:.88rem}
 .pw{position:relative}.pw input{padding-right:46px}
 .pw button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:1.05rem;padding:4px 6px}
+.ms{position:relative}
+.ms-btn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;min-height:42px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;text-align:left}
+.ms-btn:focus-visible{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 25%,transparent)}
+.ms-btn.on{border-color:var(--primary);font-weight:700}
+.ms-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ms-arrow{font-size:.7rem;color:var(--muted);flex:0 0 auto}
+.ms-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:40;width:max-content;min-width:100%;max-width:min(340px,calc(100vw - 24px));background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:8px}
+.ms-panel.right{left:auto;right:0}
+.ms-panel .ms-search{margin-bottom:6px}
+.ms-list{max-height:240px;overflow:auto;overscroll-behavior:contain}
+.field .ms-opt{display:flex;align-items:center;gap:8px;margin:0;padding:9px 8px;border-radius:8px;cursor:pointer;font-size:.88rem;font-weight:500;color:var(--text);text-transform:none;letter-spacing:0}
+.field .ms-opt:hover{background:var(--surface-2)}
+.field .ms-opt input{width:18px;height:18px;padding:0;flex:0 0 auto;accent-color:var(--primary);cursor:pointer}
+.field .ms-opt.ms-all{font-weight:700;border-bottom:1px solid var(--border);border-radius:8px 8px 0 0;margin-bottom:4px}
+.ms-empty{padding:10px 8px;color:var(--muted);font-size:.85rem}
 @media (max-width:860px){.charts{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.hdr-actions .lbl{display:none}.float-ico{display:none}}
 @media (max-width:600px){
   header{gap:6px;align-items:center;padding-left:10px;padding-right:10px}.brand{font-size:1.05rem;gap:7px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.brand i{flex:0 0 30px;width:30px;height:30px;border-radius:8px;font-size:.82rem}.hdr-actions{gap:3px;max-width:none;flex:0 1 auto;overflow:visible}.hdr-actions .muted{max-width:30vw;font-size:.75rem!important}.hdr-actions .badge{display:none}.hdr-actions .btn{flex:0 0 auto}.btn{min-height:44px;padding:10px 12px}.btn-icon{padding:9px 10px;min-width:44px;justify-content:center}
@@ -194,9 +209,11 @@ tr:hover td{background:var(--surface-2)}
   </div>
 
   <div class="kpis">
+    <div class="card kpi"><span>Saldo inicial</span><b id="kOpen">R$ 0,00</b><div class="hint" id="kOpenHint"></div></div>
     <div class="card kpi inc"><span>Receitas</span><b id="kInc">R$ 0,00</b><div class="bar"><i id="kIncBar"></i></div></div>
     <div class="card kpi exp"><span>Despesas</span><b id="kExp">R$ 0,00</b><div class="bar"><i id="kExpBar"></i></div></div>
-    <div class="card kpi"><span>Saldo</span><b id="kBal">R$ 0,00</b><div class="hint" id="kBalHint"></div></div>
+    <div class="card kpi"><span>Saldo do período</span><b id="kBal">R$ 0,00</b><div class="hint" id="kBalHint"></div></div>
+    <div class="card kpi"><span>Saldo final</span><b id="kClose">R$ 0,00</b><div class="hint" id="kCloseHint"></div></div>
     <div class="card kpi"><span>Lançamentos</span><b id="kCount">0</b><div class="hint" id="kCountHint"></div></div>
   </div>
 
@@ -214,8 +231,8 @@ tr:hover td{background:var(--surface-2)}
     <div class="field"><label>Até</label><input type="date" id="fTo"></div>
     <div class="field"><label>Natureza</label><select id="fNat"><option value="">Todas</option><option value="R">Receitas</option><option value="D">Despesas</option></select></div>
     <div class="field"><label>Classificação</label><select id="fCls"><option value="">Todas</option><option>Fixa</option><option>Variável</option><option>Extra</option></select></div>
-    <div class="field"><label>Categoria</label><select id="fCat"><option value="">Todas</option></select></div>
-    <div class="field"><label>Forma pagto</label><select id="fPay"><option value="">Todas</option></select></div>
+    <div class="field"><label>Categoria</label><div class="ms" id="fCat"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas (sem filtro)</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
+    <div class="field"><label>Forma pagto</label><div class="ms" id="fPay"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas (sem filtro)</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
     <div class="field" style="align-self:end"><button class="btn" id="clearBtn" style="width:100%">Limpar filtros</button></div>
   </div>
 
@@ -526,35 +543,89 @@ window.addEventListener('online', () => toast('Conexão restabelecida.'));
 window.addEventListener('offline', () => toast('Você está offline. A planilha não pode ser sincronizada.'));
 
 /* ===================== FILTERS ===================== */
+/* ---- Filtro multisseleção (Categoria / Forma pagto) ----
+   sel vazio = sem restrição ("Todas"); com itens = mostra somente os marcados. */
+const NO_CAT = '__none';
+const MS = {};
+function initMulti(rootSel, allLabel, onChange){
+  const root = $(rootSel), btn = root.querySelector('.ms-btn'), panel = root.querySelector('.ms-panel'),
+        search = root.querySelector('.ms-search'), allCb = root.querySelector('.ms-all input'),
+        list = root.querySelector('.ms-list'), lbl = root.querySelector('.ms-lbl');
+  const st = { items:[], sel:new Set() };
+  const textOf = v => (st.items.find(i=>i.v===v)||{}).t || v;
+  function draw(){
+    const q = search.value.trim().toLowerCase();
+    const vis = st.items.filter(i => !q || i.t.toLowerCase().includes(q));
+    list.innerHTML = vis.length ? vis.map(i=>`<label class="ms-opt" role="option"><input type="checkbox" value="${esc(i.v)}" ${st.sel.has(i.v)?'checked':''}> <span>${esc(i.t)}</span></label>`).join('')
+                                : '<div class="ms-empty">Nenhum item encontrado.</div>';
+    allCb.checked = st.sel.size === 0;
+    const n = st.sel.size;
+    lbl.textContent = n === 0 ? allLabel : n === 1 ? textOf([...st.sel][0]) : `${n} selecionadas`;
+    btn.classList.toggle('on', n > 0);
+  }
+  const open = () => {
+    panel.classList.remove('hidden'); btn.setAttribute('aria-expanded','true');
+    panel.classList.remove('right'); const r = panel.getBoundingClientRect();
+    if (r.right > innerWidth - 8) panel.classList.add('right');
+    search.value = ''; draw();
+    if (matchMedia('(hover:hover)').matches) search.focus();
+  };
+  const close = () => { panel.classList.add('hidden'); btn.setAttribute('aria-expanded','false'); };
+  btn.onclick = () => panel.classList.contains('hidden') ? (Object.values(MS).forEach(m=>m.close()), open()) : close();
+  document.addEventListener('click', e => { if (!root.contains(e.target)) close(); });
+  document.addEventListener('keydown', e => { if (e.key==='Escape') close(); });
+  search.addEventListener('input', draw);
+  allCb.onchange = () => { st.sel.clear(); draw(); onChange(); };            // "Todas" = remove a restrição
+  list.addEventListener('change', e => {
+    const cb = e.target.closest('input[type=checkbox]'); if (!cb) return;
+    cb.checked ? st.sel.add(cb.value) : st.sel.delete(cb.value);
+    if (st.items.length && st.sel.size === st.items.length) st.sel.clear();   // todos marcados = sem filtro
+    // mantém a lista aberta e a rolagem; só atualiza o rótulo e o "Todas"
+    allCb.checked = st.sel.size === 0;
+    const n = st.sel.size; lbl.textContent = n===0 ? allLabel : n===1 ? textOf([...st.sel][0]) : `${n} selecionadas`; btn.classList.toggle('on', n>0);
+    if (st.sel.size === 0) list.querySelectorAll('input').forEach(i=>i.checked=false);
+    onChange();
+  });
+  Object.assign(st, {
+    close,
+    setItems(items){ st.items = items; st.sel = new Set([...st.sel].filter(v => items.some(i=>i.v===v))); draw(); },
+    clear(){ st.sel.clear(); draw(); },
+    labels(){ return [...st.sel].map(textOf); }
+  });
+  return st;
+}
+const onMsChange = () => { page = 1; render(); };
+MS.fCat = initMulti('#fCat', 'Todas', onMsChange);
+MS.fPay = initMulti('#fPay', 'Todas', onMsChange);
+
 function fillPay(){
   const set = [...new Set([...DEFAULT_PAY, ...rows.map(r=>r.formaPagto).filter(Boolean)])].sort();
-  const sel = $('#fPay'), v = sel.value;
-  sel.innerHTML = '<option value="">Todas</option>' + set.map(p=>`<option>${esc(p)}</option>`).join(''); sel.value = v;
+  MS.fPay.setItems(set.map(p=>({v:p,t:p})));
   $('#payList').innerHTML = set.map(p=>`<option value="${esc(p)}">`).join('');
   const cs = [...new Set([...CATS.D, ...CATS.R, ...rows.map(r=>r.categoria).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  const fc = $('#fCat'), cv = fc.value;
-  fc.innerHTML = '<option value="">Todas</option><option value="__none">(Sem categoria)</option>' + cs.map(p=>`<option>${esc(p)}</option>`).join(''); fc.value = cv;
+  MS.fCat.setItems([{v:NO_CAT,t:'(Sem categoria)'}, ...cs.map(p=>({v:p,t:p}))]);
 }
 function fillCatSel(n, v){
   const list = [...CATS[n]]; if (v && !list.includes(v)) list.unshift(v);
   $('#iCat').innerHTML = '<option value="">Selecione...</option>' + list.map(p=>`<option>${esc(p)}</option>`).join('');
   $('#iCat').value = v || '';
 }
-function filtered(){
+function filtered(mode){   // mode='before' => lançamentos anteriores à data inicial (para o saldo inicial)
   const q = $('#fText').value.trim().toLowerCase(), from = $('#fFrom').value, to = $('#fTo').value;
-  const n = $('#fNat').value, c = $('#fCls').value, p = $('#fPay').value, k = $('#fCat').value;
+  const n = $('#fNat').value, c = $('#fCls').value, pSel = MS.fPay.sel, kSel = MS.fCat.sel;
   const fd = from ? new Date(from+'T00:00') : null, td = to ? new Date(to+'T23:59') : null;
   return rows.filter(r => {
     const d = parseBR(r.data);
-    if (fd && d < fd) return false; if (td && d > td) return false;
-    if (n && natOf(r) !== n) return false; if (c && clsOf(r) !== c) return false; if (p && r.formaPagto !== p) return false;
-    if (k && (k==='__none' ? !!r.categoria : r.categoria !== k)) return false;
+    if (mode==='before'){ if (!fd || d >= fd) return false; } else { if (fd && d < fd) return false; if (td && d > td) return false; }
+    if (n && natOf(r) !== n) return false; if (c && clsOf(r) !== c) return false;
+    if (pSel.size && !pSel.has(r.formaPagto)) return false;
+    if (kSel.size && !kSel.has(r.categoria || NO_CAT)) return false;
     if (q && !`${r.descricao} ${r.categoria||''} ${r.formaPagto} ${clsOf(r)} ${r.valor}`.toLowerCase().includes(q)) return false;
     return true;
   });
 }
-['#fText','#fFrom','#fTo','#fNat','#fCls','#fPay','#fCat'].forEach(s=>$(s).addEventListener('input',()=>{ page=1; render(); }));
-$('#clearBtn').onclick = () => { ['#fText','#fFrom','#fTo','#fNat','#fCls','#fPay','#fCat'].forEach(s=>$(s).value=''); setChip('all'); page=1; render(); };
+['#fText','#fFrom','#fTo','#fNat','#fCls'].forEach(s=>$(s).addEventListener('input',()=>{ page=1; render(); }));
+$('#clearBtn').onclick = () => { ['#fText','#fFrom','#fTo','#fNat','#fCls'].forEach(s=>$(s).value=''); MS.fPay.clear(); MS.fCat.clear(); setChip('all'); page=1; render(); };
 function setChip(q){ document.querySelectorAll('#quick .chip').forEach(c=>c.classList.toggle('on',c.dataset.q===q)); }
 $('#quick').onclick = e => {
   const q = e.target.dataset.q; if (!q) return; setChip(q);
@@ -570,6 +641,12 @@ $('#quick').onclick = e => {
 
 /* ===================== RENDER ===================== */
 function totals(list){ const inc = list.filter(r=>natOf(r)==='R').reduce((s,r)=>s+ +r.valor,0); const exp = list.filter(r=>natOf(r)==='D').reduce((s,r)=>s+ +r.valor,0); return {inc,exp,bal:inc-exp}; }
+function balances(list, t){
+  // Saldo inicial = acumulado antes da data "De" (mesmos demais filtros); sem "De", parte de zero. Final = inicial + período.
+  const fromISO = $('#fFrom').value, open = fromISO ? totals(filtered('before')).bal : 0;
+  const last = list.reduce((m,r)=>{ const d=parseBR(r.data); return !m||d>m?d:m; }, null);
+  return { fromISO, open, close: open + t.bal, last };
+}
 function sorted(list){
   return [...list].sort((a,b)=>{ let x=a[sortKey], y=b[sortKey];
     if (sortKey==='data'){ x=parseBR(x); y=parseBR(y); } else if (sortKey==='valor'||sortKey==='parcelas'){ x=+x||0; y=+y||0; } else if (sortKey==='nat'){ x=natOf(a); y=natOf(b); } else { x=String(x).toLowerCase(); y=String(y).toLowerCase(); }
@@ -580,6 +657,12 @@ function render(){
   const list = sorted(filtered()), t = totals(list), max = Math.max(t.inc,t.exp,1);
   $('#kInc').textContent=brl(t.inc); $('#kExp').textContent=brl(t.exp); $('#kBal').textContent=brl(t.bal);
   $('#kBal').style.color = t.bal>=0?'var(--income)':'var(--expense)';
+  // Saldo inicial = acumulado dos lançamentos anteriores à data inicial (mesmos demais filtros); sem data inicial parte de zero.
+  const { fromISO, open, close, last } = balances(list, t);
+  $('#kOpen').textContent = brl(open); $('#kOpen').style.color = open>=0?'var(--income)':'var(--expense)';
+  $('#kOpenHint').textContent = fromISO ? `Acumulado antes de ${isoToBR(fromISO)}` : 'Sem data inicial: parte de zero';
+  $('#kClose').textContent = brl(close); $('#kClose').style.color = close>=0?'var(--income)':'var(--expense)';
+  $('#kCloseHint').textContent = last ? `Posição em ${toBR(last)}` : 'Sem lançamentos no período';
   $('#kIncBar').style.width = (t.inc/max*100)+'%'; $('#kExpBar').style.width=(t.exp/max*100)+'%';
   $('#kBalHint').textContent = t.inc ? `Comprometimento: ${(t.exp/t.inc*100).toFixed(1)}% da receita` : '';
   $('#kCount').textContent = list.length; $('#kCountHint').textContent = `de ${rows.length} no total`;
@@ -673,7 +756,7 @@ $('#tbody').onclick = async e => {
 
 /* ===================== EXPORT PDF ===================== */
 function filterDesc(){ const p=[]; if($('#fFrom').value)p.push('De '+isoToBR($('#fFrom').value)); if($('#fTo').value)p.push('Até '+isoToBR($('#fTo').value));
-  if($('#fNat').value)p.push($('#fNat').value==='R'?'Receitas':'Despesas'); if($('#fCls').value)p.push($('#fCls').value); if($('#fPay').value)p.push($('#fPay').value); if($('#fText').value)p.push(`"${$('#fText').value}"`);
+  if($('#fNat').value)p.push($('#fNat').value==='R'?'Receitas':'Despesas'); if($('#fCls').value)p.push($('#fCls').value); if(MS.fCat.sel.size)p.push('Categoria: '+MS.fCat.labels().join(', ')); if(MS.fPay.sel.size)p.push('Forma: '+MS.fPay.labels().join(', ')); if($('#fText').value)p.push(`"${$('#fText').value}"`);
   return p.length?p.join(' · '):'Todos os lançamentos'; }
 function buildPDF(){
   const { jsPDF } = window.jspdf, doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
@@ -681,13 +764,16 @@ function buildPDF(){
   doc.setFillColor(15,92,86); doc.rect(0,0,W,30,'F'); doc.setFillColor(232,163,61); doc.rect(0,30,W,1.5,'F');
   doc.setTextColor(255); doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.text('Relatório de Receitas e Despesas',14,15);
   doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.text(`Filtros: ${filterDesc()}`,14,23); doc.text(`Emitido em ${new Date().toLocaleString('pt-BR')}`,W-14,23,{align:'right'});
-  const cards = [['RECEITAS',brl(t.inc),[31,157,107]],['DESPESAS',brl(t.exp),[214,73,63]],['SALDO',brl(t.bal),t.bal>=0?[31,157,107]:[214,73,63]],['LANÇAMENTOS',String(list.length),[15,92,86]]];
-  const cw = (W-28-18)/4;
-  cards.forEach(([l,v,c],i)=>{ const x=14+i*(cw+6); doc.setFillColor(245,243,238); doc.roundedRect(x,38,cw,20,3,3,'F'); doc.setFillColor(...c); doc.rect(x,38,1.5,20,'F');
-    doc.setTextColor(95,107,105); doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text(l,x+6,45); doc.setTextColor(...c); doc.setFontSize(14); doc.text(v,x+6,53); });
-  doc.autoTable({ startY:66, head:[['Data','Descrição','Natureza','Valor','Tipo Despesa','Qt Parc.','Forma Pagto','Tipo Receita','Categoria']],
+  const b = balances(list, t), pos = [31,157,107], neg = [214,73,63], sg = v => v>=0?pos:neg;
+  const cards = [['SALDO INICIAL',brl(b.open),sg(b.open)],['RECEITAS',brl(t.inc),pos],['DESPESAS',brl(t.exp),neg],['SALDO DO PERÍODO',brl(t.bal),sg(t.bal)],['SALDO FINAL',brl(b.close),sg(b.close)],['LANÇAMENTOS',String(list.length),[15,92,86]]];
+  const cw = (W-28-5*5)/6;
+  cards.forEach(([l,v,c],i)=>{ const x=14+i*(cw+5); doc.setFillColor(245,243,238); doc.roundedRect(x,38,cw,20,3,3,'F'); doc.setFillColor(...c); doc.rect(x,38,1.5,20,'F');
+    doc.setTextColor(95,107,105); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(l,x+6,45); doc.setTextColor(...c); doc.setFontSize(11.5); doc.text(v,x+6,53); });
+  doc.setTextColor(95,107,105); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text(`Saldo inicial: ${b.fromISO?'acumulado antes de '+isoToBR(b.fromISO):'sem data inicial (parte de zero)'}  ·  Saldo final: ${b.last?'posição em '+toBR(b.last):'sem lançamentos no período'}`,14,62);
+  doc.autoTable({ startY:68, head:[['Data','Descrição','Natureza','Valor','Tipo Despesa','Qt Parc.','Forma Pagto','Tipo Receita','Categoria']],
     body:list.map(r=>[r.data,r.descricao,natOf(r)==='R'?'Receita':'Despesa',brl(+r.valor),r.tipoDespesa,r.parcelas,r.formaPagto,r.tipoReceita,r.categoria||'']),
-    foot:[['','TOTAL RECEITAS','',brl(t.inc),'','','','',''],['','TOTAL DESPESAS','',brl(t.exp),'','','','',''],['','SALDO','',brl(t.bal),'','','','','']],
+    foot:[['','SALDO INICIAL','',brl(b.open),'','','','',''],['','TOTAL RECEITAS','',brl(t.inc),'','','','',''],['','TOTAL DESPESAS','',brl(t.exp),'','','','',''],['','SALDO DO PERÍODO','',brl(t.bal),'','','','',''],['','SALDO FINAL','',brl(b.close),'','','','','']],
     theme:'grid', styles:{fontSize:8.5,cellPadding:2.4,lineColor:[226,221,210],lineWidth:.1},
     headStyles:{fillColor:[15,92,86],textColor:255,fontStyle:'bold'}, footStyles:{fillColor:[240,237,230],textColor:[20,32,31],fontStyle:'bold'},
     alternateRowStyles:{fillColor:[250,249,246]}, columnStyles:{3:{halign:'right'},5:{halign:'center'}},
@@ -701,12 +787,12 @@ $('#pdfDl').onclick = () => pdfDoc?.save(`relatorio-financeiro-${isoDate(new Dat
 
 /* ===================== EXPORT EXCEL ===================== */
 $('#xlsBtn').onclick = () => {
-  const list = sorted(filtered()), t = totals(list), X = XLSX;
+  const list = sorted(filtered()), t = totals(list), b = balances(list, t), X = XLSX;
   const border = { top:{style:'thin',color:{rgb:'E2DDD2'}}, bottom:{style:'thin',color:{rgb:'E2DDD2'}}, left:{style:'thin',color:{rgb:'E2DDD2'}}, right:{style:'thin',color:{rgb:'E2DDD2'}} };
   const H = ['Data','Descrição','Valor','Tipo Despesa','Qt Parcelas','Forma Pagto','Tipo Receita','Categoria'];
   const aoa = [['Relatório de Receitas e Despesas'],[`Filtros: ${filterDesc()} · Emitido em ${new Date().toLocaleString('pt-BR')}`],[],H,
     ...list.map(r=>[r.data,r.descricao,natOf(r)==='R'?+r.valor:-r.valor,r.tipoDespesa,r.parcelas===''?'':+r.parcelas,r.formaPagto,r.tipoReceita,r.categoria||'']),
-    [],['','Total Receitas',t.inc],['','Total Despesas',-t.exp],['','Saldo',t.bal]];
+    [],['','Saldo Inicial',b.open],['','Total Receitas',t.inc],['','Total Despesas',-t.exp],['','Saldo do Período',t.bal],['','Saldo Final',b.close]];
   const ws = X.utils.aoa_to_sheet(aoa), last = 4 + list.length;
   ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}}];
   ws['!cols'] = [{wch:12},{wch:38},{wch:15},{wch:14},{wch:12},{wch:20},{wch:14},{wch:24}];
@@ -718,7 +804,8 @@ $('#xlsBtn').onclick = () => {
   for (let r=4;r<last;r++) for (let c=0;c<8;c++){ const a=X.utils.encode_cell({r,c}); ws[a] ??= {t:'s',v:''};
     const neg = c===2 && ws[a].v<0; ws[a].s = { border, fill:{fgColor:{rgb:r%2?'FAF9F6':'FFFFFF'}}, alignment:{horizontal:[0,4].includes(c)?'center':c===2?'right':'left'},
       font:{color:{rgb:c===2?(neg?'D6493F':'1F9D6B'):'14201F'},bold:c===2} }; if (c===2) ws[a].z='"R$" #,##0.00;[Red]-"R$" #,##0.00'; }
-  [last+1,last+2,last+3].forEach((r,i)=>{ ['B','C'].forEach(col=>{ const a=col+(r+1); if(ws[a]) ws[a].s={font:{bold:true,sz:12,color:{rgb:i===2?(t.bal>=0?'1F9D6B':'D6493F'):'14201F'}},fill:{fgColor:{rgb:'F0EDE6'}},border,alignment:{horizontal:col==='C'?'right':'left'}}; });
+  const sumVals = [b.open, null, null, t.bal, b.close];   // linhas coloridas pelo sinal: saldo inicial, do período e final
+  [last+1,last+2,last+3,last+4,last+5].forEach((r,i)=>{ ['B','C'].forEach(col=>{ const a=col+(r+1); if(ws[a]) ws[a].s={font:{bold:true,sz:12,color:{rgb:sumVals[i]===null?'14201F':(sumVals[i]>=0?'1F9D6B':'D6493F')}},fill:{fgColor:{rgb:'F0EDE6'}},border,alignment:{horizontal:col==='C'?'right':'left'}}; });
     const c=ws['C'+(r+1)]; if(c) c.z='"R$" #,##0.00;[Red]-"R$" #,##0.00'; });
   // Aba resumo mensal
   const mm = {}; list.forEach(r=>{ const d=parseBR(r.data), k=`${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`, s=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`; mm[s] ??= {k,R:0,D:0}; mm[s][natOf(r)] += +r.valor; });
