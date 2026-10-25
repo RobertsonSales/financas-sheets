@@ -237,6 +237,7 @@ html[data-theme="dark"] .modtab[data-m="I"]{--tab:#7c97ff}
       <button class="btn" id="pdfBtn">📄 PDF</button>
       <button class="btn" id="xlsBtn">📗 Excel</button>
       <button class="btn" id="cadBtn" title="Cadastrar naturezas, classificações, categorias e formas de pagamento/recebimento">⚙️ Cadastros</button>
+      <a class="btn" id="helpBtn" href="#" target="_blank" rel="noopener" title="Abrir o tutorial em nova aba">❓ Tutorial</a>
     </div>
   </div>
 
@@ -259,10 +260,10 @@ html[data-theme="dark"] .modtab[data-m="I"]{--tab:#7c97ff}
     <div class="field"><label>Buscar</label><input id="fText" placeholder="Descrição, forma..."></div>
     <div class="field"><label>De</label><input type="date" id="fFrom"></div>
     <div class="field"><label>Até</label><input type="date" id="fTo"></div>
-    <div class="field"><label>Natureza</label><select id="fNat"><option value="">Todas</option></select></div>
-    <div class="field"><label>Classificação</label><select id="fCls"><option value="">Todas</option></select></div>
+    <div class="field"><label>Natureza</label><div class="ms" id="fNat"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
+    <div class="field"><label>Classificação</label><div class="ms" id="fCls"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
     <div class="field"><label>Categoria</label><div class="ms" id="fCat"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
-    <div class="field"><label>Forma pagto</label><div class="ms" id="fPay"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
+    <div class="field"><label id="lblFPay">Forma pagto</label><div class="ms" id="fPay"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
     <div class="field" style="align-self:end"><button class="btn" id="clearBtn" style="width:100%">Limpar filtros</button></div>
   </div>
 
@@ -277,7 +278,7 @@ html[data-theme="dark"] .modtab[data-m="I"]{--tab:#7c97ff}
         <thead><tr>
           <th data-s="data">Data ↕</th><th data-s="descricao">Descrição ↕</th><th data-s="categoria">Categoria ↕</th><th data-s="nat">Natureza ↕</th>
           <th data-s="valor" class="num">Valor ↕</th><th data-s="classe">Classificação ↕</th><th data-s="parcelas">Qt Parc.</th>
-          <th data-s="formaPagto">Forma Pagto ↕</th><th></th>
+          <th data-s="formaPagto" id="thPay">Forma Pagto ↕</th><th></th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -298,7 +299,7 @@ html[data-theme="dark"] .modtab[data-m="I"]{--tab:#7c97ff}
       <div class="field"><label>Classificação</label><div class="fld-row"><select id="iCls" required></select><button type="button" class="btn" data-add="cls" title="Cadastrar nova classificação" aria-label="Cadastrar nova classificação">＋</button></div></div>
       <div class="field hidden" id="parcWrap"><label id="parcLbl">Qt Parcelas</label><input type="number" id="iParc" min="1" max="120" value="1"><div class="hint" id="parcHint"></div></div>
       <div class="field"><label>Categoria</label><div class="fld-row"><select id="iCat" required></select><button type="button" class="btn" data-add="cat" title="Cadastrar nova categoria" aria-label="Cadastrar nova categoria">＋</button></div></div>
-      <div class="field"><label>Forma de pagto./receb.</label><div class="fld-row"><select id="iPay" required></select><button type="button" class="btn" data-add="pay" title="Cadastrar nova forma de pagamento/recebimento" aria-label="Cadastrar nova forma de pagamento ou recebimento">＋</button></div></div>
+      <div class="field"><label id="lblIPay">Forma de pagto./receb.</label><div class="fld-row"><select id="iPay" required></select><button type="button" class="btn" data-add="pay" title="Cadastrar nova forma de pagamento/recebimento" aria-label="Cadastrar nova forma de pagamento ou recebimento">＋</button></div></div>
     </div>
     <div class="modal-foot"><button type="button" class="btn" data-close>Cancelar</button><button class="btn btn-primary" type="submit">Salvar</button></div>
   </form>
@@ -377,6 +378,9 @@ const CATS = {
   R: ['Salário','Pró-labore','13º Salário','Férias','Freelance / Serviços','Vendas','Aluguéis Recebidos','Rendimentos de Investimentos',
       'Dividendos','Aposentadoria / Pensão','Bônus e Comissões','Reembolsos','Restituição de IR','Presentes Recebidos','Outras Receitas']
 };
+// Tutorial na raiz do projeto: o arquivo tutorial.html fica ao lado do index.html e é servido pela própria Vercel
+// (https://financas-sheets.vercel.app/tutorial.html). Caminho relativo = mesmo domínio, sem configuração extra.
+const TUTORIAL_URL = '/tutorial.html';
 const DEFAULT_PAY = ['Pix','Dinheiro','Cartão de Crédito','Cartão de Débito','Boleto','Transferência','Débito Automático',
   ...CARD_BRANDS.map(b=>`Cartão de Crédito - ${b}`)];
 const CAPTIONS = [
@@ -466,14 +470,14 @@ function demoSeed(){
     const e = natureza==='Aplicação' || natureza==='Rendimento';
     return { data, descricao, valor, tipoDespesa:e?'':cls, tipoReceita:e?cls:'', parcelas, formaPagto, categoria, natureza, modulo:'I', id:uid() };
   };
-  rs.push(inv(m(-2,8),'Aporte CDB 110% CDI',5000,'Aplicação','Renda Fixa','CDB','Transferência (TED/DOC)'),
+  rs.push(inv(m(-2,8),'Aporte CDB 110% CDI',5000,'Aplicação','Renda Fixa','CDB','TED'),
           inv(m(-1,8),'Tesouro Selic 2029',2500,'Aplicação','Reserva de Emergência','Tesouro Direto','Pix'),
           inv(m(-2,20),'Poupança – reserva',800,'Aplicação','Reserva de Emergência','Poupança','Pix'),
           inv(m(-1,28),'Rendimento CDB',62.4,'Rendimento','Renda Fixa','CDB','Reinvestimento automático'),
           inv(m(0,2),'Rendimento Tesouro Selic',41.2,'Rendimento','Reserva de Emergência','Tesouro Direto','Reinvestimento automático'),
           inv(m(0,2),'Rendimento Poupança',9.6,'Rendimento','Reserva de Emergência','Poupança','Reinvestimento automático'),
           inv(m(0,4),'Resgate parcial CDB',1000,'Resgate','Renda Fixa','CDB','Resgate para conta corrente'),
-          inv(m(0,4),'IR sobre resgate',31.5,'Taxas e IR','Renda Fixa','CDB','Resgate para conta corrente'));
+          inv(m(0,4),'IR sobre resgate',31.5,'Taxas e IR','Renda Fixa','CDB','Descontado do resgate'));
   for (let i=0;i<3;i++) rs.push(inv(m(-2+i,12),`Previdência PGBL (${i+1}/3)`,400,'Aplicação','Previdência','Previdência Privada (PGBL)','Débito Automático',3));
   return rs;
 }
@@ -682,6 +686,8 @@ MS.fCat = initMulti('#fCat', 'Todas', onMsChange);
 MS.fPay = initMulti('#fPay', 'Todas', onMsChange);
 
 /* ===================== MÓDULOS ===================== */
+MS.fNat = initMulti('#fNat', 'Todas', onMsChange);
+MS.fCls = initMulti('#fCls', 'Todas', onMsChange);
 const MODCFG = {
   F:{ tab:'Fluxo de caixa', title:'Painel financeiro', c1:'Fluxo mensal', c2:'Despesas por forma de pagamento', pdf:'Relatório de Receitas e Despesas', parc:'Qt Parcelas', defNat:'Despesa', theme:'#0f5c56', file:'financas' },
   I:{ tab:'Investimentos', title:'Painel de investimentos', c1:'Evolução do patrimônio', c2:'Patrimônio por categoria', pdf:'Relatório de Investimentos', parc:'Qt de aportes mensais', defNat:'Aplicação', theme:'#2d4a9a', file:'investimentos' }
@@ -697,6 +703,8 @@ function paintMod(){
   document.documentElement.dataset.mod = MOD;
   document.querySelector('meta[name="theme-color"]').content = c.theme;
   $('#dTitle').textContent = c.title; $('#chT1').textContent = c.c1; $('#chT2').textContent = c.c2;
+  $('#lblFPay').textContent = MOD==='I' ? 'Aporte / saque' : 'Forma pagto'; $('#thPay').textContent = payLbl() + ' ↕';
+  $('#lblIPay').textContent = MOD==='I' ? 'Forma de aporte ou saque' : 'Forma de pagto./receb.';
   document.querySelectorAll('.modtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.m===MOD)));
 }
 function tabStats(){
@@ -705,7 +713,7 @@ function tabStats(){
     const el = document.querySelector(`.modtab[data-m="${m}"] small`); if (el) el.textContent = `${m==='F'?'Saldo geral':'Patrimônio'} ${brl(v)}`;
   });
 }
-function resetFilters(){ ['#fText','#fFrom','#fTo','#fNat','#fCls'].forEach(s=>$(s).value=''); MS.fPay.clear(); MS.fCat.clear(); setChip('all'); page=1; }
+function resetFilters(){ ['#fText','#fFrom','#fTo'].forEach(s=>$(s).value=''); MS.fNat.clear(); MS.fCls.clear(); MS.fPay.clear(); MS.fCat.clear(); setChip('all'); page=1; }
 function setMod(m, force){
   if (m===MOD && !force) return;
   MOD = m; localStorage.setItem('fp-mod', m); resetFilters(); paintMod(); fillLists(); render();
@@ -718,23 +726,31 @@ $('#modtabs').onclick = e => { const b = e.target.closest('.modtab'); if (b) set
    nat: {n, s:'E'|'S'}  · cls/cat: {n, nat:<natureza> | '*' = todas}  · pay: {n} */
 const KINDS = { nat:'Naturezas', cls:'Classificações', cat:'Categorias', pay:'Formas de pagto./receb.' };
 const KIND_LBL = { nat:'Natureza', cls:'Classificação', cat:'Categoria', pay:'Forma de pagamento/recebimento' };
+const kindLbl = k => k==='pay' && MOD==='I' ? 'Forma de aporte/saque' : KIND_LBL[k];
+const payLbl = () => MOD==='I' ? 'Aporte/Saque' : 'Forma Pagto';
+const isScoped = (m,k) => k==='cls' || k==='cat' || (k==='pay' && m==='I');
 const KIND_NOTE = {
   nat:'A natureza define se o lançamento soma (entrada) ou subtrai (saída) do saldo e aparece nos totais e gráficos.',
   cls:'A classificação detalha o tipo do lançamento dentro de cada natureza (ex.: Fixa, Variável, Renda Fixa).',
   cat:'Categorias agrupam os lançamentos para filtros e gráficos. Podem valer para uma natureza ou para todas.',
-  pay:'Formas de pagamento (despesas) ou de recebimento (receitas, resgates, rendimentos).'
+  pay:'Formas de pagamento (despesas) ou de recebimento (receitas).'
 };
+const PAY_NOTE_I = 'Meios usados para aportar (aplicar) ou sacar (resgatar). Cada meio vale para uma natureza ou para todas.';
 const INV_CATS = ['Poupança','CDB','LCI / LCA','Tesouro Direto','Fundos de Investimento','Ações','FIIs (Fundos Imobiliários)','ETFs','Previdência Privada (PGBL)',
   'Previdência Privada (VGBL)','Debêntures / CRI / CRA','Criptoativos','Ouro e Moeda Estrangeira','Outros Investimentos'];
 const DEF = {
   F:{ nat:[{n:'Receita',s:'E'},{n:'Despesa',s:'S'}],
       cls:[{n:'Variável',nat:'Despesa'},{n:'Fixa',nat:'Despesa'},{n:'Fixa',nat:'Receita'},{n:'Extra',nat:'Receita'}],
       cat:[...CATS.D.map(n=>({n,nat:'Despesa'})), ...CATS.R.map(n=>({n,nat:'Receita'}))],
-      pay:DEFAULT_PAY.map(n=>({n})) },
+      pay:DEFAULT_PAY.map(n=>({n,nat:'*'})) },
   I:{ nat:[{n:'Aplicação',s:'E'},{n:'Rendimento',s:'E'},{n:'Resgate',s:'S'},{n:'Taxas e IR',s:'S'}],
       cls:['Renda Fixa','Renda Variável','Previdência','Reserva de Emergência','Outros'].map(n=>({n,nat:'*'})),
       cat:INV_CATS.map(n=>({n,nat:'*'})),
-      pay:['Pix','Transferência (TED/DOC)','Débito em conta','Débito Automático','Boleto','Dinheiro','Desconto em folha','Resgate para conta corrente','Reinvestimento automático'].map(n=>({n})) }
+      // Meios de aporte (entrada no investimento) e de saque (saída), por natureza
+      pay:[ ...['Pix','TED','Transferência entre contas','Débito Automático','Débito em conta','Boleto','Desconto em folha','Depósito em espécie','Portabilidade recebida'].map(n=>({n,nat:'Aplicação'})),
+            ...['Reinvestimento automático','Crédito em conta'].map(n=>({n,nat:'Rendimento'})),
+            ...['Resgate para conta corrente','Pix','TED','Resgate automático no vencimento','Saque em espécie','Portabilidade enviada'].map(n=>({n,nat:'Resgate'})),
+            ...['Retenção na fonte','Descontado do resgate','Débito em conta'].map(n=>({n,nat:'Taxas e IR'})) ] }
 };
 const emptyCfg = () => ({ F:{nat:[],cls:[],cat:[],pay:[]}, I:{nat:[],cls:[],cat:[],pay:[]} });
 let CFG = emptyCfg(), natSel = '', quickCtx = null, cadKind = 'nat', cfgWarned = false;
@@ -745,7 +761,7 @@ function cleanCfg(raw){
   ['F','I'].forEach(m => { const src = raw[m] || {};
     arr(src.nat).forEach(x => { const n = t(x?.n); if (n) c[m].nat.push({ n, s: x.s==='E' ? 'E' : 'S' }); });
     ['cls','cat'].forEach(k => arr(src[k]).forEach(x => { const n = t(x?.n); if (n) c[m][k].push({ n, nat: t(x.nat) || '*' }); }));
-    arr(src.pay).forEach(x => { const n = t(x?.n); if (n) c[m].pay.push({ n }); });
+    arr(src.pay).forEach(x => { const n = t(x?.n); if (n) c[m].pay.push({ n, nat: t(x.nat) || '*' }); });
     Object.keys(c[m]).forEach(k => c[m][k] = c[m][k].slice(0,200));
   });
   return c;
@@ -778,40 +794,41 @@ function scoped(m, kind, nat){
 }
 const classesFor = (m,nat) => scoped(m,'cls',nat);
 const catsFor = (m,nat) => scoped(m,'cat',nat).sort((a,b)=>a.localeCompare(b,'pt-BR'));
-const paysFor = m => uniq(items(m,'pay').map(x=>x.n));
+const paysFor = (m,nat) => scoped(m,'pay',nat);
+const allPays = m => uniq(items(m,'pay').map(x=>x.n));
 function addItem(m, kind, o){   // retorna mensagem de erro ou ''
   const n = String(o.n||'').trim().replace(/\s+/g,' ');
   if (!n) return 'Informe um nome.';
   if (n.length > 60) return 'Use no máximo 60 caracteres.';
-  const sc = (kind==='cls'||kind==='cat') ? (o.nat || '*') : '';
-  const dup = items(m,kind).some(x => norm(x.n)===norm(n) && (kind==='nat'||kind==='pay' || x.nat===sc || x.nat==='*' || sc==='*'));
-  if (dup) return `Já existe “${n}” nesta lista${sc && sc!=='*' ? ' para essa natureza' : ''}.`;
+  const scp = isScoped(m,kind), sc = scp ? (o.nat || '*') : (kind==='pay' ? '*' : '');
+  const dup = items(m,kind).some(x => norm(x.n)===norm(n) && (!scp || x.nat===sc || x.nat==='*' || sc==='*'));
+  if (dup) return `Já existe “${n}” nesta lista${scp && sc!=='*' ? ' para essa natureza' : ''}.`;
   if (arr(CFG[m][kind]).length >= 200) return 'Limite de 200 itens personalizados atingido.';
   o.n = n;
-  CFG[m][kind].push(kind==='nat' ? { n, s:o.s==='E'?'E':'S' } : kind==='pay' ? { n } : { n, nat:sc });
+  CFG[m][kind].push(kind==='nat' ? { n, s:o.s==='E'?'E':'S' } : { n, nat:sc });
   return '';
 }
 function fillLists(){   // filtros do painel (natureza, classificação, categoria, forma)
-  const d = data(), keep = (sel, list) => { const cur = $(sel).value; $(sel).innerHTML = '<option value="">Todas</option>' + list.map(x=>`<option>${esc(x)}</option>`).join(''); $(sel).value = list.includes(cur) ? cur : ''; };
-  keep('#fNat', uniq([...natsOf(MOD).map(x=>x.n), ...d.map(natName)]));
-  keep('#fCls', uniq([...items(MOD,'cls').map(x=>x.n), ...d.map(clsOf).filter(Boolean)]));
-  MS.fPay.setItems(uniq([...paysFor(MOD), ...d.map(r=>r.formaPagto).filter(Boolean)]).sort((a,b)=>a.localeCompare(b,'pt-BR')).map(p=>({v:p,t:p})));
-  const cs = uniq([...items(MOD,'cat').map(x=>x.n), ...d.map(r=>r.categoria).filter(Boolean)]).sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  MS.fCat.setItems([{v:NO_CAT,t:'(Sem categoria)'}, ...cs.map(p=>({v:p,t:p}))]);
+  const d = data(), srt = a => a.sort((x,y)=>x.localeCompare(y,'pt-BR')), mk = a => a.map(p=>({v:p,t:p}));
+  MS.fNat.setItems(mk(uniq([...natsOf(MOD).map(x=>x.n), ...d.map(natName)])));
+  MS.fCls.setItems(mk(uniq([...items(MOD,'cls').map(x=>x.n), ...d.map(clsOf).filter(Boolean)])));
+  MS.fPay.setItems(mk(srt(uniq([...allPays(MOD), ...d.map(r=>r.formaPagto).filter(Boolean)]))));
+  const cs = srt(uniq([...items(MOD,'cat').map(x=>x.n), ...d.map(r=>r.categoria).filter(Boolean)]));
+  MS.fCat.setItems([{v:NO_CAT,t:'(Sem categoria)'}, ...mk(cs)]);
 }
 
 /* ---- Cadastro rápido (botão ＋ no formulário e botão "Novo" em Cadastros) ---- */
 function openQuick(kind, from){
   quickCtx = { kind, from };
-  $('#qTitle').textContent = `Nova ${KIND_LBL[kind].toLowerCase()} · ${MODCFG[MOD].tab}`;
+  $('#qTitle').textContent = `Nova ${kindLbl(kind).toLowerCase()} · ${MODCFG[MOD].tab}`;
   $('#qName').value = ''; $('#qErr').textContent = ''; $('#qSign').value = 'E';
   $('#qSignF').classList.toggle('hidden', kind!=='nat');
-  const sc = kind==='cls' || kind==='cat';
+  const sc = isScoped(MOD, kind);
   $('#qScopeF').classList.toggle('hidden', !sc);
   if (sc) {
     const nats = natsOf(MOD).map(x=>x.n);
     $('#qScope').innerHTML = nats.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('') + '<option value="*">Todas as naturezas</option>';
-    $('#qScope').value = MOD==='I' ? '*' : (from==='form' && nats.includes(natSel) ? natSel : nats.includes(MODCFG[MOD].defNat) ? MODCFG[MOD].defNat : nats[0]);
+    $('#qScope').value = kind==='pay' ? (from==='form' && nats.includes(natSel) ? natSel : '*') : MOD==='I' ? '*' : (from==='form' && nats.includes(natSel) ? natSel : nats.includes(MODCFG[MOD].defNat) ? MODCFG[MOD].defNat : nats[0]);
   }
   $('#quickModal').classList.remove('hidden'); setTimeout(()=>$('#qName').focus(), 30);
 }
@@ -823,9 +840,8 @@ $('#quickForm').onsubmit = e => {
   $('#quickModal').classList.add('hidden'); saveCfg(); fillLists();
   if (from==='cad') renderCad();
   else if (kind==='nat') setNat(o.n);
-  else if (kind==='pay') fillSel('#iPay', paysFor(MOD), o.n, 'Selecione...', true);
-  else setNat(natSel, { cls: kind==='cls' ? o.n : $('#iCls').value, cat: kind==='cat' ? o.n : $('#iCat').value });
-  toast(`${KIND_LBL[kind]} “${o.n}” cadastrada.`);
+  else setNat(natSel, { cls: kind==='cls' ? o.n : $('#iCls').value, cat: kind==='cat' ? o.n : $('#iCat').value, pay: kind==='pay' ? o.n : $('#iPay').value });
+  toast(`${kindLbl(kind)} “${o.n}” cadastrada.`);
 };
 $('#form').addEventListener('click', e => { const b = e.target.closest('[data-add]'); if (b) openQuick(b.dataset.add, 'form'); });
 
@@ -836,15 +852,19 @@ function tagsHTML(list, k){
 }
 function renderCad(){
   $('#cadTitle').textContent = `Cadastros · ${MODCFG[MOD].tab}`;
-  $('#cadTabs').innerHTML = Object.keys(KINDS).map(k => `<button type="button" role="tab" class="chip${k===cadKind?' on':''}" data-k="${k}" aria-selected="${k===cadKind}">${KINDS[k]}</button>`).join('');
-  $('#cadNote').textContent = KIND_NOTE[cadKind] + ' Itens com × foram cadastrados por você e podem ser removidos; os demais são padrão do sistema.';
+  $('#cadTabs').innerHTML = Object.keys(KINDS).map(k => `<button type="button" role="tab" class="chip${k===cadKind?' on':''}" data-k="${k}" aria-selected="${k===cadKind}">${k==='pay' && MOD==='I' ? 'Formas de aporte/saque' : KINDS[k]}</button>`).join('');
+  $('#cadNote').textContent = (cadKind==='pay' && MOD==='I' ? PAY_NOTE_I : KIND_NOTE[cadKind]) + ' Itens com × foram cadastrados por você e podem ser removidos; os demais são padrão do sistema.';
   const k = cadKind;
-  if (k==='nat' || k==='pay') $('#cadBody').innerHTML = `<div class="grp">${tagsHTML(items(MOD,k), k)}</div>`;
+  if (k==='nat' || (k==='pay' && MOD==='F')) $('#cadBody').innerHTML = `<div class="grp">${tagsHTML(items(MOD,k), k)}</div>`;
   else $('#cadBody').innerHTML = [...natsOf(MOD).map(x=>x.n), '*'].map(g => {
     const l = items(MOD,k).filter(x => x.nat===g); if (!l.length && g==='*') return '';
     return `<div class="grp"><h4>${g==='*' ? 'Todas as naturezas' : esc(g)}</h4>${l.length ? tagsHTML(l,k) : '<div class="hint">Nenhum item próprio: usa os de naturezas equivalentes.</div>'}</div>`;
   }).join('');
 }
+$('#helpBtn').onclick = e => {
+  if (/SEU-USUARIO/.test(TUTORIAL_URL)) { e.preventDefault(); return toast('Defina TUTORIAL_URL no código com o endereço do tutorial no GitHub Pages.'); }
+  e.currentTarget.href = `${TUTORIAL_URL}?tema=${document.documentElement.dataset.theme}&painel=${MOD}`;
+};
 $('#cadBtn').onclick = () => { renderCad(); $('#cadModal').classList.remove('hidden'); };
 $('#cadTabs').onclick = e => { const b = e.target.closest('[data-k]'); if (b) { cadKind = b.dataset.k; renderCad(); } };
 $('#cadAdd').onclick = () => openQuick(cadKind, 'cad');
@@ -853,26 +873,26 @@ $('#cadBody').onclick = e => {
   const k = b.dataset.del, n = b.dataset.n, sc = b.dataset.nat || '', used = usageCount(k, n);
   if (!confirm(`Remover “${n}”?` + (used ? `\n${used} lançamento(s) usam este cadastro e continuarão exibindo o valor, mas ele deixa de ser oferecido em novos lançamentos.` : '') + (k==='nat' ? '\nClassificações e categorias exclusivas dessa natureza também serão removidas.' : ''))) return;
   const L = CFG[MOD][k], i = L.findIndex(x => x.n===n && (x.nat||'')===sc); if (i >= 0) L.splice(i,1);
-  if (k==='nat') ['cls','cat'].forEach(kk => CFG[MOD][kk] = CFG[MOD][kk].filter(x => x.nat !== n));
+  if (k==='nat') ['cls','cat','pay'].forEach(kk => CFG[MOD][kk] = CFG[MOD][kk].filter(x => x.nat !== n));
   saveCfg(); fillLists(); renderCad(); render();
 };
 
 /* ===================== FILTROS ===================== */
 function filtered(mode){   // mode='before' => lançamentos anteriores à data inicial (para o saldo inicial)
   const q = $('#fText').value.trim().toLowerCase(), from = $('#fFrom').value, to = $('#fTo').value;
-  const n = $('#fNat').value, c = $('#fCls').value, pSel = MS.fPay, kSel = MS.fCat;
+  const nSel = MS.fNat, cSel = MS.fCls, pSel = MS.fPay, kSel = MS.fCat;
   const fd = from ? new Date(from+'T00:00') : null, td = to ? new Date(to+'T23:59') : null;
   return data().filter(r => {
     const d = parseBR(r.data);
     if (mode==='before'){ if (!fd || d >= fd) return false; } else { if (fd && d < fd) return false; if (td && d > td) return false; }
-    if (n && natName(r) !== n) return false; if (c && clsOf(r) !== c) return false;
+    if (!nSel.pass(natName(r))) return false; if (!cSel.pass(clsOf(r))) return false;
     if (!pSel.pass(r.formaPagto)) return false;
     if (!kSel.pass(r.categoria || NO_CAT)) return false;
     if (q && !`${r.descricao} ${r.categoria||''} ${r.formaPagto} ${natName(r)} ${clsOf(r)} ${r.valor}`.toLowerCase().includes(q)) return false;
     return true;
   });
 }
-['#fText','#fFrom','#fTo','#fNat','#fCls'].forEach(s=>$(s).addEventListener('input',()=>{ page=1; render(); }));
+['#fText','#fFrom','#fTo'].forEach(s=>$(s).addEventListener('input',()=>{ page=1; render(); }));
 $('#clearBtn').onclick = () => { resetFilters(); render(); };
 function setChip(q){ document.querySelectorAll('#quick .chip').forEach(c=>c.classList.toggle('on',c.dataset.q===q)); }
 $('#quick').onclick = e => {
@@ -999,12 +1019,13 @@ function setNat(name, keep = {}){
   natSel = name; renderSeg(name);
   fillSel('#iCls', classesFor(MOD,name), keep.cls, 'Cadastre uma classificação com ＋', false);
   fillSel('#iCat', catsFor(MOD,name), keep.cat, 'Selecione...', true);
+  fillSel('#iPay', paysFor(MOD,name), keep.pay, 'Selecione...', true);
   updParc();
 }
 $('#natSeg').onclick = e => {
   const b = e.target.closest('button[data-n]'); if (!b) return;
-  const pc = $('#iCat').value, pk = $('#iCls').value, n = b.dataset.n;
-  setNat(n, { cat: catsFor(MOD,n).includes(pc) ? pc : '', cls: classesFor(MOD,n).includes(pk) ? pk : undefined });
+  const pc = $('#iCat').value, pk = $('#iCls').value, py = $('#iPay').value, n = b.dataset.n;
+  setNat(n, { cat: catsFor(MOD,n).includes(pc) ? pc : '', cls: classesFor(MOD,n).includes(pk) ? pk : undefined, pay: paysFor(MOD,n).includes(py) ? py : '' });
 };
 const canParc = () => MOD==='I' ? natSel==='Aplicação' : (signOfName(natSel)==='S' && $('#iCls').value==='Fixa');
 function updParc(){
@@ -1018,8 +1039,7 @@ function openForm(r){
   editing = r || null; $('#formTitle').textContent = (r ? 'Editar' : 'Novo') + (MOD==='I' ? ' lançamento de investimento' : ' lançamento');
   $('#iData').value = r ? brToISO(r.data) : isoDate(new Date()); $('#iValor').value = r ? centsToBRL(Math.round(r.valor*100)) : ''; $('#iDesc').value = r?.descricao ?? '';
   $('#iParc').value = r?.parcelas || 1; $('#iParc').disabled = !!r;
-  fillSel('#iPay', paysFor(MOD), r?.formaPagto, 'Selecione...', true);
-  setNat(r ? natName(r) : MODCFG[MOD].defNat, { cls: r ? clsOf(r) : undefined, cat: r?.categoria || '' });
+  setNat(r ? natName(r) : MODCFG[MOD].defNat, { cls: r ? clsOf(r) : undefined, cat: r?.categoria || '', pay: r?.formaPagto || '' });
   $('#formModal').classList.remove('hidden'); $('#iDesc').focus();
 }
 $('#newBtn').onclick = () => openForm();
@@ -1061,7 +1081,7 @@ $('#tbody').onclick = async e => {
 
 /* ===================== EXPORT PDF ===================== */
 function filterDesc(){ const p=[]; if($('#fFrom').value)p.push('De '+isoToBR($('#fFrom').value)); if($('#fTo').value)p.push('Até '+isoToBR($('#fTo').value));
-  if($('#fNat').value)p.push($('#fNat').value); if($('#fCls').value)p.push($('#fCls').value); if(!MS.fCat.all)p.push('Categoria: '+(MS.fCat.labels().join(', ')||'nenhuma')); if(!MS.fPay.all)p.push('Forma: '+(MS.fPay.labels().join(', ')||'nenhuma')); if($('#fText').value)p.push(`"${$('#fText').value}"`);
+  if(!MS.fNat.all)p.push('Natureza: '+(MS.fNat.labels().join(', ')||'nenhuma')); if(!MS.fCls.all)p.push('Classificação: '+(MS.fCls.labels().join(', ')||'nenhuma')); if(!MS.fCat.all)p.push('Categoria: '+(MS.fCat.labels().join(', ')||'nenhuma')); if(!MS.fPay.all)p.push(payLbl()+': '+(MS.fPay.labels().join(', ')||'nenhuma')); if($('#fText').value)p.push(`"${$('#fText').value}"`);
   return p.length?p.join(' · '):'Todos os lançamentos'; }
 function buildPDF(){
   const { jsPDF } = window.jspdf, doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
@@ -1077,7 +1097,7 @@ function buildPDF(){
   doc.setTextColor(95,107,105); doc.setFont('helvetica','normal'); doc.setFontSize(8);
   doc.text(`${MOD==='I'?'Patrimônio':'Saldo'} inicial: ${b.fromISO?'acumulado antes de '+isoToBR(b.fromISO):'sem data inicial (parte de zero)'}  ·  ${MOD==='I'?'Patrimônio':'Saldo'} final: ${b.last?'posição em '+toBR(b.last):'sem lançamentos no período'}`,14,62);
   const sum = mt.items.filter(i=>!i.count && !i.pct);
-  doc.autoTable({ startY:68, head:[['Data','Descrição','Natureza','Valor','Classificação','Qt Parc.','Forma Pagto','Categoria']],
+  doc.autoTable({ startY:68, head:[['Data','Descrição','Natureza','Valor','Classificação','Qt Parc.',payLbl(),'Categoria']],
     body:list.map(r=>[r.data,r.descricao,natName(r),brl(+r.valor),clsOf(r),r.parcelas,r.formaPagto,r.categoria||'']),
     foot:sum.map(i=>['',i.l.toUpperCase(),'',brl(i.v),'','','','']),
     theme:'grid', styles:{fontSize:8.5,cellPadding:2.4,lineColor:[226,221,210],lineWidth:.1},
@@ -1096,7 +1116,7 @@ $('#xlsBtn').onclick = () => {
   const list = sorted(filtered()), mt = metrics(list), X = XLSX, brandHex = MOD==='I' ? '2D4A9A' : '0F5C56', isI = MOD==='I';
   const border = { top:{style:'thin',color:{rgb:'E2DDD2'}}, bottom:{style:'thin',color:{rgb:'E2DDD2'}}, left:{style:'thin',color:{rgb:'E2DDD2'}}, right:{style:'thin',color:{rgb:'E2DDD2'}} };
   const money = '"R$" #,##0.00;[Red]-"R$" #,##0.00';
-  const H = ['Data','Descrição','Valor','Natureza','Classificação','Qt Parcelas','Forma Pagto','Categoria'];
+  const H = ['Data','Descrição','Valor','Natureza','Classificação','Qt Parcelas',payLbl(),'Categoria'];
   const lines = mt.items.filter(i=>!i.count && !i.pct).map(i=>({ l:i.l, v: i.cls==='exp' ? -i.v : i.v, sg:!!i.sg }));
   const aoa = [[MODCFG[MOD].pdf],[`Filtros: ${filterDesc()} · Emitido em ${new Date().toLocaleString('pt-BR')}`],[],H,
     ...list.map(r=>[r.data,r.descricao,natOf(r)==='R'?+r.valor:-r.valor,natName(r),clsOf(r),r.parcelas===''||r.parcelas==null?'':+r.parcelas,r.formaPagto,r.categoria||'']),
