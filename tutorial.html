@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light" data-mod="F">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f5c56" />
+<title>Tutorial · Finanças Plus</title>
+<meta name="description" content="Aprenda a usar o Finanças Plus: fluxo de caixa, investimentos, cadastros, filtros e relatórios, com simuladores interativos." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f3ee;--surface:#fff;--surface-2:#f0ede6;--text:#14201f;--muted:#5f6b69;--border:#e2ddd2;
+  --primary:#0f5c56;--primary-2:#14857b;--on-primary:#fff;--accent:#e8a33d;--income:#1f9d6b;--expense:#d6493f;
+  --shadow:0 10px 30px -12px rgba(15,60,55,.25);--radius:16px;--grad:linear-gradient(135deg,var(--primary),var(--primary-2));
+  --tip:#14857b;--warn:#c9831c;
+}
+[data-theme="dark"]{--bg:#0c1413;--surface:#131e1d;--surface-2:#1a2928;--text:#e9f0ee;--muted:#93a5a2;--border:#243634;--primary:#2bb3a3;--primary-2:#5fd4c4;--on-primary:#06201d;--accent:#f2b955;--income:#3ccf91;--expense:#ff6b5f;--shadow:0 10px 30px -12px rgba(0,0,0,.6);--tip:#5fd4c4;--warn:#f2b955}
+html[data-mod="I"]{--bg:#f1f3f9;--surface-2:#e8ecf6;--border:#dce1ef;--primary:#2d4a9a;--primary-2:#4b72d6;--tip:#4b72d6;--shadow:0 10px 30px -12px rgba(30,50,115,.28)}
+html[data-theme="dark"][data-mod="I"]{--bg:#0b1020;--surface:#121a30;--surface-2:#1a2442;--border:#26324f;--primary:#7c97ff;--primary-2:#a8bcff;--on-primary:#0b1433;--tip:#a8bcff;--shadow:0 10px 30px -12px rgba(0,0,0,.65)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;transition:background .3s,color .3s;overflow-x:hidden}
+h1,h2,h3,.brand{font-family:'Fraunces',Georgia,serif}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--primary)}
+:focus-visible{outline:3px solid color-mix(in oklab,var(--primary) 50%,transparent);outline-offset:2px;border-radius:8px}
+.btn{border:1px solid var(--border);background:var(--surface);padding:9px 15px;border-radius:12px;cursor:pointer;font-weight:600;display:inline-flex;gap:8px;align-items:center;text-decoration:none;color:var(--text);transition:transform .15s,box-shadow .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.btn-primary{background:var(--grad);color:var(--on-primary);border:none}
+.btn[disabled]{opacity:.45;pointer-events:none}
+/* topo */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) clamp(12px,3vw,32px) 10px;background:color-mix(in oklab,var(--bg) 82%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.brand{font-size:1.2rem;font-weight:800;display:flex;gap:10px;align-items:center;white-space:nowrap}
+.brand i{width:32px;height:32px;border-radius:10px;background:var(--grad);display:grid;place-items:center;color:var(--on-primary);font:700 .85rem 'Plus Jakarta Sans'}
+.brand small{font:600 .8rem 'Plus Jakarta Sans';color:var(--muted)}
+.search{flex:1;max-width:420px;margin-left:auto;position:relative}
+.search input{width:100%;padding:9px 38px 9px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);outline:none}
+.search input:focus{border-color:var(--primary)}
+.search kbd{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:.72rem;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:0 6px;background:var(--surface-2)}
+.pswitch{display:flex;background:var(--surface-2);border-radius:12px;padding:3px}
+.pswitch button{border:none;background:none;padding:7px 12px;border-radius:9px;cursor:pointer;font-weight:700;font-size:.85rem;white-space:nowrap}
+.pswitch button[aria-pressed="true"]{background:var(--grad);color:var(--on-primary)}
+.ring{--p:0;width:38px;height:38px;border-radius:50%;background:conic-gradient(var(--primary) calc(var(--p)*1%),var(--surface-2) 0);display:grid;place-items:center;flex:0 0 auto}
+.ring span{width:28px;height:28px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:.68rem;font-weight:800}
+/* layout */
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:clamp(16px,3vw,40px);max-width:1180px;margin:0 auto;padding:24px clamp(12px,3vw,32px) 80px}
+.rail{position:sticky;top:78px;align-self:start;display:flex;flex-direction:column;gap:4px;max-height:calc(100vh - 100px);overflow:auto}
+.rail button{display:flex;gap:10px;align-items:center;text-align:left;border:1px solid transparent;background:none;padding:9px 10px;border-radius:12px;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--muted)}
+.rail button:hover{background:var(--surface-2);color:var(--text)}
+.rail button[aria-current="step"]{background:var(--surface);border-color:var(--border);color:var(--text);box-shadow:var(--shadow)}
+.rail .n{flex:0 0 26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:.76rem;font-weight:800;background:var(--surface-2);color:var(--muted)}
+.rail button[aria-current="step"] .n{background:var(--grad);color:var(--on-primary)}
+.rail .done .n{background:var(--income);color:#fff}
+.rail .done .n::before{content:"✓"}
+.rail .done .n b{display:none}
+/* conteúdo */
+.lesson{min-width:0;animation:in .35s ease both}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.eyebrow{font-size:.85rem;font-weight:700;color:var(--primary)}
+.lesson h1{font-size:clamp(1.8rem,4.2vw,2.7rem);line-height:1.1;margin:4px 0 10px}
+.lead{font-size:1.08rem;color:var(--muted);max-width:62ch;margin-bottom:22px}
+.lesson h2{font-size:1.25rem;margin:28px 0 8px}
+.lesson p{margin:8px 0;max-width:68ch}
+.lesson ul,.lesson ol{margin:8px 0 8px 1.2em;max-width:68ch}.lesson li{margin:4px 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin:16px 0}
+.callout{border-left:4px solid var(--tip);background:color-mix(in oklab,var(--tip) 9%,var(--surface));padding:12px 16px;border-radius:0 12px 12px 0;margin:16px 0;max-width:68ch}
+.callout.warn{border-color:var(--warn);background:color-mix(in oklab,var(--warn) 11%,var(--surface))}
+.callout b:first-child{display:block;margin-bottom:2px}
+.kbd,.ui{display:inline-block;padding:0 8px;border-radius:7px;border:1px solid var(--border);background:var(--surface-2);font-size:.86em;font-weight:700;white-space:nowrap}
+.pill{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill.inc{background:color-mix(in oklab,var(--income) 15%,transparent);color:var(--income)}
+.pill.exp{background:color-mix(in oklab,var(--expense) 15%,transparent);color:var(--expense)}
+.goals{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:18px 0}
+.goal{text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:border-color .2s,transform .15s}
+.goal:hover{border-color:var(--primary);transform:translateY(-2px)}
+.goal b{font-size:.98rem}.goal span{font-size:.82rem;color:var(--muted)}
+.next-up{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--grad);color:var(--on-primary);border-radius:var(--radius);padding:16px 20px;margin:0 0 20px}
+.next-up .btn{background:rgba(255,255,255,.18);color:inherit;border-color:rgba(255,255,255,.35)}
+/* formulários dos simuladores */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.field label{display:block;font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:5px}
+.field input,.field select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);outline:none}
+.field input:focus,.field select:focus{border-color:var(--primary)}
+.field.full{grid-column:1/-1}
+.seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface-2);border-radius:12px;padding:4px}
+.seg button{flex:1 1 auto;min-width:92px;border:none;background:none;padding:9px;border-radius:9px;cursor:pointer;font-weight:700}
+.seg button.on.inc{background:var(--income);color:#fff}.seg button.on.exp{background:var(--expense);color:#fff}
+.flash{animation:flash 1.4s ease}
+@keyframes flash{0%{box-shadow:0 0 0 0 color-mix(in oklab,var(--accent) 80%,transparent)}30%{box-shadow:0 0 0 6px color-mix(in oklab,var(--accent) 45%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
+.out{margin-top:14px;border-top:1px dashed var(--border);padding-top:12px}
+.out h3{font-size:1rem;margin-bottom:8px}
+.tbl{width:100%;border-collapse:collapse;font-size:.88rem}
+.tbl th{text-align:left;font-size:.74rem;color:var(--muted);padding:6px 8px;border-bottom:2px solid var(--border)}
+.tbl td{padding:7px 8px;border-bottom:1px solid var(--border)}
+.tbl .num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl-wrap{overflow-x:auto}
+.effects{list-style:none;margin:10px 0 0!important;display:grid;gap:6px}
+.effects li{position:relative;padding-left:1.5em;font-size:.9rem;margin:0}
+.effects li::before{content:"→";position:absolute;left:0;color:var(--primary);font-weight:800}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+.kpi{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface-2)}
+.kpi span{font-size:.72rem;color:var(--muted);font-weight:700}.kpi b{display:block;font-family:'Fraunces',serif;font-size:1.25rem}
+.ms{display:flex;flex-direction:column;gap:2px;border:1px solid var(--border);border-radius:12px;padding:8px;background:var(--surface-2);min-width:200px}
+.ms .head{font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:4px}
+.ms label{display:flex;gap:8px;align-items:center;padding:6px 6px;border-radius:8px;cursor:pointer;font-size:.9rem}
+.ms label:hover{background:var(--surface)}
+.ms input{width:17px;height:17px;accent-color:var(--primary)}
+.ms .all{font-weight:700;border-bottom:1px solid var(--border);margin-bottom:3px;border-radius:8px 8px 0 0}
+.ms .val{margin-top:6px;font-size:.82rem;font-weight:700;color:var(--primary)}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.chip{padding:7px 13px;border-radius:999px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:.84rem;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--grad);color:var(--on-primary);border-color:transparent}
+.answer{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
+.answer div{background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.answer small{display:block;font-size:.72rem;color:var(--muted);font-weight:700}
+details{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:0 14px;margin:8px 0;max-width:72ch}
+summary{cursor:pointer;font-weight:700;padding:12px 0;list-style:none;display:flex;justify-content:space-between;gap:10px}
+summary::after{content:"＋";color:var(--primary)}details[open] summary::after{content:"−"}
+details p{padding-bottom:12px}
+.mock{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.mock .tab{flex:1 1 200px;border:1px solid var(--border);border-radius:14px;padding:11px 14px;background:var(--surface);border-bottom:4px solid var(--c)}
+.mock .tab b{font-family:'Fraunces',serif}.mock .tab small{display:block;color:var(--muted)}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:34px;padding-top:16px;border-top:1px solid var(--border)}
+.check{display:flex;gap:8px;align-items:center;font-weight:600;cursor:pointer}
+.check input{width:19px;height:19px;accent-color:var(--income)}
+.results .hit{display:block;width:100%;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:12px 16px;margin:8px 0;cursor:pointer}
+.results .hit:hover{border-color:var(--primary)}
+.results .hit span{display:block;color:var(--muted);font-size:.86rem;margin-top:2px}
+mark{background:color-mix(in oklab,var(--accent) 45%,transparent);color:inherit;border-radius:4px;padding:0 2px}
+@media (max-width:860px){
+  .layout{grid-template-columns:minmax(0,1fr);padding-top:14px}
+  .rail{min-width:0;position:static;flex-direction:row;overflow-x:auto;max-height:none;padding-bottom:6px;margin:0 -4px}
+  .rail button{flex:0 0 auto;white-space:nowrap}
+  .top{flex-wrap:wrap}.brand small{display:none}.search{order:5;flex:1 1 100%;max-width:none;margin:0}
+  .pswitch{margin-left:auto}
+}
+@media (max-width:480px){.pswitch button{padding:7px 9px;font-size:.78rem}.brand{font-size:1.05rem}.card{padding:14px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media print{.top,.rail,.pager{display:none}.layout{display:block}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><i>R$</i> Finanças Plus <small>· Tutorial</small></div>
+  <div class="search"><input id="q" type="search" placeholder="Buscar: parcela, senha, PDF..." autocomplete="off" aria-label="Buscar no tutorial"><kbd>/</kbd></div>
+  <div class="pswitch" role="group" aria-label="Painel de exemplo">
+    <button type="button" data-p="F" aria-pressed="true">Fluxo de caixa</button>
+    <button type="button" data-p="I" aria-pressed="false">Investimentos</button>
+  </div>
+  <div class="ring" id="ring" title="Seu progresso"><span id="ringTxt">0/9</span></div>
+  <button class="btn" id="themeBtn" aria-label="Alternar tema" title="Alternar tema">🌙</button>
+</header>
+<div class="layout">
+  <nav class="rail" id="rail" aria-label="Etapas do tutorial"></nav>
+  <main id="view" tabindex="-1"></main>
+</div>
+<noscript><p style="padding:20px">Este tutorial precisa de JavaScript habilitado.</p></noscript>
+
+<script>
+/* ===================== utilidades ===================== */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const brl = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const pad = n => String(n).padStart(2,'0');
+const toBR = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+const addMonths = (d,n) => { const r = new Date(d.getFullYear(), d.getMonth()+n, 1); r.setDate(Math.min(d.getDate(), new Date(r.getFullYear(), r.getMonth()+1, 0).getDate())); return r; };
+const maskBRL = el => { const d = el.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,11); el.value = d ? brl(+d/100) : ''; return d ? +d/100 : 0; };
+const store = { get:(k,d)=>{ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch{ return d; } }, set:(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} } };
+
+/* ===================== estado: tema e painel vêm do app via ?tema=&painel= ===================== */
+const Q = new URLSearchParams(location.search);
+let panel = Q.get('painel') === 'I' ? 'I' : 'F';
+function setTheme(t){ document.documentElement.dataset.theme = t; store.set('fp-tut-theme', t); $('#themeBtn').textContent = t==='dark'?'☀️':'🌙'; }
+setTheme(Q.get('tema') || store.get('fp-tut-theme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+$('#themeBtn').onclick = () => setTheme(document.documentElement.dataset.theme==='dark' ? 'light' : 'dark');
+function setPanel(p, rerender=true){
+  panel = p; document.documentElement.dataset.mod = p;
+  document.querySelector('meta[name=theme-color]').content = p==='I' ? '#2d4a9a' : '#0f5c56';
+  $$('.pswitch button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p===p)));
+  if (rerender && !searching) show(current, true);
+}
+$$('.pswitch button').forEach(b => b.onclick = () => setPanel(b.dataset.p));
+
+/* ===================== dados dos simuladores (espelham os padrões do app) ===================== */
+const SIM = {
+  F:{ payLbl:'Forma de pagto./receb.', parcLbl:'Qt Parcelas',
+    nats:[
+      { n:'Receita', s:'E', cls:['Fixa','Extra'], cat:['Salário','Freelance / Serviços','Aluguéis Recebidos','Restituição de IR'], pay:['Pix','Transferência','Dinheiro'] },
+      { n:'Despesa', s:'S', cls:['Variável','Fixa'], cat:['Moradia','Supermercado','Lazer','Saúde','Investimentos'], pay:['Pix','Boleto','Cartão de Crédito','Cartão de Débito','Débito Automático'] } ],
+    parc:(n,c) => n.s==='S' && c==='Fixa' },
+  I:{ payLbl:'Forma de aporte ou saque', parcLbl:'Qt de aportes mensais',
+    nats:[
+      { n:'Aplicação', s:'E', cls:['Renda Fixa','Renda Variável','Previdência','Reserva de Emergência'], cat:['CDB','Poupança','Tesouro Direto','Previdência Privada (PGBL)','Ações'], pay:['Pix','TED','Débito Automático','Desconto em folha','Boleto'] },
+      { n:'Rendimento', s:'E', cls:['Renda Fixa','Renda Variável','Previdência','Reserva de Emergência'], cat:['CDB','Poupança','Tesouro Direto','Ações'], pay:['Reinvestimento automático','Crédito em conta'] },
+      { n:'Resgate', s:'S', cls:['Renda Fixa','Renda Variável','Previdência','Reserva de Emergência'], cat:['CDB','Poupança','Tesouro Direto','Ações'], pay:['Resgate para conta corrente','Pix','TED','Saque em espécie'] },
+      { n:'Taxas e IR', s:'S', cls:['Renda Fixa','Renda Variável','Previdência'], cat:['CDB','Tesouro Direto','Ações'], pay:['Retenção na fonte','Descontado do resgate'] } ],
+    parc:(n) => n.n==='Aplicação' }
+};
+
+/* ===================== etapas ===================== */
+const L = [];
+const lesson = (id, t, k, lead, body, init) => L.push({ id, t, k, lead, body, init });
+
+lesson('inicio','Comece pelo seu objetivo','início objetivo começar ajuda por onde',
+  'Diga o que você quer fazer e eu levo você direto à etapa certa. Se preferir, siga a ordem do menu: leva uns 10 minutos.',
+  () => `<div id="suggest"></div>
+  <div class="goals">
+    ${[['lancar','Registrar uma despesa ou receita','Passo a passo do formulário'],['investimentos','Acompanhar meus investimentos','Aportes, rendimentos e rentabilidade'],
+       ['parcelas','Parcelar ou repetir um aporte','Como as linhas mensais são geradas'],['cadastros','Criar categoria, natureza ou forma nova','Cadastros próprios'],
+       ['filtros','Achar um lançamento','Filtros de seleção múltipla e busca'],['relatorios','Gerar PDF ou Excel','Relatórios que respeitam os filtros'],
+       ['acesso','Entrar, criar conta ou trocar a senha','Login e sessão'],['ajuda','Algo deu errado','Perguntas frequentes']]
+      .map(([id,t,s]) => `<button class="goal" data-go="${id}"><b>${t}</b><span>${s}</span></button>`).join('')}
+  </div>
+  <div class="callout"><b>Dica</b>O seletor <span class="ui">Fluxo de caixa / Investimentos</span> no topo desta página muda os exemplos para o painel que você quer aprender. Ao abrir o tutorial pelo botão ❓ do app, ele já vem no painel em que você estava.</div>`,
+  () => {
+    const next = L.find(l => l.id!=='inicio' && !done.has(l.id) && (panel==='I' ? true : l.id!=='investimentos')) || null;
+    if (next && done.size) $('#suggest').innerHTML = `<div class="next-up"><div><b>Continue de onde parou</b><br>Próxima etapa: ${esc(next.t)}</div><button class="btn" data-go="${next.id}">Continuar</button></div>`;
+  });
+
+lesson('paineis','Os dois painéis','painel painéis fluxo caixa investimentos abas separados independentes',
+  'O Finanças Plus tem dois painéis independentes. Cada lançamento pertence a um deles e só aparece nele.',
+  () => `<div class="mock">
+    <div class="tab" style="--c:#0f5c56"><b>💳 Fluxo de caixa</b><small>Saldo geral R$ 10.973,30</small></div>
+    <div class="tab" style="--c:#2d4a9a"><b>📈 Investimentos</b><small>Patrimônio R$ 8.581,70</small></div></div>
+  <ul>
+    <li><b>Fluxo de caixa</b>: o dia a dia. Receitas e despesas, saldo inicial, saldo do período e saldo final.</li>
+    <li><b>Investimentos</b>: poupança, CDB, Tesouro, previdência privada, ações e o que mais você tiver. Aportes, rendimentos, resgates e taxas, com patrimônio e rentabilidade.</li>
+  </ul>
+  <p>Trocar de aba muda as cores, os indicadores, os gráficos, os filtros, o relatório e as listas de cadastro. Os filtros são reiniciados a cada troca.</p>
+  <div class="callout warn"><b>Atenção: os painéis não se conversam</b>Aplicar R$ 1.000 em um CDB <u>não</u> baixa o saldo do Fluxo de caixa. Se quiser que a conta corrente reflita o aporte, registre também uma <i>Despesa</i> (categoria <i>Investimentos</i>) no Fluxo de caixa, e um resgate como <i>Receita</i> (por exemplo, <i>Rendimentos de Investimentos</i>).</div>`);
+
+lesson('acesso','Entrar, conta e sessão','login senha conta e-mail codigo código sessão sair bloqueio esqueci',
+  'Cada pessoa entra com e-mail e senha e vê somente os próprios lançamentos.',
+  () => `<ol>
+    <li>Na tela inicial, clique em <span class="ui">Carregar dados da planilha →</span>.</li>
+    <li><b>Primeira vez?</b> Escolha <span class="ui">Criar conta</span>, informe o e-mail e digite o código de 6 dígitos recebido (vale 15 minutos). Depois defina a senha, com no mínimo 8 caracteres.</li>
+    <li><b>Já tem conta?</b> Entre com e-mail e senha. Se esquecer, use <span class="ui">Esqueci minha senha</span>: o mesmo código por e-mail redefine a senha.</li>
+  </ol>
+  <h2>No cabeçalho</h2>
+  <p><span class="ui">🏠</span> volta ao início · <span class="ui">🔑</span> altera a senha · <span class="ui">🔒 Sair</span> encerra a sessão · <span class="ui">⬇️</span> instala o app no celular ou computador · <span class="ui">🌙</span> alterna o tema claro/escuro.</p>
+  <div class="callout"><b>Bom saber</b>A sessão dura até 6 horas. Cinco senhas erradas bloqueiam o login por 15 minutos (a recuperação por e-mail continua disponível). Trocar a senha encerra as sessões abertas em outros aparelhos.</div>
+  <div class="callout"><b>Só quer experimentar?</b>Se a planilha não responder, o app oferece o <i>Modo demonstração</i>, com dados fictícios guardados só no seu navegador.</div>`);
+
+lesson('lancar','Registrar um lançamento','novo lançamento natureza classificação categoria forma pagamento valor descrição formulário despesa receita simulador',
+  'Clique em ＋ Novo lançamento. Experimente o formulário abaixo: ele funciona como o do app e mostra o que será gravado.',
+  () => `<div class="card" id="sim"></div>
+  <h2>O que significa cada campo</h2>
+  <ul>
+    <li><b>Natureza</b>: de onde vem o efeito no saldo. <i>Receita</i> e <i>Aplicação</i> somam; <i>Despesa</i>, <i>Resgate</i> e <i>Taxas e IR</i> subtraem.</li>
+    <li><b>Classificação</b>: o tipo dentro da natureza (Fixa, Variável, Renda Fixa...).</li>
+    <li><b>Categoria</b>: para onde foi o dinheiro (Moradia, CDB, Previdência...). É obrigatória.</li>
+    <li><b>Forma</b>: no Fluxo de caixa, de pagamento ou recebimento; em Investimentos, de <b>aporte ou saque</b>. As opções mudam conforme a natureza.</li>
+  </ul>
+  <h2>Qual natureza usar?</h2>
+  <p>Escolha uma situação e veja como lançar.</p>
+  <div class="chips" id="scen"></div><div class="answer" id="scenOut"></div>`,
+  () => { initSim(); initScen(); });
+
+lesson('parcelas','Parcelas e aportes mensais','parcela parcelado repetir mensal aporte fixa cartão cálculo data dia 31 excluir editar',
+  'Despesas Fixas (no Fluxo) e Aplicações (em Investimentos) podem gerar várias linhas mensais de uma só vez.',
+  () => `<div class="card">
+    <div class="form-grid">
+      <div class="field"><label>Data da 1ª linha</label><input type="date" id="pDate"></div>
+      <div class="field"><label>Valor de cada linha</label><input id="pVal" inputmode="numeric" placeholder="R$ 0,00"></div>
+      <div class="field"><label id="pQtL">Quantidade</label><input type="number" id="pQt" min="1" max="120" value="4"></div>
+    </div>
+    <div class="out"><div id="pOut"></div></div></div>
+  <ul>
+    <li>Cada linha vira um lançamento, com a descrição seguida de <span class="kbd">(1/4)</span>, <span class="kbd">(2/4)</span>...</li>
+    <li>Se o dia não existe no mês (31 em fevereiro), o app usa o último dia daquele mês, como mostra o simulador.</li>
+    <li><b>Editar</b> uma linha altera só aquela linha. A quantidade de parcelas fica travada na edição.</li>
+    <li><b>Excluir</b> uma linha parcelada pergunta: <span class="ui">OK</span> apaga todas as parcelas, <span class="ui">Cancelar</span> apaga só a escolhida.</li>
+    <li>Para ver o que ainda vai vencer, use o atalho <span class="ui">Futuros (parcelas)</span>.</li>
+  </ul>`,
+  () => initParc());
+
+lesson('cadastros','Cadastros próprios','cadastro categoria natureza classificação forma pagamento criar novo remover escopo entrada saída herda mais',
+  'Nenhuma lista é fixa. Você cadastra o que faltar, em cada painel, sem sair do formulário.',
+  () => `<h2>Dois caminhos</h2>
+  <ul>
+    <li><b>Pelo formulário</b>: o botão <span class="ui">＋</span> ao lado de Classificação, Categoria e Forma, e <span class="ui">＋ Nova</span> junto às naturezas. O item novo já fica selecionado.</li>
+    <li><b>Pelo painel</b>: <span class="ui">⚙️ Cadastros</span> lista tudo por abas, mostra o que é padrão e o que é seu (com ×) e permite remover.</li>
+  </ul>
+  <h2>Regras que ajudam</h2>
+  <ul>
+    <li><b>Natureza nova</b> pede o <i>efeito no saldo</i>: <b>Entrada</b> soma, <b>Saída</b> subtrai. É isso que a encaixa nos totais e gráficos.</li>
+    <li><b>Disponível para</b>: categorias, classificações e (em Investimentos) formas de aporte/saque valem para uma natureza ou para todas. Uma natureza nova sem itens próprios herda os de mesmo sinal, então já nasce utilizável.</li>
+    <li>Nomes repetidos são bloqueados, sem diferenciar maiúsculas e acentos.</li>
+    <li><b>Remover</b> um cadastro não apaga lançamentos: eles mantêm o valor, só deixa de ser oferecido em novos lançamentos. Remover uma natureza remove também seus itens exclusivos.</li>
+  </ul>
+  <div class="callout"><b>Onde ficam salvos?</b>Na aba <i>Config</i> da sua planilha, separados por usuário e por painel, e também em cópia no navegador. Se aparecer o aviso “cadastro salvo só neste aparelho”, a planilha ainda está com o script antigo (veja <a href="#/ajuda" data-go="ajuda">Dúvidas</a>).</div>
+  <div class="card"><h3>Exemplo: criar “Dividendos” em Investimentos</h3>
+    <ol><li>Abra <span class="ui">⚙️ Cadastros</span> › <span class="ui">Naturezas</span> › <span class="ui">＋ Novo</span>.</li>
+    <li>Nome: <i>Dividendos</i>. Efeito no saldo: <b>Entrada</b>. Cadastrar.</li>
+    <li>Ao lançar, escolha <i>Dividendos</i>; ele soma ao patrimônio e entra em “Aportes” (só <i>Rendimento</i> alimenta a rentabilidade).</li></ol></div>`);
+
+lesson('filtros','Filtros e busca','filtro filtros busca período seleção múltipla natureza classificação categoria saldo inicial todas limpar',
+  'Natureza, Classificação, Categoria e Forma aceitam várias opções ao mesmo tempo. Teste a lógica na demonstração.',
+  () => `<div class="card"><div class="row" id="fdemo"></div><div class="out"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Descrição</th><th>Natureza</th><th>Classificação</th><th class="num">Valor</th></tr></thead><tbody id="fOut"></tbody></table></div></div></div>
+  <ul>
+    <li><b>Todas</b> marcado = sem restrição. Desmarcar <i>Todas</i> limpa tudo para você marcar só o que quer. Marcar item por item até completar volta para <i>Todas</i>.</li>
+    <li>Nenhum item marcado = tabela vazia (é proposital: nada foi escolhido).</li>
+    <li>Os filtros se combinam (E): <i>Receita</i> + <i>Extra</i> mostra só receitas extras.</li>
+  </ul>
+  <h2>Período e atalhos</h2>
+  <p>Use <span class="ui">De</span>/<span class="ui">Até</span> ou os atalhos <span class="ui">Este mês</span>, <span class="ui">Mês anterior</span>, <span class="ui">Últimos 90 dias</span>, <span class="ui">Este ano</span> e <span class="ui">Futuros</span>. O campo <span class="ui">Buscar</span> procura em descrição, categoria, forma, natureza, classificação e valor.</p>
+  <div class="callout"><b>Saldo inicial</b>Ao preencher <i>De</i>, o saldo (ou patrimônio) inicial passa a ser tudo o que foi acumulado <u>antes</u> dessa data, respeitando os outros filtros. Sem <i>De</i>, ele parte de R$ 0,00. Clique nos títulos das colunas para ordenar.</div>`,
+  () => initFiltros());
+
+lesson('investimentos','Lendo o painel de investimentos','investimentos patrimônio rentabilidade aporte rendimento resgate taxas ir poupança previdência cdb tesouro cálculo',
+  'Os indicadores partem do que você lança. Mude os números e veja como cada um é calculado.',
+  () => `<div class="card"><div class="form-grid">
+      <div class="field"><label>Patrimônio inicial</label><input data-k="open" inputmode="numeric" value="R$ 10.000,00"></div>
+      <div class="field"><label>Aportes</label><input data-k="ap" inputmode="numeric" value="R$ 2.000,00"></div>
+      <div class="field"><label>Rendimentos</label><input data-k="rd" inputmode="numeric" value="R$ 150,00"></div>
+      <div class="field"><label>Resgates e taxas</label><input data-k="sa" inputmode="numeric" value="R$ 500,00"></div></div>
+    <div class="kpi-row" id="iOut"></div></div>
+  <ul>
+    <li><b>Aportes</b>: toda entrada que não seja <i>Rendimento</i> (Aplicação e naturezas suas de entrada).</li>
+    <li><b>Rendimentos</b>: só a natureza <i>Rendimento</i>: juros, correção, dividendos que você lançar.</li>
+    <li><b>Resgates e taxas</b>: toda saída (Resgate, Taxas e IR e naturezas suas de saída).</li>
+    <li><b>Patrimônio final</b> = inicial + aportes + rendimentos − resgates e taxas.</li>
+    <li><b>Rentabilidade</b> = rendimentos ÷ (inicial + aportes). É um indicador do período filtrado, não uma taxa anualizada.</li>
+  </ul>
+  <div class="callout warn"><b>Não é cotação de mercado</b>O app não consulta preços. O patrimônio é o resultado dos seus lançamentos: para refletir ganhos, lance os rendimentos (do extrato ou do informe). Um bom ritmo é lançar o <i>Rendimento</i> uma vez por mês, junto com o <i>IR</i> retido, quando houver.</div>
+  <p>O gráfico <i>Evolução do patrimônio</i> mostra barras mensais de aportes, rendimentos e resgates, com a linha do patrimônio acumulado. O gráfico de rosca mostra o patrimônio por categoria (Poupança, CDB, Previdência...).</p>`,
+  () => initInvest());
+
+lesson('relatorios','PDF e Excel','pdf excel relatório exportar baixar planilha imprimir',
+  'Os relatórios saem exatamente com o que está na tela: mesmo painel, mesmos filtros.',
+  () => `<ol>
+    <li>Ajuste período e filtros.</li>
+    <li><span class="ui">📄 PDF</span> abre uma pré-visualização; depois, <span class="ui">⬇ Baixar PDF</span>. Traz os indicadores, o resumo dos filtros e a tabela com totais.</li>
+    <li><span class="ui">📗 Excel</span> baixa um arquivo com duas abas: os lançamentos (com saídas em negativo e totais) e um <i>Resumo Mensal</i>.</li>
+  </ol>
+  <p>No painel de Investimentos, os relatórios usam os termos do painel (aportes, rendimentos, resgates, patrimônio) e a coluna <i>Aporte/Saque</i>.</p>
+  <div class="callout"><b>Dica</b>Para um relatório de um ano só, use <span class="ui">Este ano</span>; para um único produto, filtre a <i>Categoria</i> (por exemplo, só “Previdência Privada (PGBL)”).</div>`);
+
+lesson('ajuda','Dúvidas e solução de problemas','ajuda erro problema faq dúvida sessão expirada offline instalar demo senha bloqueada salvo só neste aparelho misturados modulo',
+  'As situações mais comuns e o que fazer.',
+  () => {
+    const faq = [
+      ['Os investimentos aparecem misturados ao fluxo de caixa','A planilha ainda usa o script antigo, sem a coluna <i>Modulo</i>. No Apps Script, cole o <i>Code.js</i> novo e publique uma <b>nova versão</b> da implantação. Lançamentos antigos continuam como fluxo de caixa.'],
+      ['Aparece “cadastro salvo só neste aparelho”','Mesma causa: o script antigo não conhece a gravação de cadastros. Depois de publicar o novo, abra o app e faça um novo cadastro; ele passa a ser salvo na aba <i>Config</i>.'],
+      ['“Sessão expirada”','A sessão dura até 6 horas. Entre de novo; seus dados não se perdem.'],
+      ['Login bloqueado','Cinco senhas erradas bloqueiam por 15 minutos. Use <i>Esqueci minha senha</i> para redefinir com o código enviado ao e-mail.'],
+      ['O código por e-mail não chega','Confira a caixa de spam. Há intervalo de 1 minuto entre pedidos e limite de 5 por hora. Se a mensagem de erro mencionar permissão, o administrador precisa executar a função <i>autorizarEmail</i> no Apps Script.'],
+      ['Saldo inicial aparece R$ 0,00','Ele só é calculado quando o campo <i>De</i> está preenchido. Sem data inicial o app parte de zero.'],
+      ['Meu lançamento sumiu da lista','Veja os filtros: a lista só mostra o painel atual e o que combina com todos os filtros. <span class="ui">Limpar filtros</span> volta ao total.'],
+      ['Posso apagar uma categoria já usada?','Pode. Os lançamentos continuam com o nome; ele só deixa de ser sugerido para novos.'],
+      ['Funciona sem internet?','O app instalado abre offline, mas os dados vêm da planilha e exigem conexão para carregar e salvar.'],
+      ['Como instalo no celular?','Quando o navegador permitir, aparece o botão ⬇️ no cabeçalho. Também é possível usar “Adicionar à tela inicial” do navegador.']
+    ];
+    return faq.map(([q,a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join('') +
+      `<div class="callout"><b>Não achou?</b>Use a busca no topo desta página: ela procura em todas as etapas.</div>`;
+  });
+
+/* ===================== progresso ===================== */
+const done = new Set(store.get('fp-tut-done', []));
+const saveDone = () => store.set('fp-tut-done', [...done]);
+const steps = () => L.filter(l => l.id!=='inicio');
+function paintProgress(){
+  const n = steps().filter(l => done.has(l.id)).length, tot = steps().length;
+  $('#ring').style.setProperty('--p', Math.round(n/tot*100)); $('#ringTxt').textContent = `${n}/${tot}`;
+  $('#rail').innerHTML = L.map((l,i) => `<button type="button" data-go="${l.id}" class="${done.has(l.id)?'done':''}" ${l.id===current&&!searching?'aria-current="step"':''}><span class="n"><b>${i||'•'}</b></span>${esc(l.t)}</button>`).join('');
+}
+
+/* ===================== navegação ===================== */
+let current = 'inicio', searching = false;
+function show(id, keep){
+  const i = Math.max(0, L.findIndex(l => l.id===id)), l = L[i]; current = l.id; searching = false;
+  if (!keep) { history.replaceState(null,'',`#/${l.id}`); }
+  const prev = L[i-1], next = L[i+1];
+  $('#view').innerHTML = `<article class="lesson">
+    <div class="eyebrow">${i ? `Etapa ${i} de ${L.length-1}` : 'Bem-vindo'}</div>
+    <h1>${esc(l.t)}</h1><p class="lead">${esc(l.lead)}</p>${l.body()}
+    <div class="pager">
+      <button class="btn" data-go="${prev?prev.id:''}" ${prev?'':'disabled'}>← ${prev?esc(prev.t):'Anterior'}</button>
+      ${i ? `<label class="check"><input type="checkbox" id="doneCb" ${done.has(l.id)?'checked':''}> Concluí esta etapa</label>` : ''}
+      <button class="btn btn-primary" data-go="${next?next.id:''}" data-mark="1" ${next?'':'disabled'}>${next?esc(next.t):'Próxima'} →</button>
+    </div></article>`;
+  l.init?.(); $('#doneCb')?.addEventListener('change', e => { e.target.checked ? done.add(l.id) : done.delete(l.id); saveDone(); paintProgress(); });
+  paintProgress(); if (!keep) { scrollTo({top:0}); $('#view').focus({preventScroll:true}); }
+  $('#q').value = '';
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-go]'); if (!b || !b.dataset.go) return;
+  e.preventDefault();
+  if (b.dataset.mark && current!=='inicio') { done.add(current); saveDone(); }
+  show(b.dataset.go);
+});
+addEventListener('hashchange', () => { const id = location.hash.replace(/^#\/?/,''); if (L.some(l=>l.id===id) && id!==current) show(id, true); });
+document.addEventListener('keydown', e => {
+  const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
+  if (e.key==='/' && !typing) { e.preventDefault(); $('#q').focus(); }
+  if (typing || searching || e.altKey || e.ctrlKey || e.metaKey) return;
+  const i = L.findIndex(l => l.id===current);
+  if (e.key==='ArrowRight' && L[i+1]) show(L[i+1].id); if (e.key==='ArrowLeft' && L[i-1]) show(L[i-1].id);
+});
+
+/* ===================== busca ===================== */
+const plain = new Map();
+const plainOf = l => { if (!plain.has(l.id)) { const d = document.createElement('div'); d.innerHTML = l.lead + ' ' + l.body(); plain.set(l.id, d.textContent.replace(/\s+/g,' ')); } return plain.get(l.id); };
+$('#q').addEventListener('input', e => {
+  const q = norm(e.target.value).trim(); if (!q) { if (searching) show(current, true); return; }
+  searching = true; const toks = q.split(/\s+/);
+  const hits = L.map(l => { const txt = plainOf(l), hay = norm(l.t+' '+l.k+' '+txt); return toks.every(t => hay.includes(t)) ? { l, txt, score: toks.reduce((s,t)=>s+(norm(l.t).includes(t)?3:0)+(norm(l.k).includes(t)?2:0),0) } : null; }).filter(Boolean).sort((a,b)=>b.score-a.score);
+  const snip = (txt) => { const nt = norm(txt), p = Math.max(0, nt.indexOf(toks[0])); const s = txt.slice(Math.max(0,p-50), p+110); return esc(s).replace(new RegExp('('+toks.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','gi'),'<mark>$1</mark>'); };
+  $('#view').innerHTML = `<div class="results"><h1 style="font-size:1.6rem;margin-bottom:6px">${hits.length ? hits.length+' resultado(s)' : 'Nada encontrado'}</h1>
+    ${hits.length ? hits.map(h => `<button class="hit" data-go="${h.l.id}"><b>${esc(h.l.t)}</b><span>…${snip(h.txt)}…</span></button>`).join('') : '<p class="lead">Tente outra palavra, como “parcela”, “senha” ou “PDF”.</p>'}</div>`;
+  paintProgress();
+});
+$('#q').addEventListener('keydown', e => { if (e.key==='Enter') $('#view .hit')?.click(); if (e.key==='Escape') { e.target.value=''; e.target.blur(); if (searching) show(current,true); } });
+
+/* ===================== simulador do formulário ===================== */
+function initSim(){
+  const P = SIM[panel], st = { nat:P.nats[panel==='I'?0:1], cls:'', cat:'', pay:'', val:0, desc:'', n:1, date:new Date().toISOString().slice(0,10) };
+  const root = $('#sim'), opts = a => a.map(x=>`<option>${esc(x)}</option>`).join('');
+  function build(keep){
+    st.cls = st.nat.cls.includes(keep?.cls) ? keep.cls : st.nat.cls[0];
+    st.cat = st.nat.cat.includes(keep?.cat) ? keep.cat : st.nat.cat[0];
+    st.pay = st.nat.pay.includes(keep?.pay) ? keep.pay : st.nat.pay[0];
+    root.innerHTML = `<div class="form-grid">
+      <div class="field full"><label>Natureza</label><div class="seg">${P.nats.map(n=>`<button type="button" data-n="${esc(n.n)}" class="${n.s==='E'?'inc':'exp'}${n===st.nat?' on':''}">${n.s==='E'?'↑':'↓'} ${esc(n.n)}</button>`).join('')}</div></div>
+      <div class="field"><label>Data</label><input type="date" id="sDate" value="${st.date}"></div>
+      <div class="field"><label>Valor (R$)</label><input id="sVal" inputmode="numeric" placeholder="R$ 0,00" value="${st.val?brl(st.val):''}"></div>
+      <div class="field full"><label>Descrição</label><input id="sDesc" maxlength="60" placeholder="${panel==='I'?'Ex.: Aporte CDB 110% CDI':'Ex.: Notebook'}" value="${esc(st.desc)}"></div>
+      <div class="field" id="fCls"><label>Classificação</label><select id="sCls">${opts(st.nat.cls)}</select></div>
+      <div class="field" id="fParc"><label>${P.parcLbl}</label><input type="number" id="sN" min="1" max="120" value="${st.n}"></div>
+      <div class="field"><label>Categoria</label><select id="sCat">${opts(st.nat.cat)}</select></div>
+      <div class="field" id="fPay"><label>${P.payLbl}</label><select id="sPay">${opts(st.nat.pay)}</select></div></div>
+      <div class="out" id="sOut"></div>`;
+    $('#sCls').value = st.cls; $('#sCat').value = st.cat; $('#sPay').value = st.pay;
+    $('#fParc').style.display = P.parc(st.nat,st.cls) ? '' : 'none';
+    out();
+  }
+  function out(){
+    const par = P.parc(st.nat, st.cls), n = par ? Math.max(1, Math.min(120, st.n||1)) : 1, d0 = new Date(st.date+'T12:00'), v = st.val, e = st.nat.s==='E';
+    const lines = Array.from({length:n}, (_,i) => ({ d:toBR(n>1?addMonths(d0,i):d0), t:`${st.desc||'Descrição'}${n>1?` (${i+1}/${n})`:''}` }));
+    const eff = panel==='I'
+      ? { 'Aplicação':['Soma ao <b>Patrimônio</b>','Conta em <b>Aportes</b>'], 'Rendimento':['Soma ao <b>Patrimônio</b>','Conta em <b>Rendimentos</b> e eleva a <b>Rentabilidade</b>'], 'Resgate':['Subtrai do <b>Patrimônio</b>','Conta em <b>Resgates e taxas</b>'], 'Taxas e IR':['Subtrai do <b>Patrimônio</b>','Conta em <b>Resgates e taxas</b>'] }[st.nat.n]
+      : (e ? ['Soma ao <b>Saldo</b>','Conta em <b>Receitas</b>'] : ['Subtrai do <b>Saldo</b>','Conta em <b>Despesas</b> (e no gráfico por forma de pagamento)']);
+    $('#sOut').innerHTML = `<h3>O app vai gravar ${n} linha${n>1?'s':''} no painel ${panel==='I'?'Investimentos':'Fluxo de caixa'}</h3>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Data</th><th>Descrição</th><th>Natureza</th><th>Classificação · Categoria</th><th class="num">Valor</th></tr></thead><tbody>
+      ${lines.slice(0,6).map(l=>`<tr><td>${l.d}</td><td>${esc(l.t)}</td><td><span class="pill ${e?'inc':'exp'}">${esc(st.nat.n)}</span></td><td>${esc(st.cls)} · ${esc(st.cat)}</td><td class="num" style="color:var(--${e?'income':'expense'})">${e?'':'− '}${brl(v)}</td></tr>`).join('')}
+      ${n>6?`<tr><td colspan="5" style="color:var(--muted)">… e mais ${n-6} linha(s)</td></tr>`:''}</tbody></table></div>
+      <ul class="effects">${eff.map(x=>`<li>${x}</li>`).join('')}${n>1?`<li>Total das ${n} linhas: <b>${brl(v*n)}</b></li>`:''}
+      ${par?`<li>O campo <b>${P.parcLbl}</b> apareceu porque ${panel==='I'?'a natureza é <i>Aplicação</i>':'a despesa é <i>Fixa</i>'}.</li>`:''}</ul>`;
+  }
+  root.addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (!b) return; st.nat = P.nats.find(n=>n.n===b.dataset.n); build({cls:st.cls,cat:st.cat,pay:st.pay}); root.querySelector('#fPay').classList.add('flash'); });
+  root.addEventListener('input', e => {
+    const t = e.target.id;
+    if (t==='sVal') st.val = maskBRL(e.target); else if (t==='sDesc') st.desc = e.target.value; else if (t==='sDate') st.date = e.target.value || st.date;
+    else if (t==='sN') st.n = +e.target.value; else if (t==='sCls') { st.cls = e.target.value; $('#fParc').style.display = P.parc(st.nat,st.cls) ? '' : 'none'; if (P.parc(st.nat,st.cls)) $('#fParc').classList.add('flash'); }
+    else if (t==='sCat') st.cat = e.target.value; else if (t==='sPay') st.pay = e.target.value;
+    out();
+  });
+  build();
+}
+function initScen(){
+  const S = {
+    F:[['Recebi meu salário',['Fluxo de caixa','Receita','Fixa','Salário','Pix ou Transferência'],'Repita todo mês, ou use a data de cada recebimento.'],
+       ['Paguei o aluguel',['Fluxo de caixa','Despesa','Fixa','Moradia','Boleto'],'Em “Qt Parcelas” informe 12 para gerar o ano todo.'],
+       ['Compras no mercado',['Fluxo de caixa','Despesa','Variável','Supermercado','Cartão de Débito'],'Variável não gera parcelas.'],
+       ['Compra parcelada em 6x',['Fluxo de caixa','Despesa','Fixa · Qt Parcelas 6','Categoria do item','Cartão de Crédito'],'Gera 6 linhas mensais com o valor da parcela.'],
+       ['Trabalho extra (freela)',['Fluxo de caixa','Receita','Extra','Freelance / Serviços','Pix'],'Extra separa o que não é recorrente.'],
+       ['Mandei dinheiro para investir',['Fluxo de caixa','Despesa','Variável','Investimentos','Pix ou TED'],'Para acompanhar o investimento em si, registre também no painel Investimentos (como Aplicação).']],
+    I:[['Apliquei em um CDB',['Investimentos','Aplicação','Renda Fixa','CDB','Pix ou TED'],'Se o dinheiro saiu da conta corrente, registre também uma Despesa (categoria Investimentos) no Fluxo de caixa.'],
+       ['O CDB rendeu no mês',['Investimentos','Rendimento','Renda Fixa','CDB','Reinvestimento automático'],'Só Rendimento alimenta a rentabilidade.'],
+       ['Retirei parte do valor',['Investimentos','Resgate','Renda Fixa','CDB','Resgate para conta corrente'],'Para refletir na conta, registre uma Receita no Fluxo de caixa.'],
+       ['Foi descontado IR',['Investimentos','Taxas e IR','Renda Fixa','CDB','Descontado do resgate'],'Entra em “Resgates e taxas”.'],
+       ['Contribuição mensal de previdência',['Investimentos','Aplicação · Qt de aportes 12','Previdência','Previdência Privada (PGBL)','Débito Automático ou Desconto em folha'],'Gera uma linha por mês.'],
+       ['Recebi dividendos',['Investimentos','Rendimento (ou natureza sua “Dividendos”)','Renda Variável','Ações','Crédito em conta'],'Se preferir separar, cadastre a natureza Dividendos como Entrada.']]
+  }[panel], lbl = ['Painel','Natureza','Classificação','Categoria', panel==='I'?'Aporte/saque':'Forma'];
+  $('#scen').innerHTML = S.map((s,i)=>`<button class="chip" data-i="${i}" aria-pressed="false">${esc(s[0])}</button>`).join('');
+  const show1 = i => { $$('#scen .chip').forEach(c=>c.setAttribute('aria-pressed',String(+c.dataset.i===i)));
+    $('#scenOut').innerHTML = S[i][1].map((v,k)=>`<div><small>${lbl[k]}</small>${esc(v)}</div>`).join('') + `<div style="grid-column:1/-1"><small>Observação</small>${esc(S[i][2])}</div>`; };
+  $('#scen').onclick = e => { const c = e.target.closest('.chip'); if (c) show1(+c.dataset.i); }; show1(0);
+}
+function initParc(){
+  const P = SIM[panel], d = new Date(); d.setDate(31); d.setMonth(0); if (d.getMonth()!==0) d.setDate(28);
+  $('#pDate').value = `${new Date().getFullYear()}-01-31`; $('#pVal').value = brl(panel==='I'?400:450); $('#pQtL').textContent = P.parcLbl;
+  const upd = () => {
+    const v = (+($('#pVal').value.replace(/\D/g,''))||0)/100, n = Math.max(1, Math.min(120, +$('#pQt').value||1)), d0 = new Date($('#pDate').value+'T12:00');
+    if (isNaN(d0)) return;
+    $('#pOut').innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Linha</th><th>Data</th><th class="num">Valor</th><th></th></tr></thead><tbody>${Array.from({length:Math.min(n,12)},(_,i)=>{ const x = addMonths(d0,i); return `<tr><td>${i+1}/${n}</td><td>${toBR(x)}</td><td class="num">${brl(v)}</td><td style="color:var(--warn);font-size:.8rem">${x.getDate()!==d0.getDate()?`dia ${d0.getDate()} → ${x.getDate()}`:''}</td></tr>`; }).join('')}${n>12?`<tr><td colspan="4" style="color:var(--muted)">… e mais ${n-12} linha(s)</td></tr>`:''}</tbody></table></div><p style="margin-top:8px"><b>Total:</b> ${brl(v*n)} em ${n} linha(s)</p>`;
+  };
+  $('#pVal').addEventListener('input', e => { maskBRL(e.target); upd(); }); ['#pDate','#pQt'].forEach(s => $(s).addEventListener('input', upd)); upd();
+}
+function initFiltros(){
+  const D = panel==='I'
+    ? [['Aporte CDB','Aplicação','Renda Fixa',5000],['Aporte previdência','Aplicação','Previdência',400],['Rendimento CDB','Rendimento','Renda Fixa',62.4],['Resgate parcial','Resgate','Renda Fixa',-1000],['IR sobre resgate','Taxas e IR','Renda Fixa',-31.5],['Rendimento previdência','Rendimento','Previdência',18.2]]
+    : [['Salário','Receita','Fixa',6500],['Freelance site','Receita','Extra',1800],['Aluguel','Despesa','Fixa',-1900],['Supermercado','Despesa','Variável',-688.9],['Combustível','Despesa','Variável',-310],['Internet','Despesa','Fixa',-120]];
+  const mk = (title, idx) => {
+    const items = [...new Set(D.map(r=>r[idx]))], st = { all:true, sel:new Set() };
+    const el = document.createElement('div'); el.className = 'ms';
+    const lab = () => st.all ? 'Todas' : st.sel.size===0 ? 'Nenhuma' : st.sel.size===1 ? [...st.sel][0] : `${st.sel.size} selecionadas`;
+    const draw = () => { el.innerHTML = `<div class="head">${title}</div><label class="all"><input type="checkbox" data-all ${st.all?'checked':''}> Todas</label>${items.map(i=>`<label><input type="checkbox" value="${esc(i)}" ${st.all||st.sel.has(i)?'checked':''}> ${esc(i)}</label>`).join('')}<div class="val">Mostrando: ${esc(lab())}</div>`;
+      el.querySelector('[data-all]').indeterminate = !st.all && st.sel.size>0; };
+    el.addEventListener('change', e => {
+      if (e.target.matches('[data-all]')) { st.all = e.target.checked; st.sel.clear(); }
+      else { if (st.all) { st.all = false; st.sel = new Set(items); } e.target.checked ? st.sel.add(e.target.value) : st.sel.delete(e.target.value); if (st.sel.size===items.length) { st.all = true; st.sel.clear(); } }
+      draw(); upd(); });
+    draw(); st.el = el; st.pass = v => st.all || st.sel.has(v); return st;
+  };
+  const N = mk('Natureza',1), C = mk('Classificação',2); $('#fdemo').append(N.el, C.el);
+  function upd(){ const rows = D.filter(r => N.pass(r[1]) && C.pass(r[2]));
+    $('#fOut').innerHTML = rows.length ? rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td class="num" style="color:var(--${r[3]>0?'income':'expense'})">${brl(r[3])}</td></tr>`).join('') : '<tr><td colspan="4" style="color:var(--muted)">Nenhum item marcado: a tabela fica vazia.</td></tr>'; }
+  upd();
+}
+function initInvest(){
+  const get = k => (+($(`[data-k=${k}]`).value.replace(/\D/g,''))||0)/100;
+  const upd = () => { const o = get('open'), a = get('ap'), r = get('rd'), s = get('sa'), f = o+a+r-s, base = o+a, rent = base>0 ? r/base*100 : 0;
+    $('#iOut').innerHTML = `<div class="kpi"><span>Patrimônio final</span><b style="color:var(--${f>=0?'income':'expense'})">${brl(f)}</b></div><div class="kpi"><span>Rentabilidade</span><b style="color:var(--${rent>=0?'income':'expense'})">${rent.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</b></div><div class="kpi"><span>Base de cálculo</span><b>${brl(base)}</b></div>`; };
+  $$('[data-k]').forEach(i => i.addEventListener('input', e => { maskBRL(e.target); upd(); })); upd();
+}
+
+/* ===================== início ===================== */
+setPanel(panel, false);
+const first = (location.hash.replace(/^#\/?/,'') || Q.get('topico') || 'inicio');
+show(L.some(l=>l.id===first) ? first : 'inicio', true);
+</script>
+</body>
+</html>
