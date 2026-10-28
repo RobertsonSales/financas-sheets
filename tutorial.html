@@ -275,7 +275,7 @@ lesson('parcelas','Parcelas e aportes mensais','parcela parcelado repetir mensal
     <li>Cada linha vira um lançamento, com a descrição seguida de <span class="kbd">(1/4)</span>, <span class="kbd">(2/4)</span>... A <b>ocorrência</b> e a <b>previsão</b> avançam um mês por linha, cada uma a partir da sua data inicial.</li>
     <li>Se o dia não existe no mês (31 em fevereiro), o app usa o último dia daquele mês, como mostra o simulador.</li>
     <li><b>Editar</b> uma linha altera só aquela linha. A quantidade de parcelas fica travada na edição.</li>
-    <li><b>Excluir</b> uma linha parcelada pergunta: <span class="ui">OK</span> apaga todas as parcelas, <span class="ui">Cancelar</span> apaga só a escolhida.</li>
+    <li><b>Excluir</b> uma parcela abre uma janela com três opções: <span class="ui">Só esta parcela</span>, <span class="ui">Todas as parcelas</span> ou <span class="ui">Cancelar</span>. Ao excluir só uma, o app pergunta se você quer <b>reordenar</b> as demais: elas sobem para os lugares vagos, com novo número de ordem, ocorrência e previsão (há uma prévia antes de confirmar). Se escolher <span class="ui">Manter como estão</span>, nada muda nas outras parcelas e você pode ajustar cada uma pela edição, quando quiser.</li>
     <li>Para ver o que ainda vai vencer, use o atalho <span class="ui">Futuros (parcelas)</span>.</li>
   </ul>`,
   () => initParc());
@@ -358,6 +358,7 @@ lesson('ajuda','Dúvidas e solução de problemas','ajuda erro problema faq dúv
       ['Qual a diferença entre ocorrência e previsão?','Ocorrência é a data em que o lançamento aconteceu; previsão é a data em que era esperado. Começam iguais. O seletor <i>Período por</i> escolhe qual delas vale nos filtros, indicadores, gráficos e relatórios. Lançamentos antigos, sem previsão, assumem a própria ocorrência.'],
       ['Saldo inicial aparece R$ 0,00','Ele só é calculado quando o campo <i>De</i> está preenchido. Sem data inicial o app parte de zero.'],
       ['Meu lançamento sumiu da lista','Veja os filtros: a lista só mostra o painel atual e o que combina com todos os filtros. <span class="ui">Limpar filtros</span> volta ao total.'],
+      ['Excluí uma parcela e a numeração ficou com um “buraco”','Foi a opção “Manter como estão”. Edite a descrição e as datas da parcela quando quiser, ou exclua a próxima parcela e escolha <i>Reordenar</i>, que renumera tudo de 1 ao total restante.'],
       ['Posso apagar uma categoria já usada?','Pode. Os lançamentos continuam com o nome; ele só deixa de ser sugerido para novos.'],
       ['Funciona sem internet?','O app instalado abre offline, mas os dados vêm da planilha e exigem conexão para carregar e salvar.'],
       ['Como instalo no celular?','Quando o navegador permitir, aparece o botão ⬇️ no cabeçalho. Também é possível usar “Adicionar à tela inicial” do navegador.']
