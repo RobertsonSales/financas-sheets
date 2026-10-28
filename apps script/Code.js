@@ -8,12 +8,22 @@
  *                   que confirme o código recebido pode se cadastrar.
  *   ADMIN_EMAIL     (opcional) dono dos lançamentos antigos, usado pela função atribuirLancamentosAntigos.
  *
+ * NOVIDADES desta versão:
+ *   - Coluna Previsao (a coluna Data passa a ser a OCORRÊNCIA). Linhas antigas sem previsão assumem a própria Data.
+ *   - Colunas Categoria, Modulo (F = fluxo de caixa, I = investimentos) e Natureza nos lançamentos.
+ *   - Aba "Config": cadastros personalizados (naturezas, classificações, categorias, formas de pagto.) por usuário.
+ *   Lançamentos antigos (sem Modulo) continuam funcionando: são tratados como fluxo de caixa (F).
+ *
  * Usuários ficam na aba "Usuarios" (senha guardada só como hash + salt).
  * Cada lançamento grava o e-mail do dono na coluna "Usuario"; cada usuário só vê/edita/exclui os seus.
  */
 const SHEET_NAME = 'Lancamentos';
 const USERS_SHEET = 'Usuarios';
-const HEADERS = ['Data', 'Descrição', 'Valor', 'Tipo Despesa', 'Qt Parcelas', 'Forma Pagto', 'Tipo Receita', 'ID', 'Usuario'];
+const HEADERS = ['Data', 'Descrição', 'Valor', 'Tipo Despesa', 'Qt Parcelas', 'Forma Pagto', 'Tipo Receita', 'ID', 'Usuario', 'Categoria', 'Modulo', 'Natureza', 'Previsao'];
+const PREV_COL = 13; // Previsão (DD/MM/AAAA). Coluna Data = Ocorrência
+const CFG_SHEET = 'Config';
+const CFG_HEADERS = ['Email', 'Chave', 'Valor', 'Atualizado em'];
+const CFG_MAX = 45000; // limite de caracteres por célula do Sheets é 50.000
 const USER_HEADERS = ['Email', 'Nome', 'Hash', 'Salt', 'Epoch', 'Criado em', 'Ativo'];
 const NCOL = HEADERS.length;
 const U_COL = 9; // coluna "Usuario"
@@ -36,8 +46,14 @@ function getSheet_() {
     sh.getRange('A:A').setNumberFormat('@');        // Data como texto DD/MM/AAAA
     sh.getRange('C:C').setNumberFormat('#,##0.00');
   }
-  if (sh.getRange(1, U_COL).getValue() !== 'Usuario') {
-    sh.getRange(1, U_COL).setValue('Usuario').setFontWeight('bold').setBackground('#0f3d3e').setFontColor('#ffffff');
+  // Planilhas antigas: garante que existam as colunas novas (Usuario, Categoria, Modulo, Natureza)
+  if (sh.getMaxColumns() < NCOL) sh.insertColumnsAfter(sh.getMaxColumns(), NCOL - sh.getMaxColumns());
+  const head = sh.getRange(1, 1, 1, NCOL).getValues()[0];
+  for (let c = U_COL; c <= NCOL; c++) {
+    if (head[c - 1] !== HEADERS[c - 1]) {
+      sh.getRange(1, c).setValue(HEADERS[c - 1]).setFontWeight('bold').setBackground('#0f3d3e').setFontColor('#ffffff');
+      if (c === PREV_COL) sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');   // datas como texto, como a coluna A
+    }
   }
   return sh;
 }
@@ -64,7 +80,9 @@ function list_(email) {
   return values.filter(r => r[7] !== '' && r[7] != null && normEmail_(r[8]) === email).map(r => ({
     data: fmtDate_(r[0]), descricao: String(r[1] || ''), valor: Number(r[2]) || 0,
     tipoDespesa: String(r[3] || ''), parcelas: r[4] === '' ? '' : Number(r[4]),
-    formaPagto: String(r[5] || ''), tipoReceita: String(r[6] || ''), id: String(r[7])
+    formaPagto: String(r[5] || ''), tipoReceita: String(r[6] || ''), id: String(r[7]),
+    categoria: String(r[9] || ''), modulo: String(r[10]) === 'I' ? 'I' : 'F', natureza: String(r[11] || ''),
+    previsao: r[12] === '' || r[12] == null ? fmtDate_(r[0]) : fmtDate_(r[12])   // sem previsão = igual à ocorrência
   }));
 }
 
@@ -72,7 +90,39 @@ function list_(email) {
 function toRow_(o, email) {
   return [String(o.data || ''), o.descricao || '', Number(o.valor) || 0, o.tipoDespesa || '',
     o.parcelas === '' || o.parcelas == null ? '' : Number(o.parcelas), o.formaPagto || '', o.tipoReceita || '',
-    o.id || Utilities.getUuid(), email];
+    o.id || Utilities.getUuid(), email,
+    String(o.categoria || '').slice(0, 80), o.modulo === 'I' ? 'I' : 'F', String(o.natureza || '').slice(0, 80), String(o.previsao || o.data || '')];
+}
+
+/* ===================== CADASTROS PERSONALIZADOS (por usuário) ===================== */
+function cfgSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(CFG_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(CFG_SHEET);
+    sh.getRange(1, 1, 1, CFG_HEADERS.length).setValues([CFG_HEADERS])
+      .setFontWeight('bold').setBackground('#0f3d3e').setFontColor('#ffffff');
+    sh.setFrozenRows(1);
+    sh.getRange('A:D').setNumberFormat('@');
+  }
+  return sh;
+}
+function cfgRow_(sh, email, key) {
+  if (sh.getLastRow() < 2) return -1;
+  const v = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues();
+  for (let i = 0; i < v.length; i++) if (normEmail_(v[i][0]) === email && String(v[i][1]) === key) return i + 2;
+  return -1;
+}
+function cfgGet_(email) {
+  const sh = cfgSheet_(), r = cfgRow_(sh, email, 'cadastros');
+  if (r < 0) return null;
+  try { return JSON.parse(String(sh.getRange(r, 3).getValue() || 'null')); } catch (e) { return null; }
+}
+function cfgSet_(email, cfg) {
+  const sh = cfgSheet_(), r = cfgRow_(sh, email, 'cadastros');
+  const row = [email, 'cadastros', JSON.stringify(cfg), Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm')];
+  if (r < 0) { const n = sh.getLastRow() + 1; sh.getRange(n, 1, 1, 4).setNumberFormat('@').setValues([row]); }
+  else sh.getRange(r, 1, 1, 4).setValues([row]);
 }
 
 // Só encontra a linha se ela pertencer ao usuário logado.
@@ -298,6 +348,14 @@ function doPost(e) {
     switch (action) {
       case 'list':
         return json_({ ok: true, data: list_(me) });
+      case 'cfg_get':
+        return json_({ ok: true, cfg: cfgGet_(me) });
+      case 'cfg_set': {
+        if (!body.cfg || typeof body.cfg !== 'object') return err_('Cadastros inválidos');
+        if (JSON.stringify(body.cfg).length > CFG_MAX) return err_('Cadastros grandes demais. Remova itens que não usa.');
+        cfgSet_(me, body.cfg);
+        return json_({ ok: true });
+      }
       case 'create': {
         const rows = (body.rows || []).map(o => toRow_(o, me));
         if (!rows.length) return err_('Nada a inserir');
@@ -310,6 +368,7 @@ function doPost(e) {
       case 'update': {
         const r = findRow_(sh, body.row && body.row.id, me);
         if (r < 0) return err_('Registro não encontrado');
+        sh.getRange(r, PREV_COL).setNumberFormat('@');
         sh.getRange(r, 1, 1, NCOL).setValues([toRow_(body.row, me)]);
         return json_({ ok: true });
       }
