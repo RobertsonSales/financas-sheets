@@ -185,6 +185,7 @@ html[data-theme="dark"] .modtab[data-m="I"]{--tab:#7c97ff}
 .cad-note{font-size:.85rem;color:var(--muted);margin:6px 0 2px;line-height:1.45}
 #quickModal{z-index:55}
 a.btn{text-decoration:none;color:var(--text);display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.chg{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
 .dmode{display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px}
 .dmode button{flex:1;border:none;background:none;padding:8px 6px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.82rem;white-space:nowrap}
 .dmode button[aria-pressed="true"]{background:var(--grad);color:var(--on-primary)}
@@ -337,6 +338,15 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
     <div class="chips" id="cadTabs" role="tablist" style="margin:14px 0 4px"></div>
     <p class="cad-note" id="cadNote"></p>
     <div id="cadBody"></div>
+  </div>
+</div>
+
+<!-- EXCLUIR PARCELA -->
+<div class="modal hidden" id="delModal">
+  <div class="card" style="width:min(680px,100%)">
+    <h3 id="dlTitle">Excluir parcela</h3>
+    <div id="dlBody"></div>
+    <div class="modal-foot" id="dlFoot" style="flex-wrap:wrap"></div>
   </div>
 </div>
 
@@ -498,6 +508,7 @@ function demoApi(method, b){
   if (method==='POST'){
     if (b.action==='create') d.push(...b.rows.map(r=>({...r,id:uid()})));
     if (b.action==='update') d = d.map(r=>r.id===b.row.id?b.row:r);
+    if (b.action==='update_many') d = d.map(r=>b.rows.find(x=>x.id===r.id)||r);
     if (b.action==='delete') d = d.filter(r=>!b.ids.includes(r.id));
   }
   localStorage.setItem('fp-demo', JSON.stringify(d));
@@ -1097,16 +1108,73 @@ $('#form').onsubmit = async e => {
     $('#formModal').classList.add('hidden'); loading(false); await load();
   } catch (err) { loading(false); toast('Erro: '+err.message); }
 };
-$('#tbody').onclick = async e => {
+/* ---- Exclusão (com opção de excluir só uma parcela e reordenar as demais) ---- */
+const parcelaInfo = r => { const m = String(r.descricao||'').match(/^(.*) \((\d+)\/(\d+)\)$/); return m ? { base:m[1], i:+m[2], n:+m[3] } : null; };
+function groupOf(r){   // parcelas irmãs: mesmo painel, descrição-base, total e natureza; em ordem de parcela
+  const pi = parcelaInfo(r); if (!pi) return null;
+  return data().filter(x => { const q = parcelaInfo(x); return q && q.base===pi.base && q.n===pi.n && natName(x)===natName(r); })
+    .sort((a,b) => parcelaInfo(a).i - parcelaInfo(b).i);
+}
+// Após excluir uma parcela, as seguintes "sobem" para os lugares vagos: cada parcela restante assume a ocorrência/previsão
+// do lugar correspondente na série original e a numeração passa a ser 1..N (N = parcelas restantes).
+function planReorder(g, delId){
+  const slots = g.map(x => ({ data:x.data, previsao:prevOf(x) })), rest = g.filter(x => x.id!==delId), base = parcelaInfo(g[0]).base;
+  return rest.map((x,k) => { const row = { ...x, data:slots[k].data, previsao:slots[k].previsao, descricao:`${base} (${k+1}/${rest.length})`, parcelas:rest.length };
+    return { old:x, row, changed: row.data!==x.data || row.previsao!==prevOf(x) || row.descricao!==x.descricao }; });
+}
+async function updateMany(list){
+  try { await api('POST', { action:'update_many', rows:list }); }
+  catch (e) { if (!/desconhecida/i.test(e.message)) throw e; for (const row of list) await api('POST', { action:'update', row }); }   // backend antigo
+}
+async function runDelete(ids, updates, msg){
+  $('#delModal').classList.add('hidden'); loading(true); let warn = '';
+  try { await api('POST', { action:'delete', ids }); } catch (err) { loading(false); return toast('Erro: '+err.message); }
+  try { if (updates.length) await updateMany(updates); } catch (err) { warn = ' Não foi possível reordenar as demais parcelas: '+err.message; }
+  loading(false); toast(msg + warn); await load();
+}
+let delCtx = null;
+const dlFoot = html => { $('#dlFoot').innerHTML = html; };
+function openDel(r){
+  const g = groupOf(r);
+  if (!g || g.length < 2) {
+    if (!confirm(`Excluir "${r.descricao}"?\nOcorrência: ${r.data} · Previsão: ${prevOf(r)}`)) return;
+    return runDelete([r.id], [], '1 registro excluído.');
+  }
+  delCtx = { r, g }; delStep1(); $('#delModal').classList.remove('hidden');
+}
+function delStep1(){
+  const { r, g } = delCtx;
+  $('#dlTitle').textContent = 'Excluir parcela';
+  $('#dlBody').innerHTML = `<p><b>${esc(r.descricao)}</b><br>Ocorrência ${esc(r.data)} · Previsão ${esc(prevOf(r))}</p>
+    <p style="margin-top:8px">Este lançamento faz parte de um parcelamento com <b>${g.length}</b> parcelas lançadas. O que deseja excluir?</p>`;
+  dlFoot('<button type="button" class="btn" data-act="cancel">Cancelar</button><button type="button" class="btn btn-danger" data-act="all">Todas as ' + g.length + ' parcelas</button><button type="button" class="btn btn-primary" data-act="one">Só esta parcela</button>');
+}
+function delStep2(){
+  const { r, g } = delCtx, plan = planReorder(g, r.id), ch = plan.filter(p => p.changed).length;
+  const cell = (o, n) => o===n ? esc(o) : `${esc(o)} → <span class="chg">${esc(n)}</span>`;
+  $('#dlTitle').textContent = 'Reordenar as parcelas restantes?';
+  $('#dlBody').innerHTML = `<p>Somente <b>${esc(r.descricao)}</b> será excluída. As parcelas seguintes podem ocupar o lugar dela, com novo número de ordem, ocorrência e previsão. Se preferir, mantenha como estão: você pode alterar qualquer parcela depois, pela edição.</p>
+    <div style="margin-top:10px;display:grid;gap:6px">${plan.map(p => {
+      const a = p.old, b = p.row; return `<div style="border:1px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--surface-2)"><b>${cell(a.descricao, b.descricao)}</b><div class="hint" style="margin-top:2px">Ocorrência ${cell(a.data, b.data)} · Previsão ${cell(prevOf(a), b.previsao)}</div></div>`; }).join('')}</div>`;
+  dlFoot('<button type="button" class="btn" data-act="back">Voltar</button><button type="button" class="btn" data-act="keep">Manter como estão</button><button type="button" class="btn btn-primary" data-act="reorder">Reordenar parcelas</button>');
+  delCtx.plan = plan; delCtx.ch = ch;
+}
+$('#delModal').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || !delCtx) return;
+  const { r, g } = delCtx;
+  switch (b.dataset.act) {
+    case 'cancel': $('#delModal').classList.add('hidden'); break;
+    case 'all': runDelete(g.map(x => x.id), [], `${g.length} parcelas excluídas.`); break;
+    case 'one': delStep2(); break;
+    case 'back': delStep1(); break;
+    case 'keep': runDelete([r.id], [], 'Parcela excluída. As demais foram mantidas como estavam.'); break;
+    case 'reorder': { const up = delCtx.plan.filter(p => p.changed).map(p => p.row); runDelete([r.id], up, `Parcela excluída e ${up.length} parcela(s) reordenada(s).`); break; }
+  }
+});
+$('#tbody').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.e) return openForm(rows.find(r=>r.id===b.dataset.e));
-  const r = rows.find(x=>x.id===b.dataset.d); if (!r) return;
-  const m = r.descricao.match(/^(.*) \(\d+\/(\d+)\)$/);
-  let ids = [r.id];
-  if (m && confirm(`"${r.descricao}" faz parte de um parcelamento.\nOK = excluir TODAS as parcelas · Cancelar = só esta`)) ids = data().filter(x=>x.descricao.startsWith(m[1]+' (') && x.descricao.endsWith(`/${m[2]})`)).map(x=>x.id);
-  else if (!m && !confirm(`Excluir "${r.descricao}"?\nOcorrência: ${r.data} · Previsão: ${prevOf(r)}`)) return;
-  loading(true);
-  try { await api('POST',{action:'delete',ids}); loading(false); toast(`${ids.length} registro(s) excluído(s).`); await load(); } catch(err){ loading(false); toast('Erro: '+err.message); }
+  const r = rows.find(x=>x.id===b.dataset.d); if (r) openDel(r);
 };
 
 /* ===================== EXPORT PDF ===================== */
