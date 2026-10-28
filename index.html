@@ -184,6 +184,12 @@ html[data-theme="dark"] .modtab[data-m="I"]{--tab:#7c97ff}
 .grp h4{font-size:.85rem;color:var(--muted);margin-bottom:7px}
 .cad-note{font-size:.85rem;color:var(--muted);margin:6px 0 2px;line-height:1.45}
 #quickModal{z-index:55}
+a.btn{text-decoration:none;color:var(--text);display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.dmode{display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px}
+.dmode button{flex:1;border:none;background:none;padding:8px 6px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.82rem;white-space:nowrap}
+.dmode button[aria-pressed="true"]{background:var(--grad);color:var(--on-primary)}
+td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
+.linkbtn{border:none;background:none;color:var(--primary);font-weight:700;cursor:pointer;padding:0;text-decoration:underline;font-size:inherit}
 #quickModal .card{width:min(440px,100%)}
 #cadModal .card{width:min(820px,100%)}
 @media (max-width:860px){.charts{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.hdr-actions .lbl{display:none}.float-ico{display:none}}
@@ -258,6 +264,7 @@ html[data-theme="dark"] .modtab[data-m="I"]{--tab:#7c97ff}
   </div>
   <div class="card filters">
     <div class="field"><label>Buscar</label><input id="fText" placeholder="Descrição, forma..."></div>
+    <div class="field"><label>Período por</label><div class="dmode" id="dmode" role="group" aria-label="Período por ocorrência ou previsão"><button type="button" data-dm="data" aria-pressed="true">Ocorrência</button><button type="button" data-dm="previsao" aria-pressed="false">Previsão</button></div></div>
     <div class="field"><label>De</label><input type="date" id="fFrom"></div>
     <div class="field"><label>Até</label><input type="date" id="fTo"></div>
     <div class="field"><label>Natureza</label><div class="ms" id="fNat"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
@@ -276,7 +283,7 @@ html[data-theme="dark"] .modtab[data-m="I"]{--tab:#7c97ff}
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th data-s="data">Data ↕</th><th data-s="descricao">Descrição ↕</th><th data-s="categoria">Categoria ↕</th><th data-s="nat">Natureza ↕</th>
+          <th data-s="data">Ocorrência ↕</th><th data-s="previsao">Previsão ↕</th><th data-s="descricao">Descrição ↕</th><th data-s="categoria">Categoria ↕</th><th data-s="nat">Natureza ↕</th>
           <th data-s="valor" class="num">Valor ↕</th><th data-s="classe">Classificação ↕</th><th data-s="parcelas">Qt Parc.</th>
           <th data-s="formaPagto" id="thPay">Forma Pagto ↕</th><th></th>
         </tr></thead>
@@ -293,8 +300,9 @@ html[data-theme="dark"] .modtab[data-m="I"]{--tab:#7c97ff}
     <h3 id="formTitle">Novo lançamento</h3>
     <div class="form-grid">
       <div class="full seg" id="natSeg" role="group" aria-label="Natureza"></div>
-      <div class="field"><label>Data</label><input type="date" id="iData" required></div>
-      <div class="field"><label>Valor (R$)</label><input id="iValor" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" required></div>
+      <div class="field"><label>Ocorrência</label><input type="date" id="iData" required></div>
+      <div class="field"><label>Previsão</label><input type="date" id="iPrev" required><div class="hint" id="prevHint"></div></div>
+      <div class="field full"><label>Valor (R$)</label><input id="iValor" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" required></div>
       <div class="field full"><label>Descrição</label><input id="iDesc" maxlength="120" required></div>
       <div class="field"><label>Classificação</label><div class="fld-row"><select id="iCls" required></select><button type="button" class="btn" data-add="cls" title="Cadastrar nova classificação" aria-label="Cadastrar nova classificação">＋</button></div></div>
       <div class="field hidden" id="parcWrap"><label id="parcLbl">Qt Parcelas</label><input type="number" id="iParc" min="1" max="120" value="1"><div class="hint" id="parcHint"></div></div>
@@ -463,12 +471,14 @@ function demoSeed(){
     [m(0,10),'Aluguel',1900,'Fixa',1,'Boleto',''],[m(-2,14),'Supermercado',742.3,'Variável','','Cartão de Débito',''],[m(-1,12),'Supermercado',688.9,'Variável','','Cartão de Débito',''],
     [m(0,3),'Combustível',310,'Variável','','Cartão de Crédito',''],[m(-1,22),'Restaurante',185.5,'Variável','','Pix',''],
   ];
-  const rs = s.map(a=>({data:a[0],descricao:a[1],valor:a[2],tipoDespesa:a[3],parcelas:a[4],formaPagto:a[5],tipoReceita:a[6],id:uid()}));
-  for (let i=0;i<6;i++) rs.push({data:toBR(addMonths(new Date(t.getFullYear(),t.getMonth()-1,15),i)),descricao:`Notebook (${i+1}/6)`,valor:450,tipoDespesa:'Fixa',parcelas:6,formaPagto:'Cartão de Crédito',tipoReceita:'',id:uid()});
+  const rs = s.map(a=>({data:a[0],previsao:a[0],descricao:a[1],valor:a[2],tipoDespesa:a[3],parcelas:a[4],formaPagto:a[5],tipoReceita:a[6],id:uid()}));
+  rs[3].previsao = m(0,2);        // freelance: ocorreu no mês passado, estava previsto para este mês
+  rs[9].previsao = m(-1,28);      // combustível: ocorreu neste mês, estava previsto para o mês passado
+  for (let i=0;i<6;i++) rs.push({data:toBR(addMonths(new Date(t.getFullYear(),t.getMonth()-1,15),i)),previsao:toBR(addMonths(new Date(t.getFullYear(),t.getMonth()-1,15),i)),descricao:`Notebook (${i+1}/6)`,valor:450,tipoDespesa:'Fixa',parcelas:6,formaPagto:'Cartão de Crédito',tipoReceita:'',id:uid()});
   // Investimentos de exemplo (módulo I)
   const inv = (data,descricao,valor,natureza,cls,categoria,formaPagto,parcelas='') => {
     const e = natureza==='Aplicação' || natureza==='Rendimento';
-    return { data, descricao, valor, tipoDespesa:e?'':cls, tipoReceita:e?cls:'', parcelas, formaPagto, categoria, natureza, modulo:'I', id:uid() };
+    return { data, previsao:data, descricao, valor, tipoDespesa:e?'':cls, tipoReceita:e?cls:'', parcelas, formaPagto, categoria, natureza, modulo:'I', id:uid() };
   };
   rs.push(inv(m(-2,8),'Aporte CDB 110% CDI',5000,'Aplicação','Renda Fixa','CDB','TED'),
           inv(m(-1,8),'Tesouro Selic 2029',2500,'Aplicação','Reserva de Emergência','Tesouro Direto','Pix'),
@@ -500,7 +510,7 @@ function offerDemo(e){
   return false;
 }
 // Lançamentos antigos não têm módulo/natureza: viram "Fluxo de caixa" (F) com Receita/Despesa.
-const normRow = r => ({ ...r, modulo: r.modulo==='I' ? 'I' : 'F', natureza: r.natureza || (r.tipoReceita ? 'Receita' : 'Despesa'), categoria: r.categoria || '' });
+const normRow = r => ({ ...r, previsao: r.previsao || r.data, modulo: r.modulo==='I' ? 'I' : 'F', natureza: r.natureza || (r.tipoReceita ? 'Receita' : 'Despesa'), categoria: r.categoria || '' });
 async function load(){
   try { await ensureAuth(); }
   catch (e) { loading(false); if (e.cancel) return false; if (offerDemo(e)) return load(); return false; }
@@ -693,6 +703,19 @@ const MODCFG = {
   I:{ tab:'Investimentos', title:'Painel de investimentos', c1:'Evolução do patrimônio', c2:'Patrimônio por categoria', pdf:'Relatório de Investimentos', parc:'Qt de aportes mensais', defNat:'Aplicação', theme:'#2d4a9a', file:'investimentos' }
 };
 const data = () => rows.filter(r => r.modulo === MOD);
+// Ocorrência = quando aconteceu (coluna Data). Previsão = quando se espera/espera-se que aconteça. O seletor "Período por" escolhe qual das duas
+// comanda filtros de período, saldo inicial, gráficos, ordenação padrão e relatórios.
+let DM = localStorage.getItem('fp-dm') === 'previsao' ? 'previsao' : 'data';
+let prevLinked = true; sortKey = DM;
+const prevOf = r => r.previsao || r.data;
+const dateOf = r => parseBR(DM === 'previsao' ? prevOf(r) : r.data);
+const dmName = () => DM === 'previsao' ? 'previsão' : 'ocorrência';
+function paintDM(){
+  document.querySelectorAll('#dmode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dm===DM)));
+  $('#chT1').textContent = MODCFG[MOD].c1 + (DM==='previsao' ? ' (por previsão)' : '');
+}
+$('#dmode').onclick = e => { const b = e.target.closest('[data-dm]'); if (!b || b.dataset.dm===DM) return;
+  DM = b.dataset.dm; localStorage.setItem('fp-dm', DM); if (sortKey==='data' || sortKey==='previsao') sortKey = DM; page = 1; paintDM(); render(); };
 const natName = r => r.natureza || (r.tipoReceita ? 'Receita' : 'Despesa');
 // Em investimentos: R = aporte (entrada), Y = rendimento (entrada), D = resgate/taxa (saída). No fluxo de caixa só R e D.
 const bucket = r => natOf(r)==='D' ? 'D' : (MOD==='I' && natName(r)==='Rendimento' ? 'Y' : 'R');
@@ -702,7 +725,8 @@ function paintMod(){
   const c = MODCFG[MOD];
   document.documentElement.dataset.mod = MOD;
   document.querySelector('meta[name="theme-color"]').content = c.theme;
-  $('#dTitle').textContent = c.title; $('#chT1').textContent = c.c1; $('#chT2').textContent = c.c2;
+  $('#dTitle').textContent = c.title; $('#chT1').textContent = c.c1 + (DM==='previsao' ? ' (por previsão)' : ''); $('#chT2').textContent = c.c2;
+  paintDM();
   $('#lblFPay').textContent = MOD==='I' ? 'Aporte / saque' : 'Forma pagto'; $('#thPay').textContent = payLbl() + ' ↕';
   $('#lblIPay').textContent = MOD==='I' ? 'Forma de aporte ou saque' : 'Forma de pagto./receb.';
   document.querySelectorAll('.modtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.m===MOD)));
@@ -883,7 +907,7 @@ function filtered(mode){   // mode='before' => lançamentos anteriores à data i
   const nSel = MS.fNat, cSel = MS.fCls, pSel = MS.fPay, kSel = MS.fCat;
   const fd = from ? new Date(from+'T00:00') : null, td = to ? new Date(to+'T23:59') : null;
   return data().filter(r => {
-    const d = parseBR(r.data);
+    const d = dateOf(r);
     if (mode==='before'){ if (!fd || d >= fd) return false; } else { if (fd && d < fd) return false; if (td && d > td) return false; }
     if (!nSel.pass(natName(r))) return false; if (!cSel.pass(clsOf(r))) return false;
     if (!pSel.pass(r.formaPagto)) return false;
@@ -912,15 +936,16 @@ function totals(list){ const inc = list.filter(r=>natOf(r)==='R').reduce((s,r)=>
 function balances(list, t){
   // Saldo inicial = acumulado antes da data "De" (mesmos demais filtros); sem "De", parte de zero. Final = inicial + período.
   const fromISO = $('#fFrom').value, open = fromISO ? totals(filtered('before')).bal : 0;
-  const last = list.reduce((m,r)=>{ const d=parseBR(r.data); return !m||d>m?d:m; }, null);
+  const last = list.reduce((m,r)=>{ const d=dateOf(r); return !m||d>m?d:m; }, null);
   return { fromISO, open, close: open + t.bal, last };
 }
 const fmtPct = v => v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '%';
 // Indicadores de cada painel. sg = colore pelo sinal; cls = inc/exp; bar = barra proporcional.
 function metrics(list){
   const t = totals(list), b = balances(list, t);
-  const openHint = b.fromISO ? `Acumulado antes de ${isoToBR(b.fromISO)}` : 'Sem data inicial: parte de zero';
-  const closeHint = b.last ? `Posição em ${toBR(b.last)}` : 'Sem lançamentos no período';
+  const by = DM==='previsao' ? ' (previsão)' : '';
+  const openHint = b.fromISO ? `Acumulado antes de ${isoToBR(b.fromISO)}${by}` : 'Sem data inicial: parte de zero';
+  const closeHint = b.last ? `Posição em ${toBR(b.last)}${by}` : 'Sem lançamentos no período';
   const cnt = { l:'Lançamentos', v:list.length, count:true, hint:`de ${data().length} no total` };
   if (MOD==='I') {
     const ap = sumBy(list, r=>bucket(r)==='R'), rd = sumBy(list, r=>bucket(r)==='Y'), base = b.open + ap;
@@ -944,7 +969,7 @@ function metrics(list){
 const fmtK = i => i.count ? String(i.v) : i.pct ? fmtPct(i.v) : brl(i.v);
 function sorted(list){
   return [...list].sort((a,b)=>{ let x=a[sortKey], y=b[sortKey];
-    if (sortKey==='data'){ x=parseBR(x); y=parseBR(y); } else if (sortKey==='valor'||sortKey==='parcelas'){ x=+x||0; y=+y||0; }
+    if (sortKey==='data' || sortKey==='previsao'){ x=parseBR(a[sortKey]||a.data); y=parseBR(b[sortKey]||b.data); } else if (sortKey==='valor'||sortKey==='parcelas'){ x=+x||0; y=+y||0; }
     else if (sortKey==='nat'){ x=natName(a).toLowerCase(); y=natName(b).toLowerCase(); } else if (sortKey==='classe'){ x=clsOf(a).toLowerCase(); y=clsOf(b).toLowerCase(); }
     else { x=String(x??'').toLowerCase(); y=String(y??'').toLowerCase(); }
     return (x>y?1:x<y?-1:0)*sortDir; });
@@ -958,11 +983,11 @@ function render(){
   const pages = Math.max(1, Math.ceil(list.length/PAGE)); page = Math.min(page, pages);
   const slice = list.slice((page-1)*PAGE, page*PAGE);
   $('#tbody').innerHTML = slice.length ? slice.map(r=>{ const n=natOf(r); return `<tr>
-    <td>${esc(r.data)}</td><td>${esc(r.descricao)}</td><td>${esc(r.categoria||'—')}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${esc(natName(r))}</span></td>
+    <td>${esc(r.data)}</td><td class="${prevOf(r)!==r.data?'diff':''}"${prevOf(r)!==r.data?' title="Previsão diferente da ocorrência"':''}>${esc(prevOf(r))}</td><td>${esc(r.descricao)}</td><td>${esc(r.categoria||'—')}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${esc(natName(r))}</span></td>
     <td class="num" style="color:var(--${n==='R'?'income':'expense'})">${n==='R'?'':'− '}${brl(+r.valor)}</td>
     <td>${esc(clsOf(r))}</td><td>${esc(r.parcelas)}</td><td>${esc(r.formaPagto)}</td>
     <td style="white-space:nowrap"><button class="btn btn-sm" data-e="${esc(r.id)}" title="Editar">✏️</button> <button class="btn btn-sm btn-danger" data-d="${esc(r.id)}" title="Excluir">🗑</button></td></tr>`; }).join('')
-    : `<tr><td colspan="9" class="empty">Nenhum lançamento encontrado para os filtros atuais.</td></tr>`;
+    : `<tr><td colspan="10" class="empty">Nenhum lançamento encontrado para os filtros atuais.</td></tr>`;
   $('#pgInfo').textContent = `Página ${page} de ${pages} · ${list.length} registros`;
   $('#pgPrev').disabled = page<=1; $('#pgNext').disabled = page>=pages;
   renderCharts(list);
@@ -971,7 +996,7 @@ $('#pgPrev').onclick=()=>{page--;render();}; $('#pgNext').onclick=()=>{page++;re
 
 function monthAgg(list){
   const mo = {};
-  list.forEach(r=>{ const d=parseBR(r.data), k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; (mo[k] ??= {R:0,Y:0,D:0})[bucket(r)] += +r.valor; });
+  list.forEach(r=>{ const d=dateOf(r), k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; (mo[k] ??= {R:0,Y:0,D:0})[bucket(r)] += +r.valor; });
   return mo;
 }
 const PALETTE = ['#0f5c56','#e8a33d','#d6493f','#2bb3a3','#6b7fd7','#8c6d4f','#c45ab3','#7aa33a','#3d8bd9','#b5651d','#5e548e','#2a9d8f'];
@@ -1035,9 +1060,14 @@ function updParc(){
 }
 $('#iValor').addEventListener('input',()=>{ maskBRL($('#iValor')); updParc(); });
 ['#iCls','#iParc'].forEach(s=>$(s).addEventListener('input',updParc));
+const paintPrevHint = () => { $('#prevHint').innerHTML = prevLinked ? 'Acompanha a ocorrência até você alterá-la.' : 'Definida manualmente. <button type="button" class="linkbtn" id="prevSync">Igualar à ocorrência</button>'; };
+$('#iData').addEventListener('input', () => { if (prevLinked) $('#iPrev').value = $('#iData').value; });
+$('#iPrev').addEventListener('input', () => { prevLinked = false; paintPrevHint(); });
+$('#prevHint').addEventListener('click', e => { if (e.target.id==='prevSync') { prevLinked = true; $('#iPrev').value = $('#iData').value; paintPrevHint(); } });
 function openForm(r){
   editing = r || null; $('#formTitle').textContent = (r ? 'Editar' : 'Novo') + (MOD==='I' ? ' lançamento de investimento' : ' lançamento');
-  $('#iData').value = r ? brToISO(r.data) : isoDate(new Date()); $('#iValor').value = r ? centsToBRL(Math.round(r.valor*100)) : ''; $('#iDesc').value = r?.descricao ?? '';
+  $('#iData').value = r ? brToISO(r.data) : isoDate(new Date());
+  $('#iPrev').value = r ? brToISO(prevOf(r)) : $('#iData').value; prevLinked = !r || prevOf(r)===r.data; paintPrevHint(); $('#iValor').value = r ? centsToBRL(Math.round(r.valor*100)) : ''; $('#iDesc').value = r?.descricao ?? '';
   $('#iParc').value = r?.parcelas || 1; $('#iParc').disabled = !!r;
   setNat(r ? natName(r) : MODCFG[MOD].defNat, { cls: r ? clsOf(r) : undefined, cat: r?.categoria || '', pay: r?.formaPagto || '' });
   $('#formModal').classList.remove('hidden'); $('#iDesc').focus();
@@ -1052,16 +1082,16 @@ $('#form').onsubmit = async e => {
   const valor = getValor(), desc = $('#iDesc').value.trim(), pay = $('#iPay').value, cat = $('#iCat').value, cls = $('#iCls').value;
   if (!cls) return toast('Escolha ou cadastre uma classificação (＋).');
   if (!cat) return toast('Escolha ou cadastre uma categoria (＋).');
-  if (!(valor>0) || !desc || !pay) return toast('Preencha todos os campos corretamente.');
+  if (!(valor>0) || !desc || !pay || !$('#iData').value || !$('#iPrev').value) return toast('Preencha todos os campos corretamente.');
   const sg = signOfName(natSel), par = canParc(), n = par ? Math.max(1, Math.min(120, parseInt($('#iParc').value)||1)) : '';
   // O sinal (entrada/saída) segue nas colunas Tipo Receita / Tipo Despesa, como na planilha original.
   const base = { modulo:MOD, natureza:natSel, descricao:desc, valor, tipoDespesa:sg==='S'?cls:'', tipoReceita:sg==='E'?cls:'', parcelas:par?n:'', formaPagto:pay, categoria:cat };
   loading(true);
   try {
-    if (editing) { await api('POST', { action:'update', row:{ ...editing, ...base, parcelas: par ? editing.parcelas || n : '', data: isoToBR($('#iData').value) } }); toast('Lançamento atualizado.'); }
+    if (editing) { await api('POST', { action:'update', row:{ ...editing, ...base, parcelas: par ? editing.parcelas || n : '', data: isoToBR($('#iData').value), previsao: isoToBR($('#iPrev').value) } }); toast('Lançamento atualizado.'); }
     else {
-      const d0 = new Date($('#iData').value+'T12:00');
-      const list = par && n>1 ? Array.from({length:n},(_,i)=>({ ...base, data:toBR(addMonths(d0,i)), descricao:`${desc} (${i+1}/${n})` })) : [{ ...base, data:toBR(d0) }];
+      const d0 = new Date($('#iData').value+'T12:00'), p0 = new Date($('#iPrev').value+'T12:00');
+      const list = par && n>1 ? Array.from({length:n},(_,i)=>({ ...base, data:toBR(addMonths(d0,i)), previsao:toBR(addMonths(p0,i)), descricao:`${desc} (${i+1}/${n})` })) : [{ ...base, data:toBR(d0), previsao:toBR(p0) }];
       await api('POST', { action:'create', rows:list }); toast(list.length>1?`${list.length} parcelas registradas.`:'Lançamento registrado.');
     }
     $('#formModal').classList.add('hidden'); loading(false); await load();
@@ -1074,13 +1104,13 @@ $('#tbody').onclick = async e => {
   const m = r.descricao.match(/^(.*) \(\d+\/(\d+)\)$/);
   let ids = [r.id];
   if (m && confirm(`"${r.descricao}" faz parte de um parcelamento.\nOK = excluir TODAS as parcelas · Cancelar = só esta`)) ids = data().filter(x=>x.descricao.startsWith(m[1]+' (') && x.descricao.endsWith(`/${m[2]})`)).map(x=>x.id);
-  else if (!m && !confirm(`Excluir "${r.descricao}"?`)) return;
+  else if (!m && !confirm(`Excluir "${r.descricao}"?\nOcorrência: ${r.data} · Previsão: ${prevOf(r)}`)) return;
   loading(true);
   try { await api('POST',{action:'delete',ids}); loading(false); toast(`${ids.length} registro(s) excluído(s).`); await load(); } catch(err){ loading(false); toast('Erro: '+err.message); }
 };
 
 /* ===================== EXPORT PDF ===================== */
-function filterDesc(){ const p=[]; if($('#fFrom').value)p.push('De '+isoToBR($('#fFrom').value)); if($('#fTo').value)p.push('Até '+isoToBR($('#fTo').value));
+function filterDesc(){ const p=['Período por '+dmName()]; if($('#fFrom').value)p.push('De '+isoToBR($('#fFrom').value)); if($('#fTo').value)p.push('Até '+isoToBR($('#fTo').value));
   if(!MS.fNat.all)p.push('Natureza: '+(MS.fNat.labels().join(', ')||'nenhuma')); if(!MS.fCls.all)p.push('Classificação: '+(MS.fCls.labels().join(', ')||'nenhuma')); if(!MS.fCat.all)p.push('Categoria: '+(MS.fCat.labels().join(', ')||'nenhuma')); if(!MS.fPay.all)p.push(payLbl()+': '+(MS.fPay.labels().join(', ')||'nenhuma')); if($('#fText').value)p.push(`"${$('#fText').value}"`);
   return p.length?p.join(' · '):'Todos os lançamentos'; }
 function buildPDF(){
@@ -1097,13 +1127,13 @@ function buildPDF(){
   doc.setTextColor(95,107,105); doc.setFont('helvetica','normal'); doc.setFontSize(8);
   doc.text(`${MOD==='I'?'Patrimônio':'Saldo'} inicial: ${b.fromISO?'acumulado antes de '+isoToBR(b.fromISO):'sem data inicial (parte de zero)'}  ·  ${MOD==='I'?'Patrimônio':'Saldo'} final: ${b.last?'posição em '+toBR(b.last):'sem lançamentos no período'}`,14,62);
   const sum = mt.items.filter(i=>!i.count && !i.pct);
-  doc.autoTable({ startY:68, head:[['Data','Descrição','Natureza','Valor','Classificação','Qt Parc.',payLbl(),'Categoria']],
-    body:list.map(r=>[r.data,r.descricao,natName(r),brl(+r.valor),clsOf(r),r.parcelas,r.formaPagto,r.categoria||'']),
-    foot:sum.map(i=>['',i.l.toUpperCase(),'',brl(i.v),'','','','']),
-    theme:'grid', styles:{fontSize:8.5,cellPadding:2.4,lineColor:[226,221,210],lineWidth:.1},
+  doc.autoTable({ startY:68, head:[['Ocorrência','Previsão','Descrição','Natureza','Valor','Classificação','Qt Parc.',payLbl(),'Categoria']],
+    body:list.map(r=>[r.data,prevOf(r),r.descricao,natName(r),brl(+r.valor),clsOf(r),r.parcelas,r.formaPagto,r.categoria||'']),
+    foot:sum.map(i=>['','',i.l.toUpperCase(),'',brl(i.v),'','','','']),
+    theme:'grid', styles:{fontSize:8,cellPadding:2.2,lineColor:[226,221,210],lineWidth:.1},
     headStyles:{fillColor:brand,textColor:255,fontStyle:'bold'}, footStyles:{fillColor:[240,237,230],textColor:[20,32,31],fontStyle:'bold'},
-    alternateRowStyles:{fillColor:[250,249,246]}, columnStyles:{3:{halign:'right'},5:{halign:'center'}},
-    didParseCell:d=>{ if(d.section==='body'&&d.column.index===3){ d.cell.styles.textColor = list[d.row.index] && natOf(list[d.row.index])==='R'?pos:neg; d.cell.styles.fontStyle='bold'; } },
+    alternateRowStyles:{fillColor:[250,249,246]}, columnStyles:{0:{halign:'center'},1:{halign:'center'},4:{halign:'right'},6:{halign:'center'}},
+    didParseCell:d=>{ if(d.section==='body'&&d.column.index===4){ d.cell.styles.textColor = list[d.row.index] && natOf(list[d.row.index])==='R'?pos:neg; d.cell.styles.fontStyle='bold'; } },
     didDrawPage:()=>{ const H=doc.internal.pageSize.getHeight(); doc.setFontSize(8); doc.setTextColor(140); doc.text('FinançaPro · Dados sincronizados com Google Sheets',14,H-8);
       doc.text(`Página ${doc.internal.getNumberOfPages()}`,W-14,H-8,{align:'right'}); }, margin:{top:14,bottom:14} });
   return doc;
@@ -1116,24 +1146,24 @@ $('#xlsBtn').onclick = () => {
   const list = sorted(filtered()), mt = metrics(list), X = XLSX, brandHex = MOD==='I' ? '2D4A9A' : '0F5C56', isI = MOD==='I';
   const border = { top:{style:'thin',color:{rgb:'E2DDD2'}}, bottom:{style:'thin',color:{rgb:'E2DDD2'}}, left:{style:'thin',color:{rgb:'E2DDD2'}}, right:{style:'thin',color:{rgb:'E2DDD2'}} };
   const money = '"R$" #,##0.00;[Red]-"R$" #,##0.00';
-  const H = ['Data','Descrição','Valor','Natureza','Classificação','Qt Parcelas',payLbl(),'Categoria'];
+  const H = ['Ocorrência','Previsão','Descrição','Valor','Natureza','Classificação','Qt Parcelas',payLbl(),'Categoria'];
   const lines = mt.items.filter(i=>!i.count && !i.pct).map(i=>({ l:i.l, v: i.cls==='exp' ? -i.v : i.v, sg:!!i.sg }));
   const aoa = [[MODCFG[MOD].pdf],[`Filtros: ${filterDesc()} · Emitido em ${new Date().toLocaleString('pt-BR')}`],[],H,
-    ...list.map(r=>[r.data,r.descricao,natOf(r)==='R'?+r.valor:-r.valor,natName(r),clsOf(r),r.parcelas===''||r.parcelas==null?'':+r.parcelas,r.formaPagto,r.categoria||'']),
-    [], ...lines.map(x=>['',x.l,x.v])];
+    ...list.map(r=>[r.data,prevOf(r),r.descricao,natOf(r)==='R'?+r.valor:-r.valor,natName(r),clsOf(r),r.parcelas===''||r.parcelas==null?'':+r.parcelas,r.formaPagto,r.categoria||'']),
+    [], ...lines.map(x=>['','',x.l,x.v])];
   const ws = X.utils.aoa_to_sheet(aoa), last = 4 + list.length;
-  ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:7}},{s:{r:1,c:0},e:{r:1,c:7}}];
-  ws['!cols'] = [{wch:12},{wch:38},{wch:15},{wch:16},{wch:18},{wch:12},{wch:24},{wch:26}];
+  ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:8}},{s:{r:1,c:0},e:{r:1,c:8}}];
+  ws['!cols'] = [{wch:12},{wch:12},{wch:38},{wch:15},{wch:16},{wch:18},{wch:12},{wch:24},{wch:26}];
   ws['!rows'] = [{hpt:30},{hpt:18},{},{hpt:22}];
-  ws['!autofilter'] = { ref:`A4:H${Math.max(last,5)}` }; ws['!freeze'] = { xSplit:0, ySplit:4 };
+  ws['!autofilter'] = { ref:`A4:I${Math.max(last,5)}` }; ws['!freeze'] = { xSplit:0, ySplit:4 };
   ws.A1.s = { font:{bold:true,sz:18,color:{rgb:'FFFFFF'}}, fill:{fgColor:{rgb:brandHex}}, alignment:{vertical:'center'} };
   ws.A2.s = { font:{italic:true,sz:10,color:{rgb:'5F6B69'}} };
   H.forEach((_,c)=>{ const a=X.utils.encode_cell({r:3,c}); ws[a].s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:brandHex}},alignment:{horizontal:'center',vertical:'center'},border}; });
-  for (let r=4;r<last;r++) for (let c=0;c<8;c++){ const a=X.utils.encode_cell({r,c}); ws[a] ??= {t:'s',v:''};
-    const neg = c===2 && ws[a].v<0; ws[a].s = { border, fill:{fgColor:{rgb:r%2?'FAF9F6':'FFFFFF'}}, alignment:{horizontal:[0,5].includes(c)?'center':c===2?'right':'left'},
-      font:{color:{rgb:c===2?(neg?'D6493F':'1F9D6B'):'14201F'},bold:c===2} }; if (c===2) ws[a].z=money; }
-  lines.forEach((x,i)=>{ const r = last+1+i; ['B','C'].forEach(col=>{ const a=col+(r+1); if(ws[a]) ws[a].s={font:{bold:true,sz:12,color:{rgb:x.sg?(x.v>=0?'1F9D6B':'D6493F'):'14201F'}},fill:{fgColor:{rgb:'F0EDE6'}},border,alignment:{horizontal:col==='C'?'right':'left'}}; });
-    const c=ws['C'+(r+1)]; if(c) c.z=money; });
+  for (let r=4;r<last;r++) for (let c=0;c<9;c++){ const a=X.utils.encode_cell({r,c}); ws[a] ??= {t:'s',v:''};
+    const neg = c===3 && ws[a].v<0; ws[a].s = { border, fill:{fgColor:{rgb:r%2?'FAF9F6':'FFFFFF'}}, alignment:{horizontal:[0,1,6].includes(c)?'center':c===3?'right':'left'},
+      font:{color:{rgb:c===3?(neg?'D6493F':'1F9D6B'):'14201F'},bold:c===3} }; if (c===3) ws[a].z=money; }
+  lines.forEach((x,i)=>{ const r = last+1+i; ['C','D'].forEach(col=>{ const a=col+(r+1); if(ws[a]) ws[a].s={font:{bold:true,sz:12,color:{rgb:x.sg?(x.v>=0?'1F9D6B':'D6493F'):'14201F'}},fill:{fgColor:{rgb:'F0EDE6'}},border,alignment:{horizontal:col==='D'?'right':'left'}}; });
+    const c=ws['D'+(r+1)]; if(c) c.z=money; });
   // Aba resumo mensal
   const mo = monthAgg(list), keys = Object.keys(mo).sort();
   const rs = [ isI ? ['Mês','Aportes','Rendimentos','Resgates e taxas','Variação'] : ['Mês','Receitas','Despesas','Saldo'],
