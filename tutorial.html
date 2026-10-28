@@ -86,6 +86,7 @@ a{color:var(--primary)}
 .seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface-2);border-radius:12px;padding:4px}
 .seg button{flex:1 1 auto;min-width:92px;border:none;background:none;padding:9px;border-radius:9px;cursor:pointer;font-weight:700}
 .seg button.on.inc{background:var(--income);color:#fff}.seg button.on.exp{background:var(--expense);color:#fff}
+.lnk{border:none;background:none;color:var(--primary);font-weight:700;cursor:pointer;padding:0;text-decoration:underline;font-size:inherit}
 .flash{animation:flash 1.4s ease}
 @keyframes flash{0%{box-shadow:0 0 0 0 color-mix(in oklab,var(--accent) 80%,transparent)}30%{box-shadow:0 0 0 6px color-mix(in oklab,var(--accent) 45%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
 .out{margin-top:14px;border-top:1px dashed var(--border);padding-top:12px}
@@ -244,11 +245,12 @@ lesson('acesso','Entrar, conta e sessão','login senha conta e-mail codigo códi
   <div class="callout"><b>Bom saber</b>A sessão dura até 6 horas. Cinco senhas erradas bloqueiam o login por 15 minutos (a recuperação por e-mail continua disponível). Trocar a senha encerra as sessões abertas em outros aparelhos.</div>
   <div class="callout"><b>Só quer experimentar?</b>Se a planilha não responder, o app oferece o <i>Modo demonstração</i>, com dados fictícios guardados só no seu navegador.</div>`);
 
-lesson('lancar','Registrar um lançamento','novo lançamento natureza classificação categoria forma pagamento valor descrição formulário despesa receita simulador',
+lesson('lancar','Registrar um lançamento','ocorrência previsão data novo lançamento natureza classificação categoria forma pagamento valor descrição formulário despesa receita simulador',
   'Clique em ＋ Novo lançamento. Experimente o formulário abaixo: ele funciona como o do app e mostra o que será gravado.',
   () => `<div class="card" id="sim"></div>
   <h2>O que significa cada campo</h2>
   <ul>
+    <li><b>Ocorrência</b> e <b>Previsão</b>: quando o fato aconteceu e quando era (ou será) esperado. Começam iguais; a previsão acompanha a ocorrência até você alterá-la (veja a etapa de filtros).</li>
     <li><b>Natureza</b>: de onde vem o efeito no saldo. <i>Receita</i> e <i>Aplicação</i> somam; <i>Despesa</i>, <i>Resgate</i> e <i>Taxas e IR</i> subtraem.</li>
     <li><b>Classificação</b>: o tipo dentro da natureza (Fixa, Variável, Renda Fixa...).</li>
     <li><b>Categoria</b>: para onde foi o dinheiro (Moradia, CDB, Previdência...). É obrigatória.</li>
@@ -263,13 +265,14 @@ lesson('parcelas','Parcelas e aportes mensais','parcela parcelado repetir mensal
   'Despesas Fixas (no Fluxo) e Aplicações (em Investimentos) podem gerar várias linhas mensais de uma só vez.',
   () => `<div class="card">
     <div class="form-grid">
-      <div class="field"><label>Data da 1ª linha</label><input type="date" id="pDate"></div>
+      <div class="field"><label>Ocorrência da 1ª linha</label><input type="date" id="pDate"></div>
+      <div class="field"><label>Previsão da 1ª linha</label><input type="date" id="pPrev"></div>
       <div class="field"><label>Valor de cada linha</label><input id="pVal" inputmode="numeric" placeholder="R$ 0,00"></div>
       <div class="field"><label id="pQtL">Quantidade</label><input type="number" id="pQt" min="1" max="120" value="4"></div>
     </div>
     <div class="out"><div id="pOut"></div></div></div>
   <ul>
-    <li>Cada linha vira um lançamento, com a descrição seguida de <span class="kbd">(1/4)</span>, <span class="kbd">(2/4)</span>...</li>
+    <li>Cada linha vira um lançamento, com a descrição seguida de <span class="kbd">(1/4)</span>, <span class="kbd">(2/4)</span>... A <b>ocorrência</b> e a <b>previsão</b> avançam um mês por linha, cada uma a partir da sua data inicial.</li>
     <li>Se o dia não existe no mês (31 em fevereiro), o app usa o último dia daquele mês, como mostra o simulador.</li>
     <li><b>Editar</b> uma linha altera só aquela linha. A quantidade de parcelas fica travada na edição.</li>
     <li><b>Excluir</b> uma linha parcelada pergunta: <span class="ui">OK</span> apaga todas as parcelas, <span class="ui">Cancelar</span> apaga só a escolhida.</li>
@@ -297,7 +300,7 @@ lesson('cadastros','Cadastros próprios','cadastro categoria natureza classifica
     <li>Nome: <i>Dividendos</i>. Efeito no saldo: <b>Entrada</b>. Cadastrar.</li>
     <li>Ao lançar, escolha <i>Dividendos</i>; ele soma ao patrimônio e entra em “Aportes” (só <i>Rendimento</i> alimenta a rentabilidade).</li></ol></div>`);
 
-lesson('filtros','Filtros e busca','filtro filtros busca período seleção múltipla natureza classificação categoria saldo inicial todas limpar',
+lesson('filtros','Filtros e busca','ocorrência previsão período por filtro filtros busca seleção múltipla natureza classificação categoria saldo inicial todas limpar',
   'Natureza, Classificação, Categoria e Forma aceitam várias opções ao mesmo tempo. Teste a lógica na demonstração.',
   () => `<div class="card"><div class="row" id="fdemo"></div><div class="out"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Descrição</th><th>Natureza</th><th>Classificação</th><th class="num">Valor</th></tr></thead><tbody id="fOut"></tbody></table></div></div></div>
   <ul>
@@ -305,9 +308,13 @@ lesson('filtros','Filtros e busca','filtro filtros busca período seleção múl
     <li>Nenhum item marcado = tabela vazia (é proposital: nada foi escolhido).</li>
     <li>Os filtros se combinam (E): <i>Receita</i> + <i>Extra</i> mostra só receitas extras.</li>
   </ul>
+  <h2>Ocorrência ou previsão?</h2>
+  <p><b>Ocorrência</b> é quando o lançamento aconteceu; <b>Previsão</b> é quando ele era esperado. Ao criar, as duas são iguais e a previsão acompanha a ocorrência até você mexer nela (o botão <span class="ui">Igualar à ocorrência</span> volta a vincular). Use a previsão para planejar: lance a conta de dezembro com previsão de dezembro e ocorrência quando efetivamente pagar.</p>
+  <p>No filtro, o seletor <span class="ui">Período por: Ocorrência | Previsão</span> define qual data comanda <i>De/Até</i> e os atalhos de período. Ele influencia <b>tudo</b>: indicadores, saldo (ou patrimônio) inicial e final, gráficos mensais, ordenação padrão e os relatórios em PDF e Excel, que trazem as duas datas e informam o critério usado. A tabela sempre mostra as duas colunas; quando diferem, a previsão aparece em destaque.</p>
+  <div class="callout"><b>Exemplo</b>Um combustível ocorrido em 3/out e previsto para 28/set cai em <i>outubro</i> por ocorrência e em <i>setembro</i> por previsão. Compare os dois modos para medir o quanto o realizado fugiu do planejado.</div>
   <h2>Período e atalhos</h2>
   <p>Use <span class="ui">De</span>/<span class="ui">Até</span> ou os atalhos <span class="ui">Este mês</span>, <span class="ui">Mês anterior</span>, <span class="ui">Últimos 90 dias</span>, <span class="ui">Este ano</span> e <span class="ui">Futuros</span>. O campo <span class="ui">Buscar</span> procura em descrição, categoria, forma, natureza, classificação e valor.</p>
-  <div class="callout"><b>Saldo inicial</b>Ao preencher <i>De</i>, o saldo (ou patrimônio) inicial passa a ser tudo o que foi acumulado <u>antes</u> dessa data, respeitando os outros filtros. Sem <i>De</i>, ele parte de R$ 0,00. Clique nos títulos das colunas para ordenar.</div>`,
+  <div class="callout"><b>Saldo inicial</b>Ao preencher <i>De</i>, o saldo (ou patrimônio) inicial passa a ser tudo o que foi acumulado <u>antes</u> dessa data (pelo critério escolhido em <i>Período por</i>), respeitando os outros filtros. Sem <i>De</i>, ele parte de R$ 0,00. Clique nos títulos das colunas para ordenar.</div>`,
   () => initFiltros());
 
 lesson('investimentos','Lendo o painel de investimentos','investimentos patrimônio rentabilidade aporte rendimento resgate taxas ir poupança previdência cdb tesouro cálculo',
@@ -332,22 +339,23 @@ lesson('investimentos','Lendo o painel de investimentos','investimentos patrimô
 lesson('relatorios','PDF e Excel','pdf excel relatório exportar baixar planilha imprimir',
   'Os relatórios saem exatamente com o que está na tela: mesmo painel, mesmos filtros.',
   () => `<ol>
-    <li>Ajuste período e filtros.</li>
+    <li>Escolha <i>Período por</i> (ocorrência ou previsão), ajuste período e filtros.</li>
     <li><span class="ui">📄 PDF</span> abre uma pré-visualização; depois, <span class="ui">⬇ Baixar PDF</span>. Traz os indicadores, o resumo dos filtros e a tabela com totais.</li>
     <li><span class="ui">📗 Excel</span> baixa um arquivo com duas abas: os lançamentos (com saídas em negativo e totais) e um <i>Resumo Mensal</i>.</li>
   </ol>
-  <p>No painel de Investimentos, os relatórios usam os termos do painel (aportes, rendimentos, resgates, patrimônio) e a coluna <i>Aporte/Saque</i>.</p>
+  <p>Os dois relatórios trazem as colunas <i>Ocorrência</i> e <i>Previsão</i> e informam no cabeçalho o critério de período. No painel de Investimentos, os relatórios usam os termos do painel (aportes, rendimentos, resgates, patrimônio) e a coluna <i>Aporte/Saque</i>.</p>
   <div class="callout"><b>Dica</b>Para um relatório de um ano só, use <span class="ui">Este ano</span>; para um único produto, filtre a <i>Categoria</i> (por exemplo, só “Previdência Privada (PGBL)”).</div>`);
 
 lesson('ajuda','Dúvidas e solução de problemas','ajuda erro problema faq dúvida sessão expirada offline instalar demo senha bloqueada salvo só neste aparelho misturados modulo',
   'As situações mais comuns e o que fazer.',
   () => {
     const faq = [
-      ['Os investimentos aparecem misturados ao fluxo de caixa','A planilha ainda usa o script antigo, sem a coluna <i>Modulo</i>. No Apps Script, cole o <i>Code.js</i> novo e publique uma <b>nova versão</b> da implantação. Lançamentos antigos continuam como fluxo de caixa.'],
+      ['Os investimentos aparecem misturados ao fluxo de caixa, ou a previsão não é salva','A planilha ainda usa o script antigo, sem as colunas <i>Modulo</i> e <i>Previsao</i>. No Apps Script, cole o <i>Code.js</i> novo e publique uma <b>nova versão</b> da implantação. Lançamentos antigos continuam como fluxo de caixa.'],
       ['Aparece “cadastro salvo só neste aparelho”','Mesma causa: o script antigo não conhece a gravação de cadastros. Depois de publicar o novo, abra o app e faça um novo cadastro; ele passa a ser salvo na aba <i>Config</i>.'],
       ['“Sessão expirada”','A sessão dura até 6 horas. Entre de novo; seus dados não se perdem.'],
       ['Login bloqueado','Cinco senhas erradas bloqueiam por 15 minutos. Use <i>Esqueci minha senha</i> para redefinir com o código enviado ao e-mail.'],
       ['O código por e-mail não chega','Confira a caixa de spam. Há intervalo de 1 minuto entre pedidos e limite de 5 por hora. Se a mensagem de erro mencionar permissão, o administrador precisa executar a função <i>autorizarEmail</i> no Apps Script.'],
+      ['Qual a diferença entre ocorrência e previsão?','Ocorrência é a data em que o lançamento aconteceu; previsão é a data em que era esperado. Começam iguais. O seletor <i>Período por</i> escolhe qual delas vale nos filtros, indicadores, gráficos e relatórios. Lançamentos antigos, sem previsão, assumem a própria ocorrência.'],
       ['Saldo inicial aparece R$ 0,00','Ele só é calculado quando o campo <i>De</i> está preenchido. Sem data inicial o app parte de zero.'],
       ['Meu lançamento sumiu da lista','Veja os filtros: a lista só mostra o painel atual e o que combina com todos os filtros. <span class="ui">Limpar filtros</span> volta ao total.'],
       ['Posso apagar uma categoria já usada?','Pode. Os lançamentos continuam com o nome; ele só deixa de ser sugerido para novos.'],
@@ -417,7 +425,7 @@ $('#q').addEventListener('keydown', e => { if (e.key==='Enter') $('#view .hit')?
 
 /* ===================== simulador do formulário ===================== */
 function initSim(){
-  const P = SIM[panel], st = { nat:P.nats[panel==='I'?0:1], cls:'', cat:'', pay:'', val:0, desc:'', n:1, date:new Date().toISOString().slice(0,10) };
+  const P = SIM[panel], st = { nat:P.nats[panel==='I'?0:1], cls:'', cat:'', pay:'', val:0, desc:'', n:1, date:new Date().toISOString().slice(0,10), prev:new Date().toISOString().slice(0,10), linked:true };
   const root = $('#sim'), opts = a => a.map(x=>`<option>${esc(x)}</option>`).join('');
   function build(keep){
     st.cls = st.nat.cls.includes(keep?.cls) ? keep.cls : st.nat.cls[0];
@@ -425,35 +433,39 @@ function initSim(){
     st.pay = st.nat.pay.includes(keep?.pay) ? keep.pay : st.nat.pay[0];
     root.innerHTML = `<div class="form-grid">
       <div class="field full"><label>Natureza</label><div class="seg">${P.nats.map(n=>`<button type="button" data-n="${esc(n.n)}" class="${n.s==='E'?'inc':'exp'}${n===st.nat?' on':''}">${n.s==='E'?'↑':'↓'} ${esc(n.n)}</button>`).join('')}</div></div>
-      <div class="field"><label>Data</label><input type="date" id="sDate" value="${st.date}"></div>
-      <div class="field"><label>Valor (R$)</label><input id="sVal" inputmode="numeric" placeholder="R$ 0,00" value="${st.val?brl(st.val):''}"></div>
+      <div class="field"><label>Ocorrência</label><input type="date" id="sDate" value="${st.date}"></div>
+      <div class="field"><label>Previsão</label><input type="date" id="sPrev" value="${st.prev}"><div class="hint" id="sPrevHint" style="font-size:.75rem;color:var(--muted);margin-top:4px"></div></div>
+      <div class="field full"><label>Valor (R$)</label><input id="sVal" inputmode="numeric" placeholder="R$ 0,00" value="${st.val?brl(st.val):''}"></div>
       <div class="field full"><label>Descrição</label><input id="sDesc" maxlength="60" placeholder="${panel==='I'?'Ex.: Aporte CDB 110% CDI':'Ex.: Notebook'}" value="${esc(st.desc)}"></div>
       <div class="field" id="fCls"><label>Classificação</label><select id="sCls">${opts(st.nat.cls)}</select></div>
       <div class="field" id="fParc"><label>${P.parcLbl}</label><input type="number" id="sN" min="1" max="120" value="${st.n}"></div>
       <div class="field"><label>Categoria</label><select id="sCat">${opts(st.nat.cat)}</select></div>
       <div class="field" id="fPay"><label>${P.payLbl}</label><select id="sPay">${opts(st.nat.pay)}</select></div></div>
       <div class="out" id="sOut"></div>`;
-    $('#sCls').value = st.cls; $('#sCat').value = st.cat; $('#sPay').value = st.pay;
+    $('#sCls').value = st.cls; $('#sCat').value = st.cat; $('#sPay').value = st.pay; hint();
     $('#fParc').style.display = P.parc(st.nat,st.cls) ? '' : 'none';
     out();
   }
+  const hint = () => { const h = $('#sPrevHint'); if (h) h.innerHTML = st.linked ? 'Acompanha a ocorrência até você alterá-la.' : 'Definida manualmente. <button type="button" class="lnk" id="sSync">Igualar à ocorrência</button>'; };
   function out(){
     const par = P.parc(st.nat, st.cls), n = par ? Math.max(1, Math.min(120, st.n||1)) : 1, d0 = new Date(st.date+'T12:00'), v = st.val, e = st.nat.s==='E';
-    const lines = Array.from({length:n}, (_,i) => ({ d:toBR(n>1?addMonths(d0,i):d0), t:`${st.desc||'Descrição'}${n>1?` (${i+1}/${n})`:''}` }));
+    const p0 = new Date(st.prev+'T12:00');
+    const lines = Array.from({length:n}, (_,i) => ({ d:toBR(n>1?addMonths(d0,i):d0), p:toBR(n>1?addMonths(p0,i):p0), t:`${st.desc||'Descrição'}${n>1?` (${i+1}/${n})`:''}` }));
     const eff = panel==='I'
       ? { 'Aplicação':['Soma ao <b>Patrimônio</b>','Conta em <b>Aportes</b>'], 'Rendimento':['Soma ao <b>Patrimônio</b>','Conta em <b>Rendimentos</b> e eleva a <b>Rentabilidade</b>'], 'Resgate':['Subtrai do <b>Patrimônio</b>','Conta em <b>Resgates e taxas</b>'], 'Taxas e IR':['Subtrai do <b>Patrimônio</b>','Conta em <b>Resgates e taxas</b>'] }[st.nat.n]
       : (e ? ['Soma ao <b>Saldo</b>','Conta em <b>Receitas</b>'] : ['Subtrai do <b>Saldo</b>','Conta em <b>Despesas</b> (e no gráfico por forma de pagamento)']);
     $('#sOut').innerHTML = `<h3>O app vai gravar ${n} linha${n>1?'s':''} no painel ${panel==='I'?'Investimentos':'Fluxo de caixa'}</h3>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Data</th><th>Descrição</th><th>Natureza</th><th>Classificação · Categoria</th><th class="num">Valor</th></tr></thead><tbody>
-      ${lines.slice(0,6).map(l=>`<tr><td>${l.d}</td><td>${esc(l.t)}</td><td><span class="pill ${e?'inc':'exp'}">${esc(st.nat.n)}</span></td><td>${esc(st.cls)} · ${esc(st.cat)}</td><td class="num" style="color:var(--${e?'income':'expense'})">${e?'':'− '}${brl(v)}</td></tr>`).join('')}
-      ${n>6?`<tr><td colspan="5" style="color:var(--muted)">… e mais ${n-6} linha(s)</td></tr>`:''}</tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ocorrência</th><th>Previsão</th><th>Descrição</th><th>Natureza</th><th>Classificação · Categoria</th><th class="num">Valor</th></tr></thead><tbody>
+      ${lines.slice(0,6).map(l=>`<tr><td>${l.d}</td><td>${l.p}</td><td>${esc(l.t)}</td><td><span class="pill ${e?'inc':'exp'}">${esc(st.nat.n)}</span></td><td>${esc(st.cls)} · ${esc(st.cat)}</td><td class="num" style="color:var(--${e?'income':'expense'})">${e?'':'− '}${brl(v)}</td></tr>`).join('')}
+      ${n>6?`<tr><td colspan="6" style="color:var(--muted)">… e mais ${n-6} linha(s)</td></tr>`:''}</tbody></table></div>
       <ul class="effects">${eff.map(x=>`<li>${x}</li>`).join('')}${n>1?`<li>Total das ${n} linhas: <b>${brl(v*n)}</b></li>`:''}
       ${par?`<li>O campo <b>${P.parcLbl}</b> apareceu porque ${panel==='I'?'a natureza é <i>Aplicação</i>':'a despesa é <i>Fixa</i>'}.</li>`:''}</ul>`;
   }
-  root.addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (!b) return; st.nat = P.nats.find(n=>n.n===b.dataset.n); build({cls:st.cls,cat:st.cat,pay:st.pay}); root.querySelector('#fPay').classList.add('flash'); });
+  root.addEventListener('click', e => { if (e.target.id==='sSync') { st.linked = true; st.prev = st.date; $('#sPrev').value = st.prev; hint(); out(); return; } const b = e.target.closest('[data-n]'); if (!b) return; st.nat = P.nats.find(n=>n.n===b.dataset.n); build({cls:st.cls,cat:st.cat,pay:st.pay}); root.querySelector('#fPay').classList.add('flash'); });
   root.addEventListener('input', e => {
     const t = e.target.id;
-    if (t==='sVal') st.val = maskBRL(e.target); else if (t==='sDesc') st.desc = e.target.value; else if (t==='sDate') st.date = e.target.value || st.date;
+    if (t==='sVal') st.val = maskBRL(e.target); else if (t==='sDesc') st.desc = e.target.value; else if (t==='sDate') { st.date = e.target.value || st.date; if (st.linked) { st.prev = st.date; $('#sPrev').value = st.prev; } }
+    else if (t==='sPrev') { st.prev = e.target.value || st.prev; st.linked = false; hint(); }
     else if (t==='sN') st.n = +e.target.value; else if (t==='sCls') { st.cls = e.target.value; $('#fParc').style.display = P.parc(st.nat,st.cls) ? '' : 'none'; if (P.parc(st.nat,st.cls)) $('#fParc').classList.add('flash'); }
     else if (t==='sCat') st.cat = e.target.value; else if (t==='sPay') st.pay = e.target.value;
     out();
@@ -482,13 +494,13 @@ function initScen(){
 }
 function initParc(){
   const P = SIM[panel], d = new Date(); d.setDate(31); d.setMonth(0); if (d.getMonth()!==0) d.setDate(28);
-  $('#pDate').value = `${new Date().getFullYear()}-01-31`; $('#pVal').value = brl(panel==='I'?400:450); $('#pQtL').textContent = P.parcLbl;
+  $('#pDate').value = `${new Date().getFullYear()}-01-31`; $('#pPrev').value = `${new Date().getFullYear()}-01-31`; $('#pDate').addEventListener('input', e => { $('#pPrev').value = e.target.value; }); $('#pVal').value = brl(panel==='I'?400:450); $('#pQtL').textContent = P.parcLbl;
   const upd = () => {
-    const v = (+($('#pVal').value.replace(/\D/g,''))||0)/100, n = Math.max(1, Math.min(120, +$('#pQt').value||1)), d0 = new Date($('#pDate').value+'T12:00');
-    if (isNaN(d0)) return;
-    $('#pOut').innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Linha</th><th>Data</th><th class="num">Valor</th><th></th></tr></thead><tbody>${Array.from({length:Math.min(n,12)},(_,i)=>{ const x = addMonths(d0,i); return `<tr><td>${i+1}/${n}</td><td>${toBR(x)}</td><td class="num">${brl(v)}</td><td style="color:var(--warn);font-size:.8rem">${x.getDate()!==d0.getDate()?`dia ${d0.getDate()} → ${x.getDate()}`:''}</td></tr>`; }).join('')}${n>12?`<tr><td colspan="4" style="color:var(--muted)">… e mais ${n-12} linha(s)</td></tr>`:''}</tbody></table></div><p style="margin-top:8px"><b>Total:</b> ${brl(v*n)} em ${n} linha(s)</p>`;
+    const v = (+($('#pVal').value.replace(/\D/g,''))||0)/100, n = Math.max(1, Math.min(120, +$('#pQt').value||1)), d0 = new Date($('#pDate').value+'T12:00'), p0 = new Date($('#pPrev').value+'T12:00');
+    if (isNaN(d0) || isNaN(p0)) return;
+    $('#pOut').innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Linha</th><th>Ocorrência</th><th>Previsão</th><th class="num">Valor</th><th></th></tr></thead><tbody>${Array.from({length:Math.min(n,12)},(_,i)=>{ const x = addMonths(d0,i); return `<tr><td>${i+1}/${n}</td><td>${toBR(x)}</td><td>${toBR(addMonths(p0,i))}</td><td class="num">${brl(v)}</td><td style="color:var(--warn);font-size:.8rem">${x.getDate()!==d0.getDate()?`dia ${d0.getDate()} → ${x.getDate()}`:''}</td></tr>`; }).join('')}${n>12?`<tr><td colspan="5" style="color:var(--muted)">… e mais ${n-12} linha(s)</td></tr>`:''}</tbody></table></div><p style="margin-top:8px"><b>Total:</b> ${brl(v*n)} em ${n} linha(s)</p>`;
   };
-  $('#pVal').addEventListener('input', e => { maskBRL(e.target); upd(); }); ['#pDate','#pQt'].forEach(s => $(s).addEventListener('input', upd)); upd();
+  $('#pVal').addEventListener('input', e => { maskBRL(e.target); upd(); }); ['#pDate','#pPrev','#pQt'].forEach(s => $(s).addEventListener('input', upd)); upd();
 }
 function initFiltros(){
   const D = panel==='I'
