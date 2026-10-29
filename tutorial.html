@@ -170,6 +170,16 @@ const isoLocal = (d=new Date()) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${
 const toBR = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
 const addMonths = (d,n) => { const r = new Date(d.getFullYear(), d.getMonth()+n, 1); r.setDate(Math.min(d.getDate(), new Date(r.getFullYear(), r.getMonth()+1, 0).getDate())); return r; };
 const maskBRL = el => { const d = el.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,11); el.value = d ? brl(+d/100) : ''; return d ? +d/100 : 0; };
+/* dia útil: seg–sex, exceto feriados nacionais e dias sem expediente bancário (Carnaval, Sexta-feira Santa, Corpus Christi) */
+const _hol = {};
+function easter(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),t=h+l-7*m+114; return new Date(y, Math.floor(t/31)-1, (t%31)+1); }
+const dkey = d => `${d.getMonth()}-${d.getDate()}`;
+function holidays(y){ if (_hol[y]) return _hol[y]; const s = new Set(['0-1','3-21','4-1','8-7','9-12','10-2','10-15','10-20','11-25']), e = easter(y); [-48,-47,-2,60].forEach(n => s.add(dkey(new Date(y, e.getMonth(), e.getDate()+n)))); return _hol[y] = s; }
+const isBiz = d => d.getDay()%6 !== 0 && !holidays(d.getFullYear()).has(dkey(d));
+const nextBiz = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); while (!isBiz(x)) x.setDate(x.getDate()+1); return x; };
+const nomDate = (nom, off, D) => { const t = new Date(nom.y, nom.m + off, 1); return new Date(t.getFullYear(), t.getMonth(), Math.min(D, new Date(t.getFullYear(), t.getMonth()+1, 0).getDate())); };
+const projPrev = (nom, D, off) => nextBiz(nomDate(nom, off, D));
+const WD = ['dom','seg','ter','qua','qui','sex','sáb'];
 const store = { get:(k,d)=>{ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch{ return d; } }, set:(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} } };
 
 /* ===================== estado: tema e painel vêm do app via ?tema=&painel= ===================== */
@@ -262,21 +272,30 @@ lesson('lancar','Registrar um lançamento','ocorrência previsão data novo lan�
   <div class="chips" id="scen"></div><div class="answer" id="scenOut"></div>`,
   () => { initSim(); initScen(); });
 
-lesson('parcelas','Parcelas e aportes mensais','parcela parcelado repetir mensal aporte fixa cartão cálculo data dia 31 excluir editar',
-  'Despesas Fixas (no Fluxo) e Aplicações (em Investimentos) podem gerar várias linhas mensais de uma só vez.',
+lesson('parcelas','Parcelas e aportes mensais','parcela parcelado repetir mensal aporte fixa cartão cálculo dia 31 vencimento dia útil feriado excluir editar bloqueada primeira projeção',
+  'Despesas Fixas (no Fluxo) e Aplicações (em Investimentos) podem gerar várias linhas mensais de uma só vez. Nas despesas, o vencimento segue regras próprias.',
   () => `<div class="card">
     <div class="form-grid">
       <div class="field"><label>Ocorrência da 1ª linha</label><input type="date" id="pDate"></div>
       <div class="field"><label>Previsão da 1ª linha</label><input type="date" id="pPrev"></div>
+      <div class="field" id="pDiaF"><label>Dia do vencimento</label><input type="number" id="pDia" min="1" max="31" inputmode="numeric"></div>
       <div class="field"><label>Valor de cada linha</label><input id="pVal" inputmode="numeric" placeholder="R$ 0,00"></div>
       <div class="field"><label id="pQtL">Quantidade</label><input type="number" id="pQt" min="1" max="120" value="4"></div>
     </div>
     <div class="out"><div id="pOut"></div></div></div>
+  <h2>Despesas parceladas (painel Fluxo de caixa)</h2>
   <ul>
-    <li>Cada linha vira um lançamento, com a descrição seguida de <span class="kbd">(1/4)</span>, <span class="kbd">(2/4)</span>... A <b>ocorrência</b> e a <b>previsão</b> avançam um mês por linha, cada uma a partir da sua data inicial.</li>
-    <li>Se o dia não existe no mês (31 em fevereiro), o app usa o último dia daquele mês, como mostra o simulador.</li>
-    <li><b>Editar</b> uma linha altera só aquela linha. A quantidade de parcelas fica travada na edição.</li>
-    <li><b>Excluir</b> uma parcela abre uma janela com três opções: <span class="ui">Só esta parcela</span>, <span class="ui">Todas as parcelas</span> ou <span class="ui">Cancelar</span>. Ao excluir só uma, o app pergunta se você quer <b>reordenar</b> as demais: elas sobem para os lugares vagos, com novo número de ordem, ocorrência e previsão (há uma prévia antes de confirmar). Se escolher <span class="ui">Manter como estão</span>, nada muda nas outras parcelas e você pode ajustar cada uma pela edição, quando quiser.</li>
+    <li><b>Dia do vencimento:</b> ao parcelar (mais de 1 parcela), o app pergunta o dia. Ele vale da 1ª à última parcela, inclusive para a data do campo <i>Previsão</i>, que é ajustada na hora.</li>
+    <li><b>Sempre em dia útil:</b> se o dia cair em sábado, domingo, feriado nacional ou dia sem expediente bancário (Carnaval, Sexta-feira Santa, Corpus Christi), a previsão passa para o <u>próximo dia útil</u>. O dia nominal não se perde: dia 31 continua sendo 31 nos meses seguintes (30 em abril, 28 em fevereiro), cada mês ajustado de novo. Feriados estaduais e municipais não são considerados.</li>
+    <li><b>Só a 1ª parcela edita:</b> as parcelas seguintes ficam com o cadeado 🔒 e não podem ser alteradas diretamente. Ao clicar, o app oferece abrir a 1ª parcela.</li>
+    <li><b>Projeção:</b> ao salvar a 1ª parcela alterada (nome, valor, classificação, categoria, forma, ocorrência, previsão ou dia de vencimento), o app avisa e recalcula todas as seguintes pelas mesmas regras.</li>
+    <li><b>Excluir:</b> a janela oferece <span class="ui">Só esta parcela</span> ou <span class="ui">Todas</span>. Ao excluir só uma, você decide se as demais sobem para os lugares vagos (com prévia) ou se ficam como estão. Se a 1ª parcela for excluída, a primeira restante passa a ser a que edita e projeta.</li>
+  </ul>
+  <h2>Aportes mensais (painel Investimentos)</h2>
+  <p>Seguem o formato simples: uma linha por mês, com ocorrência e previsão avançando um mês cada, sem ajuste de dia útil e sem bloqueio de edição.</p>
+  <ul>
+    <li>Cada linha vira um lançamento com a descrição seguida de <span class="kbd">(1/4)</span>, <span class="kbd">(2/4)</span>...</li>
+    <li>Se o dia não existe no mês (31 em fevereiro), usa-se o último dia daquele mês.</li>
     <li>Para ver o que ainda vai vencer, use o atalho <span class="ui">Futuros (parcelas)</span>.</li>
   </ul>`,
   () => initParc());
@@ -356,6 +375,8 @@ lesson('ajuda','Dúvidas e solução de problemas','ajuda erro problema faq dúv
       ['“Sessão expirada”','A sessão dura até 6 horas. Entre de novo; seus dados não se perdem.'],
       ['Login bloqueado','Cinco senhas erradas bloqueiam por 15 minutos. Use <i>Esqueci minha senha</i> para redefinir com o código enviado ao e-mail.'],
       ['O código por e-mail não chega','Confira a caixa de spam. Há intervalo de 1 minuto entre pedidos e limite de 5 por hora. Se a mensagem de erro mencionar permissão, o administrador precisa executar a função <i>autorizarEmail</i> no Apps Script.'],
+      ['Por que não consigo editar uma parcela?','Em despesas parceladas, só a <b>1ª parcela</b> pode ser alterada; as seguintes (🔒) acompanham a 1ª. Ao clicar no cadeado, o app oferece abrir a 1ª parcela. Ao salvá-la, todas as demais são recalculadas pelo dia de vencimento e em dia útil.'],
+      ['Qual dia útil o app usa?','Segunda a sexta, exceto feriados nacionais (1/1, 21/4, 1/5, 7/9, 12/10, 2/11, 15/11, 20/11, 25/12) e os dias sem expediente bancário: Carnaval (segunda e terça), Sexta-feira Santa e Corpus Christi. Se o vencimento cair em dia não útil, passa para o próximo. Feriados estaduais e municipais não entram.'],
       ['Qual a diferença entre ocorrência e previsão?','Ocorrência é a data em que o lançamento aconteceu; previsão é a data em que era esperado. Começam iguais. O seletor <i>Período por</i> escolhe qual delas vale nos filtros, indicadores, gráficos e relatórios. Lançamentos antigos, sem previsão, assumem a própria ocorrência.'],
       ['Saldo inicial aparece R$ 0,00','Ele só é calculado quando o campo <i>De</i> está preenchido. Sem data inicial o app parte de zero.'],
       ['Meu lançamento sumiu da lista','Veja os filtros: a lista só mostra o painel atual e o que combina com todos os filtros. <span class="ui">Limpar filtros</span> volta ao total.'],
@@ -441,18 +462,20 @@ function initSim(){
       <div class="field full"><label>Descrição</label><input id="sDesc" maxlength="60" placeholder="${panel==='I'?'Ex.: Aporte CDB 110% CDI':'Ex.: Notebook'}" value="${esc(st.desc)}"></div>
       <div class="field" id="fCls"><label>Classificação</label><select id="sCls">${opts(st.nat.cls)}</select></div>
       <div class="field" id="fParc"><label>${P.parcLbl}</label><input type="number" id="sN" min="1" max="120" value="${st.n}"></div>
+      <div class="field" id="fDia"><label>Dia do vencimento</label><input type="number" id="sDia" min="1" max="31" inputmode="numeric" value="${st.dia||''}" placeholder="dia da previsão"></div>
       <div class="field"><label>Categoria</label><select id="sCat">${opts(st.nat.cat)}</select></div>
       <div class="field" id="fPay"><label>${P.payLbl}</label><select id="sPay">${opts(st.nat.pay)}</select></div></div>
       <div class="out" id="sOut"></div>`;
     $('#sCls').value = st.cls; $('#sCat').value = st.cat; $('#sPay').value = st.pay; hint();
-    $('#fParc').style.display = P.parc(st.nat,st.cls) ? '' : 'none';
+    $('#fParc').style.display = P.parc(st.nat,st.cls) ? '' : 'none'; $('#fDia').style.display = diaOn() ? '' : 'none';
     out();
   }
+  const diaOn = () => panel==='F' && P.parc(st.nat,st.cls) && (st.n||1) > 1;
   const hint = () => { const h = $('#sPrevHint'); if (h) h.innerHTML = st.linked ? 'Acompanha a ocorrência até você alterá-la.' : 'Definida manualmente. <button type="button" class="lnk" id="sSync">Igualar à ocorrência</button>'; };
   function out(){
     const par = P.parc(st.nat, st.cls), n = par ? Math.max(1, Math.min(120, st.n||1)) : 1, d0 = new Date(st.date+'T12:00'), v = st.val, e = st.nat.s==='E';
-    const p0 = new Date(st.prev+'T12:00');
-    const lines = Array.from({length:n}, (_,i) => ({ d:toBR(n>1?addMonths(d0,i):d0), p:toBR(n>1?addMonths(p0,i):p0), t:`${st.desc||'Descrição'}${n>1?` (${i+1}/${n})`:''}` }));
+    const p0 = new Date(st.prev+'T12:00'), rule = diaOn(), D = Math.min(31, Math.max(1, st.dia || p0.getDate())), nom = { y:p0.getFullYear(), m:p0.getMonth() };
+    const lines = Array.from({length:n}, (_,i) => ({ d:toBR(n>1?addMonths(d0,i):d0), p:rule ? `${WD[projPrev(nom,D,i).getDay()]} ${toBR(projPrev(nom,D,i))}` : toBR(n>1?addMonths(p0,i):p0), t:`${st.desc||'Descrição'}${n>1?` (${i+1}/${n})`:''}` }));
     const eff = panel==='I'
       ? { 'Aplicação':['Soma ao <b>Patrimônio</b>','Conta em <b>Aportes</b>'], 'Rendimento':['Soma ao <b>Patrimônio</b>','Conta em <b>Rendimentos</b> e eleva a <b>Rentabilidade</b>'], 'Resgate':['Subtrai do <b>Patrimônio</b>','Conta em <b>Resgates e taxas</b>'], 'Taxas e IR':['Subtrai do <b>Patrimônio</b>','Conta em <b>Resgates e taxas</b>'] }[st.nat.n]
       : (e ? ['Soma ao <b>Saldo</b>','Conta em <b>Receitas</b>'] : ['Subtrai do <b>Saldo</b>','Conta em <b>Despesas</b> (e no gráfico por forma de pagamento)']);
@@ -460,7 +483,7 @@ function initSim(){
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ocorrência</th><th>Previsão</th><th>Descrição</th><th>Natureza</th><th>Classificação · Categoria</th><th class="num">Valor</th></tr></thead><tbody>
       ${lines.slice(0,6).map(l=>`<tr><td>${l.d}</td><td>${l.p}</td><td>${esc(l.t)}</td><td><span class="pill ${e?'inc':'exp'}">${esc(st.nat.n)}</span></td><td>${esc(st.cls)} · ${esc(st.cat)}</td><td class="num" style="color:var(--${e?'income':'expense'})">${e?'':'− '}${brl(v)}</td></tr>`).join('')}
       ${n>6?`<tr><td colspan="6" style="color:var(--muted)">… e mais ${n-6} linha(s)</td></tr>`:''}</tbody></table></div>
-      <ul class="effects">${eff.map(x=>`<li>${x}</li>`).join('')}${n>1?`<li>Total das ${n} linhas: <b>${brl(v*n)}</b></li>`:''}
+      <ul class="effects">${eff.map(x=>`<li>${x}</li>`).join('')}${n>1?`<li>Total das ${n} linhas: <b>${brl(v*n)}</b></li>`:''}${rule?`<li>Previsões sempre em <b>dia útil</b>, no dia ${D}; as parcelas seguintes só mudam pela 1ª parcela (🔒).</li>`:''}
       ${par?`<li>O campo <b>${P.parcLbl}</b> apareceu porque ${panel==='I'?'a natureza é <i>Aplicação</i>':'a despesa é <i>Fixa</i>'}.</li>`:''}</ul>`;
   }
   root.addEventListener('click', e => { if (e.target.id==='sSync') { st.linked = true; st.prev = st.date; $('#sPrev').value = st.prev; hint(); out(); return; } const b = e.target.closest('[data-n]'); if (!b) return; st.nat = P.nats.find(n=>n.n===b.dataset.n); build({cls:st.cls,cat:st.cat,pay:st.pay}); root.querySelector('#fPay').classList.add('flash'); });
@@ -468,7 +491,7 @@ function initSim(){
     const t = e.target.id;
     if (t==='sVal') st.val = maskBRL(e.target); else if (t==='sDesc') st.desc = e.target.value; else if (t==='sDate') { st.date = e.target.value || st.date; if (st.linked) { st.prev = st.date; $('#sPrev').value = st.prev; } }
     else if (t==='sPrev') { st.prev = e.target.value || st.prev; st.linked = false; hint(); }
-    else if (t==='sN') st.n = +e.target.value; else if (t==='sCls') { st.cls = e.target.value; $('#fParc').style.display = P.parc(st.nat,st.cls) ? '' : 'none'; if (P.parc(st.nat,st.cls)) $('#fParc').classList.add('flash'); }
+    else if (t==='sN') { st.n = +e.target.value; $('#fDia').style.display = diaOn() ? '' : 'none'; } else if (t==='sDia') st.dia = +e.target.value || 0; else if (t==='sCls') { st.cls = e.target.value; $('#fParc').style.display = P.parc(st.nat,st.cls) ? '' : 'none'; if (P.parc(st.nat,st.cls)) $('#fParc').classList.add('flash'); }
     else if (t==='sCat') st.cat = e.target.value; else if (t==='sPay') st.pay = e.target.value;
     out();
   });
@@ -495,14 +518,23 @@ function initScen(){
   $('#scen').onclick = e => { const c = e.target.closest('.chip'); if (c) show1(+c.dataset.i); }; show1(0);
 }
 function initParc(){
-  const P = SIM[panel], d = new Date(); d.setDate(31); d.setMonth(0); if (d.getMonth()!==0) d.setDate(28);
-  $('#pDate').value = `${new Date().getFullYear()}-01-31`; $('#pPrev').value = `${new Date().getFullYear()}-01-31`; $('#pDate').addEventListener('input', e => { $('#pPrev').value = e.target.value; }); $('#pVal').value = brl(panel==='I'?400:450); $('#pQtL').textContent = P.parcLbl;
+  const P = SIM[panel], isF = panel==='F', y = new Date().getFullYear(); let diaTouched = false;
+  $('#pDate').value = `${y}-10-31`; $('#pPrev').value = `${y}-10-31`; $('#pVal').value = brl(isF?450:400); $('#pQtL').textContent = P.parcLbl;
+  $('#pDiaF').style.display = isF ? '' : 'none'; $('#pDia').value = 31;
   const upd = () => {
     const v = (+($('#pVal').value.replace(/\D/g,''))||0)/100, n = Math.max(1, Math.min(120, +$('#pQt').value||1)), d0 = new Date($('#pDate').value+'T12:00'), p0 = new Date($('#pPrev').value+'T12:00');
     if (isNaN(d0) || isNaN(p0)) return;
-    $('#pOut').innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Linha</th><th>Ocorrência</th><th>Previsão</th><th class="num">Valor</th><th></th></tr></thead><tbody>${Array.from({length:Math.min(n,12)},(_,i)=>{ const x = addMonths(d0,i); return `<tr><td>${i+1}/${n}</td><td>${toBR(x)}</td><td>${toBR(addMonths(p0,i))}</td><td class="num">${brl(v)}</td><td style="color:var(--warn);font-size:.8rem">${x.getDate()!==d0.getDate()?`dia ${d0.getDate()} → ${x.getDate()}`:''}</td></tr>`; }).join('')}${n>12?`<tr><td colspan="5" style="color:var(--muted)">… e mais ${n-12} linha(s)</td></tr>`:''}</tbody></table></div><p style="margin-top:8px"><b>Total:</b> ${brl(v*n)} em ${n} linha(s)</p>`;
+    const D = Math.min(31, Math.max(1, +$('#pDia').value || p0.getDate())), nom = { y:p0.getFullYear(), m:p0.getMonth() }, rule = isF && n>1;
+    const rowsH = Array.from({length:Math.min(n,12)}, (_,i) => {
+      const x = addMonths(d0,i), pv = rule ? projPrev(nom,D,i) : addMonths(p0,i), nm = nomDate(nom,i,D);
+      const note = rule && pv.getTime()!==nm.getTime() ? `dia ${pad(nm.getDate())}/${pad(nm.getMonth()+1)} (${WD[nm.getDay()]}) não é útil` : '';
+      return `<tr><td>${i+1}/${n}${rule&&i?' 🔒':''}</td><td>${toBR(x)}</td><td>${WD[pv.getDay()]} ${toBR(pv)}</td><td class="num">${brl(v)}</td><td style="color:var(--warn);font-size:.8rem">${note}</td></tr>`; }).join('');
+    $('#pOut').innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Linha</th><th>Ocorrência</th><th>Previsão</th><th class="num">Valor</th><th>Ajuste</th></tr></thead><tbody>${rowsH}${n>12?`<tr><td colspan="5" style="color:var(--muted)">… e mais ${n-12} linha(s)</td></tr>`:''}</tbody></table></div><p style="margin-top:8px"><b>Total:</b> ${brl(v*n)} em ${n} linha(s)${rule?' · 🔒 = só muda pela 1ª parcela':''}</p>`;
   };
-  $('#pVal').addEventListener('input', e => { maskBRL(e.target); upd(); }); ['#pDate','#pPrev','#pQt'].forEach(s => $(s).addEventListener('input', upd)); upd();
+  $('#pDate').addEventListener('input', e => { $('#pPrev').value = e.target.value; if (!diaTouched) $('#pDia').value = new Date(e.target.value+'T12:00').getDate(); upd(); });
+  $('#pPrev').addEventListener('input', e => { if (!diaTouched) $('#pDia').value = new Date(e.target.value+'T12:00').getDate(); upd(); });
+  $('#pDia').addEventListener('input', () => { diaTouched = true; upd(); });
+  $('#pVal').addEventListener('input', e => { maskBRL(e.target); upd(); }); $('#pQt').addEventListener('input', upd); upd();
 }
 function initFiltros(){
   const D = panel==='I'
