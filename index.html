@@ -417,7 +417,8 @@ const parseBR = s => { const [d,m,y] = String(s).split('/').map(Number); return 
 const toBR = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 const isoToBR = iso => { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
 const brToISO = br => { const [d,m,y] = br.split('/'); return `${y}-${m}-${d}`; };
-const isoDate = d => d.toISOString().slice(0,10);
+// Data local (não UTC): toISOString() adianta o dia após as 21h no fuso de Brasília (GMT-3)
+const isoDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const natOf = r => r.tipoReceita ? 'R' : 'D';
 const clsOf = r => r.tipoReceita || r.tipoDespesa;
 const addMonths = (d, n) => { const r = new Date(d.getFullYear(), d.getMonth()+n, 1); r.setDate(Math.min(d.getDate(), new Date(r.getFullYear(), r.getMonth()+1, 0).getDate())); return r; };
