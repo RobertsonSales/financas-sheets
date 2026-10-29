@@ -410,7 +410,7 @@ const CAPTIONS = [
 
 /* ===================== STATE ===================== */
 let deferredInstallPrompt = null;
-let rows = [], demo = false, sortKey = 'data', sortDir = -1, page = 1, editing = null, charts = {}, pdfDoc = null, MOD = localStorage.getItem('fp-mod')==='I' ? 'I' : 'F';
+let rows = [], demo = false, sortKey = 'data', sortDir = 1, page = 1, editing = null, charts = {}, pdfDoc = null, MOD = localStorage.getItem('fp-mod')==='I' ? 'I' : 'F';
 const $ = s => document.querySelector(s);
 const brl = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const parseBR = s => { const [d,m,y] = String(s).split('/').map(Number); return new Date(y, (m||1)-1, d||1); };
@@ -979,14 +979,20 @@ function metrics(list){
     cnt ] };
 }
 const fmtK = i => i.count ? String(i.v) : i.pct ? fmtPct(i.v) : brl(i.v);
+// Ordem padrão: cronológica crescente. Parcelas ficam da 1ª à última e as demais despesas se intercalam pela data.
+// Empates (mesma data) são resolvidos sempre em ordem crescente: outra data, descrição-base e número da parcela.
 function sorted(list){
-  return [...list].sort((a,b)=>{ let x=a[sortKey], y=b[sortKey];
-    if (sortKey==='data' || sortKey==='previsao'){ x=parseBR(a[sortKey]||a.data); y=parseBR(b[sortKey]||b.data); } else if (sortKey==='valor'||sortKey==='parcelas'){ x=+x||0; y=+y||0; }
-    else if (sortKey==='nat'){ x=natName(a).toLowerCase(); y=natName(b).toLowerCase(); } else if (sortKey==='classe'){ x=clsOf(a).toLowerCase(); y=clsOf(b).toLowerCase(); }
-    else { x=String(x??'').toLowerCase(); y=String(y??'').toLowerCase(); }
-    return (x>y?1:x<y?-1:0)*sortDir; });
+  const cmp = (x,y) => x>y ? 1 : x<y ? -1 : 0;
+  const val = (r,k) => k==='data' || k==='previsao' ? parseBR(r[k] || r.data) : k==='valor' || k==='parcelas' ? (+r[k] || 0)
+    : k==='nat' ? natName(r).toLowerCase() : k==='classe' ? clsOf(r).toLowerCase() : String(r[k] ?? '').toLowerCase();
+  const tie = r => { const pi = parcelaInfo(r); return pi ? [pi.base.toLowerCase(), pi.i] : [String(r.descricao||'').toLowerCase(), 0]; };
+  return [...list].sort((a,b) => {
+    const c = cmp(val(a,sortKey), val(b,sortKey)) * sortDir; if (c) return c;
+    const ta = tie(a), tb = tie(b);
+    return cmp(parseBR(a.data), parseBR(b.data)) || cmp(parseBR(prevOf(a)), parseBR(prevOf(b))) || cmp(ta[0], tb[0]) || cmp(ta[1], tb[1]) || cmp(+a.valor, +b.valor);
+  });
 }
-document.querySelectorAll('th[data-s]').forEach(th=>th.onclick=()=>{ const k=th.dataset.s; sortDir = sortKey===k?-sortDir:-1; sortKey=k; render(); });
+document.querySelectorAll('th[data-s]').forEach(th=>th.onclick=()=>{ const k=th.dataset.s; sortDir = sortKey===k ? -sortDir : (k==='valor' ? -1 : 1); sortKey=k; render(); });
 function render(){
   const list = sorted(filtered()), m = metrics(list);
   const max = Math.max(1, ...m.items.filter(i=>i.bar).map(i=>i.v));
