@@ -185,6 +185,7 @@ html[data-theme="dark"] .modtab[data-m="I"]{--tab:#7c97ff}
 .cad-note{font-size:.85rem;color:var(--muted);margin:6px 0 2px;line-height:1.45}
 #quickModal{z-index:55}
 a.btn{text-decoration:none;color:var(--text);display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.lockbtn{opacity:.75}
 .chg{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
 .dmode{display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px}
 .dmode button{flex:1;border:none;background:none;padding:8px 6px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.82rem;white-space:nowrap}
@@ -307,6 +308,7 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
       <div class="field full"><label>Descrição</label><input id="iDesc" maxlength="120" required></div>
       <div class="field"><label>Classificação</label><div class="fld-row"><select id="iCls" required></select><button type="button" class="btn" data-add="cls" title="Cadastrar nova classificação" aria-label="Cadastrar nova classificação">＋</button></div></div>
       <div class="field hidden" id="parcWrap"><label id="parcLbl">Qt Parcelas</label><input type="number" id="iParc" min="1" max="120" value="1"><div class="hint" id="parcHint"></div></div>
+      <div class="field hidden" id="diaWrap"><label>Dia do vencimento</label><input type="number" id="iDia" min="1" max="31" inputmode="numeric"><div class="hint" id="diaHint"></div></div>
       <div class="field"><label>Categoria</label><div class="fld-row"><select id="iCat" required></select><button type="button" class="btn" data-add="cat" title="Cadastrar nova categoria" aria-label="Cadastrar nova categoria">＋</button></div></div>
       <div class="field"><label id="lblIPay">Forma de pagto./receb.</label><div class="fld-row"><select id="iPay" required></select><button type="button" class="btn" data-add="pay" title="Cadastrar nova forma de pagamento/recebimento" aria-label="Cadastrar nova forma de pagamento ou recebimento">＋</button></div></div>
     </div>
@@ -522,7 +524,7 @@ function offerDemo(e){
   return false;
 }
 // Lançamentos antigos não têm módulo/natureza: viram "Fluxo de caixa" (F) com Receita/Despesa.
-const normRow = r => ({ ...r, previsao: r.previsao || r.data, modulo: r.modulo==='I' ? 'I' : 'F', natureza: r.natureza || (r.tipoReceita ? 'Receita' : 'Despesa'), categoria: r.categoria || '' });
+const normRow = r => ({ ...r, previsao: r.previsao || r.data, diaVenc: r.diaVenc || '', modulo: r.modulo==='I' ? 'I' : 'F', natureza: r.natureza || (r.tipoReceita ? 'Receita' : 'Despesa'), categoria: r.categoria || '' });
 async function load(){
   try { await ensureAuth(); }
   catch (e) { loading(false); if (e.cancel) return false; if (offerDemo(e)) return load(); return false; }
@@ -1004,7 +1006,7 @@ function render(){
     <td>${esc(r.data)}</td><td class="${prevOf(r)!==r.data?'diff':''}"${prevOf(r)!==r.data?' title="Previsão diferente da ocorrência"':''}>${esc(prevOf(r))}</td><td>${esc(r.descricao)}</td><td>${esc(r.categoria||'—')}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${esc(natName(r))}</span></td>
     <td class="num" style="color:var(--${n==='R'?'income':'expense'})">${n==='R'?'':'− '}${brl(+r.valor)}</td>
     <td>${esc(clsOf(r))}</td><td>${esc(r.parcelas)}</td><td>${esc(r.formaPagto)}</td>
-    <td style="white-space:nowrap"><button class="btn btn-sm" data-e="${esc(r.id)}" title="Editar">✏️</button> <button class="btn btn-sm btn-danger" data-d="${esc(r.id)}" title="Excluir">🗑</button></td></tr>`; }).join('')
+    <td style="white-space:nowrap">${isLocked(r) ? `<button class="btn btn-sm lockbtn" data-e="${esc(r.id)}" title="Parcela seguinte: só muda pela 1ª parcela">🔒</button>` : `<button class="btn btn-sm" data-e="${esc(r.id)}" title="Editar">✏️</button>`} <button class="btn btn-sm btn-danger" data-d="${esc(r.id)}" title="Excluir">🗑</button></td></tr>`; }).join('')
     : `<tr><td colspan="10" class="empty">Nenhum lançamento encontrado para os filtros atuais.</td></tr>`;
   $('#pgInfo').textContent = `Página ${page} de ${pages} · ${list.length} registros`;
   $('#pgPrev').disabled = page<=1; $('#pgNext').disabled = page>=pages;
@@ -1070,22 +1072,70 @@ $('#natSeg').onclick = e => {
   const pc = $('#iCat').value, pk = $('#iCls').value, py = $('#iPay').value, n = b.dataset.n;
   setNat(n, { cat: catsFor(MOD,n).includes(pc) ? pc : '', cls: classesFor(MOD,n).includes(pk) ? pk : undefined, pay: paysFor(MOD,n).includes(py) ? py : '' });
 };
+/* ===================== DIAS ÚTEIS E VENCIMENTO DE PARCELAS ===================== */
+// Dia útil = segunda a sexta, exceto feriados nacionais e os dias sem expediente bancário (Carnaval, Sexta-feira Santa e Corpus Christi).
+// Feriados estaduais e municipais não são considerados.
+const _hol = {};
+function easter(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),t=h+l-7*m+114; return new Date(y, Math.floor(t/31)-1, (t%31)+1); }
+const dkey = d => `${d.getMonth()}-${d.getDate()}`;
+function holidays(y){
+  if (_hol[y]) return _hol[y];
+  const s = new Set(['0-1','3-21','4-1','8-7','9-12','10-2','10-15','10-20','11-25']), e = easter(y);   // 1/1, 21/4, 1/5, 7/9, 12/10, 2/11, 15/11, 20/11, 25/12
+  [-48,-47,-2,60].forEach(n => s.add(dkey(new Date(y, e.getMonth(), e.getDate()+n))));                      // Carnaval (seg/ter), Sexta-feira Santa, Corpus Christi
+  return _hol[y] = s;
+}
+const isBiz = d => d.getDay()%6 !== 0 && !holidays(d.getFullYear()).has(dkey(d));
+function nextBiz(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); while (!isBiz(x)) x.setDate(x.getDate()+1); return x; }   // vencimento em dia não útil passa para o próximo dia útil
+const nomDate = (nom, off, D) => { const t = new Date(nom.y, nom.m + off, 1); return new Date(t.getFullYear(), t.getMonth(), Math.min(D, new Date(t.getFullYear(), t.getMonth()+1, 0).getDate())); };
+const projPrev = (nom, D, off) => nextBiz(nomDate(nom, off, D));   // previsão da parcela "off" meses após a 1ª: dia D do mês, sempre em dia útil
+function nomOf(prevBR, D){   // mês nominal (antes do ajuste de dia útil) de uma previsão já gravada
+  const p = parseBR(prevBR);
+  for (const off of [0,-1,1]) { const nom = { y:new Date(p.getFullYear(), p.getMonth()+off, 1).getFullYear(), m:new Date(p.getFullYear(), p.getMonth()+off, 1).getMonth() }; if (projPrev(nom, D, 0).getTime() === p.getTime()) return nom; }
+  return { y:p.getFullYear(), m:p.getMonth() };
+}
+const WD = ['dom','seg','ter','qua','qui','sex','sáb'];
+const fmtWD = d => `${WD[d.getDay()]} ${toBR(d)}`;
+let editSeq = false, editGroup = null, diaTouched = false, prevNom = null, seqPainted = '';
+// Regras de parcelamento de DESPESAS (painel Fluxo de caixa): dia de vencimento, previsão em dia útil e projeção a partir da 1ª parcela.
+const seqActive = () => MOD==='F' && signOfName(natSel)==='S' && (editing ? editSeq : (canParc() && (+$('#iParc').value||1) > 1));
+function seqPaint(){
+  const D = Math.min(31, Math.max(1, +$('#iDia').value || 1)), nom = nomDate(prevNom, 0, D), adj = nextBiz(nom);
+  $('#iPrev').value = isoDate(adj); seqPainted = $('#iPrev').value;
+  $('#diaHint').textContent = `Vence todo dia ${D}, sempre em dia útil. 1ª parcela: ${fmtWD(adj)}${adj.getTime()!==nom.getTime() ? ` (${toBR(nom)} não é dia útil)` : ''}.`;
+}
+function seqFrom(iso){ const d = new Date(iso+'T12:00'); if (isNaN(d)) return; prevNom = { y:d.getFullYear(), m:d.getMonth() }; if (!diaTouched) $('#iDia').value = d.getDate(); seqPaint(); }
+function syncSeq(){
+  const on = seqActive(); $('#diaWrap').classList.toggle('hidden', !on); if (!on) return;
+  if (prevNom && $('#iPrev').value === seqPainted && $('#iDia').value) seqPaint(); else seqFrom($('#iPrev').value);
+}
+// Parcela que não é a 1ª de uma despesa parcelada fica bloqueada: só muda pela 1ª parcela, que projeta as demais.
+function isLocked(r){ if (r.modulo!=='F' || natOf(r)!=='D') return false; const g = groupOf(r); return !!g && g.length>1 && g[0].id!==r.id; }
+function tryEdit(r){
+  if (!r) return;
+  if (!isLocked(r)) return openForm(r);
+  const first = groupOf(r)[0];
+  if (confirm(`"${r.descricao}" é uma parcela seguinte: ela não pode ser alterada diretamente.\nTodas as parcelas seguintes acompanham a 1ª parcela (${first.descricao}).\n\nAbrir a 1ª parcela para edição?`)) openForm(first);
+}
 const canParc = () => MOD==='I' ? natSel==='Aplicação' : (signOfName(natSel)==='S' && $('#iCls').value==='Fixa');
 function updParc(){
   const ok = canParc(); $('#parcWrap').classList.toggle('hidden', !ok); $('#parcLbl').textContent = MODCFG[MOD].parc;
   const n = +$('#iParc').value||1, v = getValor();
-  $('#parcHint').textContent = editing ? 'Edição altera apenas esta linha.' : (ok && n>1 ? `Serão geradas ${n} linhas mensais de ${brl(v)} (total ${brl(v*n)}).` : '');
+  $('#parcHint').textContent = editing ? (editSeq ? `Alterações nesta 1ª parcela são projetadas nas ${editGroup.length-1} parcelas seguintes.` : 'Edição altera apenas esta linha.') : (ok && n>1 ? `Serão geradas ${n} linhas mensais de ${brl(v)} (total ${brl(v*n)}).` : '');
+  syncSeq();
 }
 $('#iValor').addEventListener('input',()=>{ maskBRL($('#iValor')); updParc(); });
 ['#iCls','#iParc'].forEach(s=>$(s).addEventListener('input',updParc));
 const paintPrevHint = () => { $('#prevHint').innerHTML = prevLinked ? 'Acompanha a ocorrência até você alterá-la.' : 'Definida manualmente. <button type="button" class="linkbtn" id="prevSync">Igualar à ocorrência</button>'; };
-$('#iData').addEventListener('input', () => { if (prevLinked) $('#iPrev').value = $('#iData').value; });
-$('#iPrev').addEventListener('input', () => { prevLinked = false; paintPrevHint(); });
-$('#prevHint').addEventListener('click', e => { if (e.target.id==='prevSync') { prevLinked = true; $('#iPrev').value = $('#iData').value; paintPrevHint(); } });
+$('#iData').addEventListener('input', () => { if (prevLinked) { $('#iPrev').value = $('#iData').value; if (seqActive()) seqFrom($('#iPrev').value); } });
+$('#iPrev').addEventListener('input', () => { prevLinked = false; paintPrevHint(); if (seqActive()) seqFrom($('#iPrev').value); });
+$('#iDia').addEventListener('input', () => { diaTouched = true; if (seqActive() && prevNom) seqPaint(); });
+$('#prevHint').addEventListener('click', e => { if (e.target.id==='prevSync') { prevLinked = true; $('#iPrev').value = $('#iData').value; paintPrevHint(); if (seqActive()) seqFrom($('#iPrev').value); } });
 function openForm(r){
-  editing = r || null; $('#formTitle').textContent = (r ? 'Editar' : 'Novo') + (MOD==='I' ? ' lançamento de investimento' : ' lançamento');
+  editing = r || null; editSeq = false; editGroup = null; diaTouched = false; prevNom = null; seqPainted = '';
+  if (r && r.modulo==='F' && natOf(r)==='D') { const g = groupOf(r); if (g && g.length>1 && g[0].id===r.id) { editSeq = true; editGroup = g; } } $('#formTitle').textContent = (r ? 'Editar' : 'Novo') + (MOD==='I' ? ' lançamento de investimento' : ' lançamento');
   $('#iData').value = r ? brToISO(r.data) : isoDate(new Date());
-  $('#iPrev').value = r ? brToISO(prevOf(r)) : $('#iData').value; prevLinked = !r || prevOf(r)===r.data; paintPrevHint(); $('#iValor').value = r ? centsToBRL(Math.round(r.valor*100)) : ''; $('#iDesc').value = r?.descricao ?? '';
+  $('#iPrev').value = r ? brToISO(prevOf(r)) : $('#iData').value; prevLinked = !r || prevOf(r)===r.data; paintPrevHint(); $('#iValor').value = r ? centsToBRL(Math.round(r.valor*100)) : ''; $('#iDesc').value = r ? (editSeq ? parcelaInfo(r).base : r.descricao) : '';
+  if (editSeq) { const D = +r.diaVenc || parseBR(prevOf(r)).getDate(); $('#iDia').value = D; diaTouched = true; prevNom = nomOf(prevOf(r), D); seqPainted = $('#iPrev').value; } else $('#iDia').value = '';
   $('#iParc').value = r?.parcelas || 1; $('#iParc').disabled = !!r;
   setNat(r ? natName(r) : MODCFG[MOD].defNat, { cls: r ? clsOf(r) : undefined, cat: r?.categoria || '', pay: r?.formaPagto || '' });
   $('#formModal').classList.remove('hidden'); $('#iDesc').focus();
@@ -1102,14 +1152,24 @@ $('#form').onsubmit = async e => {
   if (!cat) return toast('Escolha ou cadastre uma categoria (＋).');
   if (!(valor>0) || !desc || !pay || !$('#iData').value || !$('#iPrev').value) return toast('Preencha todos os campos corretamente.');
   const sg = signOfName(natSel), par = canParc(), n = par ? Math.max(1, Math.min(120, parseInt($('#iParc').value)||1)) : '';
+  const seq = seqActive(), D = seq ? parseInt($('#iDia').value) : '';
+  if (seq && !(D>=1 && D<=31)) return toast('Informe o dia do vencimento (1 a 31).');
+  if (seq && !prevNom) seqFrom($('#iPrev').value);
   // O sinal (entrada/saída) segue nas colunas Tipo Receita / Tipo Despesa, como na planilha original.
-  const base = { modulo:MOD, natureza:natSel, descricao:desc, valor, tipoDespesa:sg==='S'?cls:'', tipoReceita:sg==='E'?cls:'', parcelas:par?n:'', formaPagto:pay, categoria:cat };
+  const base = { modulo:MOD, natureza:natSel, descricao:desc, valor, tipoDespesa:sg==='S'?cls:'', tipoReceita:sg==='E'?cls:'', parcelas:par?n:'', formaPagto:pay, categoria:cat, diaVenc:seq?D:'' };
+  let seqUps = null;
+  if (editing && editSeq) {   // 1ª parcela alterada: todas as demais seguem as regras de projeção
+    const pi0 = parcelaInfo(editing), d0 = new Date($('#iData').value+'T12:00');
+    if (editGroup.length>1 && !confirm(`Esta é a 1ª parcela de ${editGroup.length}. As ${editGroup.length-1} parcelas seguintes serão recalculadas (descrição, valor, classificação, categoria, forma, ocorrência e previsão, no dia ${D} e em dia útil).\n\nContinuar?`)) return;
+    seqUps = editGroup.map(x => { const j = parcelaInfo(x).i, off = j - pi0.i; return { ...x, ...base, descricao:`${desc} (${j}/${pi0.n})`, parcelas:x.parcelas, data:toBR(addMonths(d0,off)), previsao:toBR(projPrev(prevNom, D, off)), diaVenc:D }; });
+  }
   loading(true);
   try {
-    if (editing) { await api('POST', { action:'update', row:{ ...editing, ...base, parcelas: par ? editing.parcelas || n : '', data: isoToBR($('#iData').value), previsao: isoToBR($('#iPrev').value) } }); toast('Lançamento atualizado.'); }
+    if (seqUps) { await updateMany(seqUps); toast(`1ª parcela atualizada e ${seqUps.length-1} parcela(s) reprojetada(s).`); }
+    else if (editing) { await api('POST', { action:'update', row:{ ...editing, ...base, parcelas: par ? editing.parcelas || n : '', data: isoToBR($('#iData').value), previsao: isoToBR($('#iPrev').value) } }); toast('Lançamento atualizado.'); }
     else {
       const d0 = new Date($('#iData').value+'T12:00'), p0 = new Date($('#iPrev').value+'T12:00');
-      const list = par && n>1 ? Array.from({length:n},(_,i)=>({ ...base, data:toBR(addMonths(d0,i)), previsao:toBR(addMonths(p0,i)), descricao:`${desc} (${i+1}/${n})` })) : [{ ...base, data:toBR(d0), previsao:toBR(p0) }];
+      const list = par && n>1 ? Array.from({length:n},(_,i)=>({ ...base, data:toBR(addMonths(d0,i)), previsao:toBR(seq ? projPrev(prevNom, D, i) : addMonths(p0,i)), descricao:`${desc} (${i+1}/${n})` })) : [{ ...base, data:toBR(d0), previsao:toBR(p0) }];
       await api('POST', { action:'create', rows:list }); toast(list.length>1?`${list.length} parcelas registradas.`:'Lançamento registrado.');
     }
     $('#formModal').classList.add('hidden'); loading(false); await load();
@@ -1180,7 +1240,7 @@ $('#delModal').addEventListener('click', e => {
 });
 $('#tbody').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.e) return openForm(rows.find(r=>r.id===b.dataset.e));
+  if (b.dataset.e) return tryEdit(rows.find(r=>r.id===b.dataset.e));
   const r = rows.find(x=>x.id===b.dataset.d); if (r) openDel(r);
 };
 
