@@ -166,6 +166,7 @@ const brl = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 const pad = n => String(n).padStart(2,'0');
+const isoLocal = (d=new Date()) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;   // data local, não UTC
 const toBR = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
 const addMonths = (d,n) => { const r = new Date(d.getFullYear(), d.getMonth()+n, 1); r.setDate(Math.min(d.getDate(), new Date(r.getFullYear(), r.getMonth()+1, 0).getDate())); return r; };
 const maskBRL = el => { const d = el.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,11); el.value = d ? brl(+d/100) : ''; return d ? +d/100 : 0; };
@@ -426,7 +427,7 @@ $('#q').addEventListener('keydown', e => { if (e.key==='Enter') $('#view .hit')?
 
 /* ===================== simulador do formulário ===================== */
 function initSim(){
-  const P = SIM[panel], st = { nat:P.nats[panel==='I'?0:1], cls:'', cat:'', pay:'', val:0, desc:'', n:1, date:new Date().toISOString().slice(0,10), prev:new Date().toISOString().slice(0,10), linked:true };
+  const P = SIM[panel], st = { nat:P.nats[panel==='I'?0:1], cls:'', cat:'', pay:'', val:0, desc:'', n:1, date:isoLocal(), prev:isoLocal(), linked:true };
   const root = $('#sim'), opts = a => a.map(x=>`<option>${esc(x)}</option>`).join('');
   function build(keep){
     st.cls = st.nat.cls.includes(keep?.cls) ? keep.cls : st.nat.cls[0];
