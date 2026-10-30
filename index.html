@@ -1098,10 +1098,17 @@ const fmtWD = d => `${WD[d.getDay()]} ${toBR(d)}`;
 let editSeq = false, editGroup = null, diaTouched = false, prevNom = null, seqPainted = '';
 // Regras de parcelamento de DESPESAS (painel Fluxo de caixa): dia de vencimento, previsão em dia útil e projeção a partir da 1ª parcela.
 const seqActive = () => MOD==='F' && signOfName(natSel)==='S' && (editing ? editSeq : (canParc() && (+$('#iParc').value||1) > 1));
-function seqPaint(){
+// seqHint só atualiza o texto de ajuda (não mexe no campo Previsão, para não atrapalhar a digitação/seleção do calendário)
+function seqHint(){
   const D = Math.min(31, Math.max(1, +$('#iDia').value || 1)), nom = nomDate(prevNom, 0, D), adj = nextBiz(nom);
-  $('#iPrev').value = isoDate(adj); seqPainted = $('#iPrev').value;
   $('#diaHint').textContent = `Vence todo dia ${D}, sempre em dia útil. 1ª parcela: ${fmtWD(adj)}${adj.getTime()!==nom.getTime() ? ` (${toBR(nom)} não é dia útil)` : ''}.`;
+  return adj;
+}
+function seqPaint(){ const adj = seqHint(); $('#iPrev').value = isoDate(adj); seqPainted = $('#iPrev').value; }
+// A data escolhida/digitada na Previsão manda: define o mês-base e o dia de vencimento da série.
+function seqFromPrev(){
+  const d = new Date($('#iPrev').value+'T12:00'); if (isNaN(d)) return false;
+  prevNom = { y:d.getFullYear(), m:d.getMonth() }; $('#iDia').value = d.getDate(); diaTouched = true; return true;
 }
 function seqFrom(iso){ const d = new Date(iso+'T12:00'); if (isNaN(d)) return; prevNom = { y:d.getFullYear(), m:d.getMonth() }; if (!diaTouched) $('#iDia').value = d.getDate(); seqPaint(); }
 function syncSeq(){
@@ -1126,10 +1133,12 @@ function updParc(){
 $('#iValor').addEventListener('input',()=>{ maskBRL($('#iValor')); updParc(); });
 ['#iCls','#iParc'].forEach(s=>$(s).addEventListener('input',updParc));
 const paintPrevHint = () => { $('#prevHint').innerHTML = prevLinked ? 'Acompanha a ocorrência até você alterá-la.' : 'Definida manualmente. <button type="button" class="linkbtn" id="prevSync">Igualar à ocorrência</button>'; };
-$('#iData').addEventListener('input', () => { if (prevLinked) { $('#iPrev').value = $('#iData').value; if (seqActive()) seqFrom($('#iPrev').value); } });
-$('#iPrev').addEventListener('input', () => { prevLinked = false; paintPrevHint(); if (seqActive()) seqFrom($('#iPrev').value); });
+$('#iData').addEventListener('input', () => { if (prevLinked) { $('#iPrev').value = $('#iData').value; if (seqActive() && seqFromPrev()) seqPaint(); } });
+// input: só registra o que foi digitado/escolhido (sem reescrever o campo); change: ao confirmar, ajusta para dia útil
+$('#iPrev').addEventListener('input', () => { prevLinked = false; paintPrevHint(); if (seqActive() && seqFromPrev()) seqHint(); });
+$('#iPrev').addEventListener('change', () => { if (seqActive() && seqFromPrev()) seqPaint(); });
 $('#iDia').addEventListener('input', () => { diaTouched = true; if (seqActive() && prevNom) seqPaint(); });
-$('#prevHint').addEventListener('click', e => { if (e.target.id==='prevSync') { prevLinked = true; $('#iPrev').value = $('#iData').value; paintPrevHint(); if (seqActive()) seqFrom($('#iPrev').value); } });
+$('#prevHint').addEventListener('click', e => { if (e.target.id==='prevSync') { prevLinked = true; $('#iPrev').value = $('#iData').value; paintPrevHint(); if (seqActive() && seqFromPrev()) seqPaint(); } });
 function openForm(r){
   editing = r || null; editSeq = false; editGroup = null; diaTouched = false; prevNom = null; seqPainted = '';
   if (r && r.modulo==='F' && natOf(r)==='D') { const g = groupOf(r); if (g && g.length>1 && g[0].id===r.id) { editSeq = true; editGroup = g; } } $('#formTitle').textContent = (r ? 'Editar' : 'Novo') + (MOD==='I' ? ' lançamento de investimento' : ' lançamento');
