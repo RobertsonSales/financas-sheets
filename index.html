@@ -1051,7 +1051,7 @@ function renderCharts(list){
 /* ===================== FORM / CRUD ===================== */
 function renderSeg(extra){
   const list = uniq([...natsOf(MOD).map(x=>x.n), ...(extra ? [extra] : [])]);
-  $('#natSeg').innerHTML = list.map(n => { const e = signOfName(n)==='E'; return `<button type="button" data-n="${esc(n)}" class="${e?'inc':'exp'}${n===natSel?' on':''}" aria-pressed="${n===natSel}">${e?'↑':'↓'} ${esc(n)}</button>`; }).join('')
+  $('#natSeg').innerHTML = list.map(n => { const e = signOfName(n)==='E', off = !!editing && signOfName(n)!==signOfName(natSel); return `<button type="button" data-n="${esc(n)}" class="${e?'inc':'exp'}${n===natSel?' on':''}" aria-pressed="${n===natSel}"${off?' disabled title="Inativa: não é possível trocar entre despesa e receita ao editar" style="opacity:.45;cursor:not-allowed"':''}>${e?'↑':'↓'} ${esc(n)}</button>`; }).join('')
     + '<button type="button" class="seg-add" data-add="nat" title="Cadastrar nova natureza" aria-label="Cadastrar nova natureza">＋ Nova</button>';
 }
 // list = opções; val = valor atual (entra na lista se for antigo); force = exige escolher (placeholder sempre)
@@ -1120,7 +1120,7 @@ const canParc = () => MOD==='I' ? natSel==='Aplicação' : (signOfName(natSel)==
 function updParc(){
   const ok = canParc(); $('#parcWrap').classList.toggle('hidden', !ok); $('#parcLbl').textContent = MODCFG[MOD].parc;
   const n = +$('#iParc').value||1, v = getValor();
-  $('#parcHint').textContent = editing ? (editSeq ? `Alterações nesta 1ª parcela são projetadas nas ${editGroup.length-1} parcelas seguintes.` : 'Edição altera apenas esta linha.') : (ok && n>1 ? `Serão geradas ${n} linhas mensais de ${brl(v)} (total ${brl(v*n)}).` : '');
+  $('#parcHint').textContent = editing ? (editSeq ? `Alterações nesta 1ª parcela são projetadas nas demais. Aumente ou reduza a quantidade para criar ou remover parcelas no final da série (hoje: ${editGroup.length}).` : 'Edição altera apenas esta linha.') : (ok && n>1 ? `Serão geradas ${n} linhas mensais de ${brl(v)} (total ${brl(v*n)}).` : '');
   syncSeq();
 }
 $('#iValor').addEventListener('input',()=>{ maskBRL($('#iValor')); updParc(); });
@@ -1136,7 +1136,8 @@ function openForm(r){
   $('#iData').value = r ? brToISO(r.data) : isoDate(new Date());
   $('#iPrev').value = r ? brToISO(prevOf(r)) : $('#iData').value; prevLinked = !r || prevOf(r)===r.data; paintPrevHint(); $('#iValor').value = r ? centsToBRL(Math.round(r.valor*100)) : ''; $('#iDesc').value = r ? (editSeq ? parcelaInfo(r).base : r.descricao) : '';
   if (editSeq) { const D = +r.diaVenc || parseBR(prevOf(r)).getDate(); $('#iDia').value = D; diaTouched = true; prevNom = nomOf(prevOf(r), D); seqPainted = $('#iPrev').value; } else $('#iDia').value = '';
-  $('#iParc').value = r?.parcelas || 1; $('#iParc').disabled = !!r;
+  $('#iParc').value = r?.parcelas || 1; $('#iParc').disabled = !!r && !editSeq;
+  $('#iCls').disabled = editSeq; const addCls = $('#form [data-add="cls"]'); if (addCls) addCls.disabled = editSeq;   // 1ª parcela: classificação não editável
   setNat(r ? natName(r) : MODCFG[MOD].defNat, { cls: r ? clsOf(r) : undefined, cat: r?.categoria || '', pay: r?.formaPagto || '' });
   $('#formModal').classList.remove('hidden'); $('#iDesc').focus();
 }
@@ -1157,15 +1158,28 @@ $('#form').onsubmit = async e => {
   if (seq && !prevNom) seqFrom($('#iPrev').value);
   // O sinal (entrada/saída) segue nas colunas Tipo Receita / Tipo Despesa, como na planilha original.
   const base = { modulo:MOD, natureza:natSel, descricao:desc, valor, tipoDespesa:sg==='S'?cls:'', tipoReceita:sg==='E'?cls:'', parcelas:par?n:'', formaPagto:pay, categoria:cat, diaVenc:seq?D:'' };
-  let seqUps = null;
+  let seqUps = null, seqDel = [], seqNew = [];
   if (editing && editSeq) {   // 1ª parcela alterada: todas as demais seguem as regras de projeção
-    const pi0 = parcelaInfo(editing), d0 = new Date($('#iData').value+'T12:00');
-    if (editGroup.length>1 && !confirm(`Esta é a 1ª parcela de ${editGroup.length}. As ${editGroup.length-1} parcelas seguintes serão recalculadas (descrição, valor, classificação, categoria, forma, ocorrência e previsão, no dia ${D} e em dia útil).\n\nContinuar?`)) return;
-    seqUps = editGroup.map(x => { const j = parcelaInfo(x).i, off = j - pi0.i; return { ...x, ...base, descricao:`${desc} (${j}/${pi0.n})`, parcelas:x.parcelas, data:toBR(addMonths(d0,off)), previsao:toBR(projPrev(prevNom, D, off)), diaVenc:D }; });
+    const pi0 = parcelaInfo(editing), d0 = new Date($('#iData').value+'T12:00'), N = n || pi0.n;
+    if (N < pi0.i) return toast(`A quantidade de parcelas não pode ser menor que ${pi0.i}.`);
+    const clsKeep = editing.tipoReceita || editing.tipoDespesa;   // classificação da 1ª parcela não muda
+    base.tipoDespesa = editing.tipoDespesa; base.tipoReceita = editing.tipoReceita;
+    const proj = j => ({ data:toBR(addMonths(d0, j - pi0.i)), previsao:toBR(projPrev(prevNom, D, j - pi0.i)) });
+    const resize = N !== pi0.n;
+    const keepG = editGroup.filter(x => parcelaInfo(x).i <= N);
+    seqDel = editGroup.filter(x => parcelaInfo(x).i > N).map(x => x.id);
+    if (resize) { const have = new Set(editGroup.map(x => parcelaInfo(x).i)); for (let j = pi0.n + 1; j <= N; j++) if (!have.has(j)) seqNew.push({ ...base, ...proj(j), descricao:`${desc} (${j}/${N})`, parcelas:N, diaVenc:D }); }
+    if (editGroup.length>1 || resize) { const extra = resize ? `\n\nParcelas: ${pi0.n} → ${N} (${seqNew.length} a criar, ${seqDel.length} a excluir).` : ''; if (!confirm(`Esta é a 1ª parcela de ${editGroup.length}. As demais serão recalculadas (descrição, valor, forma, categoria, ocorrência e previsão, no dia ${D} e em dia útil). A classificação (${clsKeep}) não muda.${extra}\n\nContinuar?`)) return; }
+    seqUps = keepG.map(x => { const j = parcelaInfo(x).i; return { ...x, ...base, descricao:`${desc} (${j}/${N})`, parcelas:N, ...proj(j), diaVenc:D }; });
   }
   loading(true);
   try {
-    if (seqUps) { await updateMany(seqUps); toast(`1ª parcela atualizada e ${seqUps.length-1} parcela(s) reprojetada(s).`); }
+    if (seqUps) {
+      await updateMany(seqUps);
+      if (seqNew.length) await api('POST', { action:'create', rows:seqNew });
+      if (seqDel.length) await api('POST', { action:'delete', ids:seqDel });
+      toast(`1ª parcela atualizada, ${seqUps.length-1} reprojetada(s)` + (seqNew.length ? `, ${seqNew.length} criada(s)` : '') + (seqDel.length ? `, ${seqDel.length} excluída(s)` : '') + '.');
+    }
     else if (editing) { await api('POST', { action:'update', row:{ ...editing, ...base, parcelas: par ? editing.parcelas || n : '', data: isoToBR($('#iData').value), previsao: isoToBR($('#iPrev').value) } }); toast('Lançamento atualizado.'); }
     else {
       const d0 = new Date($('#iData').value+'T12:00'), p0 = new Date($('#iPrev').value+'T12:00');
