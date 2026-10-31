@@ -205,6 +205,46 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
+
+/* ===== Conciliação patrimonial ===== */
+#concModal .card{width:min(1080px,100%)}
+.cc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.cc-top h3{margin:0}.cc-top .muted{color:var(--muted);font-size:.88rem;margin-top:2px}
+.cc-bar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:14px}
+.cc-bar .field{min-width:170px}.cc-bar .chips{margin:0}
+.cc-body{flex:1;min-height:0;overflow:auto;margin-top:14px;padding-right:2px}
+.cc-hero{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.cc-ind{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.cc-k{position:relative;overflow:hidden;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:13px 14px 13px 18px}
+.cc-k::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--primary))}
+.cc-k span{display:block;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.cc-k b{display:block;font-family:'Fraunces';font-size:1.35rem;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.cc-k small{color:var(--muted);font-size:.78rem}
+.cc-eq{display:flex;height:10px;border-radius:8px;overflow:hidden;margin-top:14px;background:var(--border)}
+.cc-eqlbl{display:flex;justify-content:space-between;font-size:.76rem;color:var(--muted);font-weight:600;margin-top:4px}
+.cc-sec{margin-top:22px}
+.cc-sec h4{font-family:'Fraunces';font-size:1.1rem;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.cc-sec h4::before{content:"";width:4px;height:18px;border-radius:3px;background:var(--accent)}
+.cc-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.cc-box{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.cc-box h5{font-size:.95rem;margin-bottom:8px;font-family:'Fraunces'}
+.cc-row{display:flex;justify-content:space-between;gap:10px;font-size:.9rem;font-variant-numeric:tabular-nums}
+.cc-meter{height:6px;background:var(--border);border-radius:6px;overflow:hidden;margin:4px 0 2px}
+.cc-meter i{display:block;height:100%;background:var(--c,var(--primary));border-radius:6px}
+.cc-line{margin-bottom:9px}.cc-sub{font-size:.76rem;color:var(--muted)}
+.cc-memo{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border);font-size:.8rem;color:var(--muted)}
+.cc-chart{position:relative;height:300px;margin-bottom:12px}
+.cc-note{font-size:.78rem;color:var(--muted);margin-top:8px}
+.cc-t{min-width:560px}.cc-t th{cursor:default}.cc-t th.r{text-align:right}
+.cc-t tr.cc-tot td{font-weight:800;background:var(--surface-2)}
+.cc-ins{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px}
+.cc-i{border:1px solid var(--border);border-left:4px solid var(--c,var(--primary));background:var(--surface-2);border-radius:12px;padding:11px 14px}
+.cc-i b{font-size:.92rem}.cc-i p{font-size:.84rem;color:var(--muted);margin-top:4px;line-height:1.45}
+.cc-check{margin-top:12px;display:grid;gap:4px;font-size:.84rem;font-weight:600}
+.cc-check .ok{color:var(--income)}.cc-check .bad{color:var(--expense)}
+.cc-met{margin-top:18px;font-size:.84rem;color:var(--muted)}.cc-met summary{cursor:pointer;font-weight:700;color:var(--text)}
+.cc-met ul{margin:8px 0 4px 18px;display:grid;gap:5px;line-height:1.45}
+@media (max-width:640px){.cc-hero{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-bar .field{flex:1 1 100%}.cc-chart{height:240px}}
 </style>
 </head>
 <body>
@@ -244,6 +284,7 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
       <button class="btn" id="reloadBtn">⟳ <span class="lbl">Atualizar</span></button>
       <button class="btn" id="pdfBtn">📄 PDF</button>
       <button class="btn" id="xlsBtn">📗 Excel</button>
+      <button class="btn" id="concBtn" title="Conciliação de ativos e passivos em uma data">⚖️ Conciliação</button>
       <button class="btn" id="cadBtn" title="Cadastrar naturezas, classificações, categorias e formas de pagamento/recebimento">⚙️ Cadastros</button>
       <a class="btn" id="helpBtn" href="#" target="_blank" rel="noopener" title="Abrir o tutorial em nova aba">❓ Tutorial</a>
     </div>
@@ -349,6 +390,21 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
     <h3 id="dlTitle">Excluir parcela</h3>
     <div id="dlBody"></div>
     <div class="modal-foot" id="dlFoot" style="flex-wrap:wrap"></div>
+  </div>
+</div>
+
+<!-- CONCILIAÇÃO PATRIMONIAL (fica antes do modal de PDF para que a pré-visualização apareça por cima) -->
+<div class="modal wide hidden" id="concModal">
+  <div class="card">
+    <div class="cc-top">
+      <div><h3>⚖️ Conciliação patrimonial</h3><div class="muted" id="cSub">—</div></div>
+      <div class="actions"><button class="btn btn-primary" id="cPdf">📄 Gerar PDF</button><button class="btn" data-close>Fechar</button></div>
+    </div>
+    <div class="cc-bar">
+      <div class="field"><label for="cDate">Data da posição</label><input type="date" id="cDate"></div>
+      <div class="chips" id="cQuick"><button type="button" class="chip" data-q="today">Hoje</button><button type="button" class="chip" data-q="eom">Fim do mês</button><button type="button" class="chip" data-q="p30">+30 dias</button><button type="button" class="chip" data-q="p90">+90 dias</button><button type="button" class="chip" data-q="eoy">Fim do ano</button></div>
+    </div>
+    <div class="cc-body" id="cBody"></div>
   </div>
 </div>
 
@@ -1296,8 +1352,8 @@ function buildPDF(){
       doc.text(`Página ${doc.internal.getNumberOfPages()}`,W-14,H-8,{align:'right'}); }, margin:{top:14,bottom:14} });
   return doc;
 }
-$('#pdfBtn').onclick = () => { pdfDoc = buildPDF(); $('#pdfFrame').src = pdfDoc.output('bloburl'); $('#pdfModal').classList.remove('hidden'); };
-$('#pdfDl').onclick = () => pdfDoc?.save(`relatorio-${MODCFG[MOD].file}-${isoDate(new Date())}.pdf`);
+$('#pdfBtn').onclick = () => { pdfName = null; pdfDoc = buildPDF(); $('#pdfFrame').src = pdfDoc.output('bloburl'); $('#pdfModal').classList.remove('hidden'); };
+$('#pdfDl').onclick = () => pdfDoc?.save(pdfName || `relatorio-${MODCFG[MOD].file}-${isoDate(new Date())}.pdf`);
 
 /* ===================== EXPORT EXCEL ===================== */
 $('#xlsBtn').onclick = () => {
@@ -1332,6 +1388,388 @@ $('#xlsBtn').onclick = () => {
   const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, isI ? 'Investimentos' : 'Lançamentos'); X.utils.book_append_sheet(wb, ws2, 'Resumo Mensal');
   X.writeFile(wb, `${MODCFG[MOD].file}-${isoDate(new Date())}.xlsx`); toast('Planilha Excel exportada.');
 };
+
+/* ===================== CONCILIAÇÃO PATRIMONIAL ===================== */
+// Critério (vale para todos os lançamentos, Fluxo de caixa e Investimentos):
+//  • Realizado  = Ocorrência (coluna Data) até a data escolhida  → compõe caixa / patrimônio investido.
+//  • A realizar = Ocorrência posterior à data escolhida          → compõe contas a receber (R) e a pagar (D).
+//  • Vencido    = a realizar cuja Previsão já chegou (previsão ≤ data): era esperado e ainda não ocorreu.
+const DAY = 86400000, MES3 = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const sod = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const mLbl = d => `${MES3[d.getMonth()]}/${d.getFullYear()}`;
+const longDate = d => d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+const sumv = a => a.reduce((s,x)=>s+x.v,0);
+const cssv = (n, fb='') => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || fb;
+const fx = (v,d=1) => v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const groupSum = (list, keyFn) => { const m = new Map(); list.forEach(x => { const k = keyFn(x); m.set(k,(m.get(k)||0)+x.v); }); return [...m].map(([k,v])=>({k,v})).sort((a,b)=>b.v-a.v); };
+const METODO = [
+  'Todos os lançamentos (Fluxo de caixa e Investimentos) são considerados, sem aplicar os filtros do painel.',
+  'Realizado: lançamentos cuja Ocorrência é igual ou anterior à data escolhida. Receitas somam e despesas subtraem do caixa; aportes e rendimentos somam e resgates e taxas subtraem do patrimônio investido.',
+  'A realizar: lançamentos com Ocorrência posterior à data escolhida. Receitas formam o ativo a receber; despesas (inclusive parcelas futuras) formam o passivo a pagar.',
+  'Vencido: item a realizar cuja Previsão já chegou na data escolhida, ou seja, esperado até aqui e ainda sem ocorrência registrada.',
+  'Caixa negativo é reclassificado como passivo (descoberto), de modo que nenhum ativo seja apresentado com saldo credor.',
+  'Os módulos são escriturados de forma independente: aportes e resgates registrados em Investimentos não baixam nem creditam o Fluxo de caixa. Para refletir a saída ou a entrada no caixa, lance a movimentação correspondente também em Fluxo de caixa.',
+  'Aportes programados (Investimentos com Ocorrência futura) são compromissos voluntários e não entram no passivo; aparecem como informação complementar.',
+  'Projeção de caixa: parte do caixa realizado e aplica, por mês de Previsão, os recebimentos e pagamentos a realizar. Itens vencidos entram no primeiro período, como se fossem liquidados de imediato.',
+  'Médias de receita e despesa usam os últimos 90 dias realizados do Fluxo de caixa (ou o histórico disponível, se menor).'
+];
+
+function concModel(Xin, noPrev){
+  const X = sod(Xin), M = { X, invalid:0 }, L = [];
+  rows.forEach(r => {
+    const d = parseBR(r.data), p = parseBR(prevOf(r)), v = +r.valor;
+    if (isNaN(d) || isNaN(p) || !isFinite(v)) { M.invalid++; return; }
+    const done = d <= X;
+    L.push({ r, mod:r.modulo, nat:natOf(r), d, p, v, done, overdue:!done && p <= X, days:Math.round((p - X)/DAY),
+      y: r.modulo==='I' && natName(r)==='Rendimento', cat:r.categoria||'Sem categoria', cls:clsOf(r)||'Sem classificação', pay:r.formaPagto||'Não informada' });
+  });
+  M.L = L; M.n = L.length;
+  const F = L.filter(x=>x.mod==='F'), I = L.filter(x=>x.mod==='I');
+
+  /* ----- Fluxo de caixa ----- */
+  const Fd = F.filter(x=>x.done), Fp = F.filter(x=>!x.done);
+  M.inF = sumv(Fd.filter(x=>x.nat==='R')); M.outF = sumv(Fd.filter(x=>x.nat==='D')); M.caixa = M.inF - M.outF;
+  const rec = Fp.filter(x=>x.nat==='R'), pag = Fp.filter(x=>x.nat==='D'), pagVL = pag.filter(x=>x.overdue), pagAL = pag.filter(x=>!x.overdue), recVL = rec.filter(x=>x.overdue);
+  M.rec = rec; M.pag = pag;
+  M.recV = sumv(recVL); M.recVn = recVL.length; M.recA = sumv(rec.filter(x=>!x.overdue)); M.recAn = rec.length - recVL.length;
+  M.pagV = sumv(pagVL); M.pagVn = pagVL.length; M.pagA = sumv(pagAL); M.pagAn = pagAL.length; M.pagTot = M.pagV + M.pagA;
+  M.age = [['0 a 30 dias',1,30],['31 a 60 dias',31,60],['61 a 90 dias',61,90],['Acima de 90 dias',91,1e9]].map(([l,a,b]) => { const s = pagAL.filter(x=>x.days>=a && x.days<=b); return { l, v:sumv(s), n:s.length }; });
+  M.payBy = groupSum(pag, x=>x.pay); M.pagParc = sumv(pag.filter(x=>parcelaInfo(x.r))); M.pagAvulso = M.pagTot - M.pagParc;
+
+  /* ----- Investimentos ----- */
+  const Id = I.filter(x=>x.done), Ip = I.filter(x=>!x.done), sg = x => ({ ...x, v: x.nat==='D' ? -x.v : x.v });
+  M.aportes = sumv(Id.filter(x=>x.nat==='R' && !x.y)); M.rend = sumv(Id.filter(x=>x.y)); M.resg = sumv(Id.filter(x=>x.nat==='D'));
+  M.inv = M.aportes + M.rend - M.resg;
+  M.invCat = groupSum(Id.map(sg), x=>x.cat).filter(x=>x.v>0.004); M.invCls = groupSum(Id.map(sg), x=>x.cls).filter(x=>x.v>0.004);
+  const apProg = Ip.filter(x=>x.nat==='R' && !x.y); M.apProg = sumv(apProg); M.apProgN = apProg.length;
+  M.apProgLast = apProg.reduce((m,x)=>!m||x.p>m?x.p:m, null);
+
+  /* ----- Posição patrimonial ----- */
+  M.disp = Math.max(M.caixa,0); M.descob = Math.max(-M.caixa,0); M.receber = M.recV + M.recA;
+  M.ativos = M.disp + M.inv + M.receber; M.passivos = M.pagTot + M.descob; M.pl = M.ativos - M.passivos;
+
+  /* ----- Parcelamentos em aberto (séries "descrição (i/n)") ----- */
+  const ser = new Map(); M.incompletas = [];
+  F.filter(x=>x.nat==='D').forEach(x => { const pi = parcelaInfo(x.r); if (!pi) return; const k = `${pi.base}|${pi.n}|${natName(x.r)}`;
+    if (!ser.has(k)) ser.set(k, { base:pi.base, n:pi.n, items:[] }); ser.get(k).items.push({ ...x, i:pi.i }); });
+  M.parc = []; M.quitadas = 0;
+  ser.forEach(s => { s.items.sort((a,b)=>a.i-b.i); const pend = s.items.filter(x=>!x.done);
+    if (s.items.length < s.n) M.incompletas.push(`${s.base} (${s.items.length} de ${s.n} parcelas lançadas)`);
+    if (!pend.length) { M.quitadas++; return; }
+    M.parc.push({ base:s.base, n:s.n, pagas:s.items.length - pend.length, rest:pend.length, valor:pend[0].v, saldo:sumv(pend), pay:pend[0].pay,
+      prox:pend.reduce((m,x)=>x.p<m?x.p:m, pend[0].p), fim:pend.reduce((m,x)=>x.p>m?x.p:m, pend[0].p), vencida:pend.some(x=>x.overdue) });
+  });
+  M.parc.sort((a,b)=>a.prox-b.prox || a.base.localeCompare(b.base,'pt-BR'));
+
+  /* ----- Indicadores base (janela de 90 dias realizados) ----- */
+  const w0 = new Date(X.getFullYear(), X.getMonth(), X.getDate()-90), firstF = Fd.reduce((m,x)=>!m||x.d<m?x.d:m, null);
+  const span = firstF ? Math.min(3, Math.max(1, (X - firstF)/(30.4*DAY))) : 1, win = Fd.filter(x=>x.d > w0);
+  M.inc90 = sumv(win.filter(x=>x.nat==='R')); M.exp90 = sumv(win.filter(x=>x.nat==='D')); M.avgInc = M.inc90/span; M.avgExp = M.exp90/span;
+  M.pag30 = M.pagV + sumv(pagAL.filter(x=>x.days<=30));
+  M.ac30 = M.disp + M.recV + sumv(rec.filter(x=>!x.overdue && x.days<=30));
+  M.liq30 = (M.pag30 + M.descob) > 0 ? M.ac30 / (M.pag30 + M.descob) : null;
+  M.cob = M.passivos > 0 ? (M.disp + Math.max(M.inv,0)) / M.passivos : null;
+  M.endiv = M.ativos > 0 ? M.passivos / M.ativos * 100 : null;
+  M.comp = M.avgInc > 0 ? M.pag30 / M.avgInc * 100 : null;
+  M.poup = M.inc90 > 0 ? (M.inc90 - M.exp90) / M.inc90 * 100 : null;
+  M.auton = M.avgExp > 0 ? (M.disp + Math.max(M.inv,0)) / M.avgExp : null;
+  const real = L.filter(x=>x.done); M.nReal = real.length; M.nDiv = real.filter(x=>x.d.getTime()!==x.p.getTime()).length;
+  M.pont = real.length ? (real.length - M.nDiv) / real.length * 100 : null;
+  M.difMed = M.nDiv ? real.filter(x=>x.d.getTime()!==x.p.getTime()).reduce((s,x)=>s+Math.abs(x.d-x.p)/DAY,0) / M.nDiv : 0;
+  const keyN = x => `${x.mod}|${x.nat}|${toBR(x.d)}|${norm(x.r.descricao)}|${x.v.toFixed(2)}`, cnt = new Map();
+  L.forEach(x => cnt.set(keyN(x), (cnt.get(keyN(x))||0)+1)); M.dups = [...cnt].filter(([,n])=>n>1).length;
+
+  /* ----- Linha do tempo (projeção por mês de previsão) ----- */
+  const open = [...rec, ...pag], lastP = open.reduce((m,x)=>!m||x.p>m?x.p:m, null);
+  const nm = lastP ? Math.min(24, Math.max(6, (lastP.getFullYear()-X.getFullYear())*12 + lastP.getMonth() - X.getMonth() + 1)) : 6;
+  const tl = [{ label:'Em atraso', pagar:M.pagV, receber:M.recV }];
+  for (let k=0;k<nm;k++) tl.push({ label:mLbl(new Date(X.getFullYear(), X.getMonth()+k, 1)), pagar:0, receber:0 });
+  open.filter(x=>!x.overdue).forEach(x => { const k = Math.min(nm, 1 + (x.p.getFullYear()-X.getFullYear())*12 + x.p.getMonth() - X.getMonth()); tl[k][x.nat==='D'?'pagar':'receber'] += x.v; });
+  let run = M.caixa; tl.forEach(b => { b.liq = b.receber - b.pagar; run += b.liq; b.saldo = run; });
+  M.tl = tl.filter((b,i)=>i>0 || b.pagar || b.receber); M.lastP = lastP;
+  M.lastPag = pag.reduce((m,x)=>!m||x.p>m?x.p:m, null);
+
+  if (!noPrev) { M.prev = concModel(new Date(X.getFullYear(), X.getMonth(), X.getDate()-30), true); M.ins = concInsights(M); M.ind = concIndicators(M); }
+  return M;
+}
+
+function concIndicators(M){
+  const T = (v, ok, warn) => v>=ok ? 'ok' : v>=warn ? 'warn' : 'bad', Tl = (v, ok, warn) => v<=ok ? 'ok' : v<=warn ? 'warn' : 'bad';
+  return [
+    { l:'Liquidez em 30 dias', v: M.liq30==null ? '—' : fx(M.liq30,2)+'x', tone: M.liq30==null ? 'ok' : T(M.liq30,1.5,1), h: M.liq30==null ? 'Sem obrigações nos próximos 30 dias' : 'Disponível + recebíveis ÷ obrigações até 30 dias' },
+    { l:'Cobertura do passivo', v: M.cob==null ? '—' : fx(M.cob,2)+'x', tone: M.cob==null ? 'ok' : T(M.cob,1,.5), h:'(Caixa + investimentos) ÷ passivo total' },
+    { l:'Endividamento', v: M.endiv==null ? '—' : fx(M.endiv)+'%', tone: M.endiv==null ? 'info' : Tl(M.endiv,30,60), h:'Passivo ÷ ativo total' },
+    { l:'Renda comprometida (30 dias)', v: M.comp==null ? '—' : fx(M.comp)+'%', tone: M.comp==null ? 'info' : Tl(M.comp,50,70), h:'Obrigações em 30 dias ÷ receita média mensal' },
+    { l:'Taxa de poupança (90 dias)', v: M.poup==null ? '—' : fx(M.poup)+'%', tone: M.poup==null ? 'info' : M.poup>=20 ? 'ok' : M.poup>=10 ? 'info' : M.poup>=0 ? 'warn' : 'bad', h:'(Receitas - despesas) ÷ receitas realizadas' },
+    { l:'Autonomia financeira', v: M.auton==null ? '—' : fx(M.auton)+' meses', tone: M.auton==null ? 'info' : T(M.auton,6,3), h:'Recursos líquidos ÷ despesa média mensal' },
+    { l:'Aderência à previsão', v: M.pont==null ? '—' : fx(M.pont,0)+'%', tone:'info', h:`${M.nReal-M.nDiv} de ${M.nReal} realizados ocorreram na data prevista` }
+  ];
+}
+
+function concInsights(M){
+  const o = [], add = (lvl,t,d) => o.push({ lvl, t, d }), P = M.prev;
+  if (M.caixa < -0.004) add('bad','Caixa no vermelho', `O saldo realizado até a data é ${brl(M.caixa)}: as saídas superam as entradas. O valor foi tratado como passivo (descoberto) no balanço.`);
+  else add('ok','Caixa positivo', `Há ${brl(M.caixa)} disponíveis, considerando tudo o que já ocorreu até a data.`);
+  if (M.pagV > 0.004) add('bad','Contas vencidas em aberto', `${M.pagVn} lançamento(s), somando ${brl(M.pagV)}, tinham previsão até a data e ainda não têm ocorrência registrada. Regularize o pagamento ou ajuste a data de ocorrência.`);
+  if (M.recV > 0.004) add('warn','Recebimentos previstos não realizados', `${M.recVn} recebimento(s), somando ${brl(M.recV)}, eram esperados até a data e ainda não ocorreram. Vale confirmar com o pagador.`);
+  if (M.liq30 != null) { const ok = M.liq30 >= 1.5, warn = M.liq30 >= 1;
+    add(ok?'ok':warn?'warn':'bad','Cobertura das obrigações de 30 dias', `Para cada R$ 1,00 a pagar nos próximos 30 dias (${brl(M.pag30 + M.descob)}), há ${brl(M.liq30)} em recursos imediatos (caixa e recebíveis do período).${ok?'' : warn ? ' A folga é pequena: evite novos compromissos no curto prazo.' : ' Os recursos imediatos não cobrem as obrigações: priorize receitas ou renegociação.'}`); }
+  if (M.comp != null) add(M.comp<=50?'ok':M.comp<=70?'warn':'bad','Comprometimento da renda', `As obrigações de 30 dias equivalem a ${fx(M.comp)}% da receita média mensal (${brl(M.avgInc)}). ${M.comp<=50 ? 'Nível saudável.' : M.comp<=70 ? 'Nível de atenção: pouco espaço para imprevistos.' : 'Nível crítico: a renda está quase toda destinada a compromissos.'}`);
+  if (M.passivos > 0 && M.payBy.length) { const t = M.payBy[0], sh = t.v / M.pagTot * 100;
+    if (M.pagTot > 0 && sh >= 50) add(/cr[eé]dito/i.test(t.k)?'warn':'info','Passivo concentrado em uma forma de pagamento', `${fx(sh,0)}% do passivo a pagar (${brl(t.v)}) está em "${t.k}".`); }
+  if (M.parc.length) { const mensal = M.parc.reduce((s,x)=>s+x.valor,0), lim = new Date(M.X.getFullYear(), M.X.getMonth(), M.X.getDate()+90), fim = M.parc.filter(x=>x.fim <= lim), lib = fim.reduce((s,x)=>s+x.valor,0), maior = M.parc.reduce((m,x)=>x.fim>m.fim?x:m, M.parc[0]);
+    add('info','Parcelamentos em andamento', `${M.parc.length} parcelamento(s) em aberto, com saldo de ${brl(sumv(M.parc.map(x=>({v:x.saldo}))))} e compromisso mensal de ${brl(mensal)}. O mais longo (${maior.base}) termina em ${mLbl(maior.fim)}.${fim.length ? ` ${fim.length} termina(m) nos próximos 90 dias, liberando ${brl(lib)} por mês.` : ''}`); }
+  const pk = M.tl.filter(b=>b.label!=='Em atraso' && b.pagar>0);
+  if (pk.length >= 2) { const m = pk.reduce((a,b)=>b.pagar>a.pagar?b:a), av = sumv(pk.map(b=>({v:b.pagar})))/pk.length;
+    if (m.pagar > av*1.3) add('info','Mês de maior pressão', `${m.label} concentra o maior volume de pagamentos (${brl(m.pagar)}), ${fx(m.pagar/av,1)}x a média dos meses com vencimento.`); }
+  if (M.lastPag && M.pagTot > 0) add('info','Horizonte do passivo', `Sem novas dívidas, o passivo em aberto é liquidado integralmente até ${mLbl(M.lastPag)}.`);
+  else if (M.pagTot <= 0.004) add('ok','Sem contas a pagar em aberto', 'Não há despesas com ocorrência posterior à data escolhida.');
+  const neg = M.tl.find(b=>b.saldo < -0.004);
+  if (neg) add('bad','Caixa projetado fica negativo', `Mantidos os lançamentos atuais, o caixa projetado passa a ${brl(neg.saldo)} em ${neg.label}. Antecipe receitas, reduza gastos ou renegocie vencimentos antes dessa data.`);
+  else if (M.tl.length) { const mn = M.tl.reduce((a,b)=>b.saldo<a.saldo?b:a, M.tl[0]); add('ok','Caixa projetado sustentado', `O caixa projetado permanece positivo em todo o horizonte; o ponto mais baixo é ${brl(mn.saldo)} (${mn.label}).`); }
+  if (M.poup != null) add(M.poup>=20?'ok':M.poup>=10?'info':M.poup>=0?'warn':'bad','Capacidade de poupança', `Nos últimos 90 dias a taxa de poupança foi de ${fx(M.poup)}%: receitas de ${brl(M.inc90)} contra despesas de ${brl(M.exp90)}.`);
+  if (M.auton != null) add(M.auton>=6?'ok':M.auton>=3?'warn':'bad','Autonomia financeira', `Caixa e investimentos cobrem cerca de ${fx(M.auton)} meses da despesa média (${brl(M.avgExp)}). ${M.auton>=6 ? 'Acima da referência de 6 meses.' : 'A referência usual para reserva de emergência é de 6 meses.'}`);
+  if (M.aportes > 0) { const rt = M.rend / M.aportes * 100; add('info','Desempenho dos investimentos', `Patrimônio investido de ${brl(M.inv)}, formado por ${brl(M.aportes)} em aportes, ${brl(M.rend)} em rendimentos (${fx(rt)}% sobre os aportes) e ${brl(M.resg)} em resgates e taxas.`); }
+  if (M.invCat.length > 1) { const t = M.invCat[0], sh = t.v / sumv(M.invCat) * 100; if (sh >= 60) add('info','Concentração em investimentos', `${fx(sh,0)}% do patrimônio investido está em "${t.k}". Avalie a diversificação.`); }
+  if (M.apProg > 0.004) add('info','Aportes programados', `Há ${M.apProgN} aporte(s) futuro(s), somando ${brl(M.apProg)}${M.apProgLast ? ' até '+mLbl(M.apProgLast) : ''}. Eles são compromissos voluntários e não entram no passivo, mas consomem caixa quando efetivados.`);
+  if (P) { const dl = (M.caixa + M.inv) - (P.caixa + P.inv), dp = M.pagTot - P.pagTot;
+    add(dl>=0?'ok':'warn','Variação em 30 dias', `Recursos líquidos (caixa + investimentos): ${dl>=0?'aumento':'redução'} de ${brl(Math.abs(dl))}. Passivo a pagar: ${dp<=0?'redução':'aumento'} de ${brl(Math.abs(dp))} em relação a ${toBR(P.X)}.`); }
+  if (M.nDiv) add('info','Datas realizadas x previstas', `${M.nDiv} de ${M.nReal} lançamentos realizados ocorreram em data diferente da prevista (diferença média de ${fx(M.difMed,0)} dia(s)).`);
+  const chk = []; if (M.incompletas.length) chk.push(`séries parceladas incompletas: ${M.incompletas.slice(0,3).join('; ')}${M.incompletas.length>3?'...':''}`); if (M.dups) chk.push(`${M.dups} grupo(s) de lançamentos possivelmente duplicados`); if (M.invalid) chk.push(`${M.invalid} lançamento(s) com data ou valor inválido, desconsiderados`);
+  if (chk.length) add('warn','Pontos de atenção na base', 'Revise: ' + chk.join(' · ') + '.');
+  const rk = { bad:0, warn:1, info:2, ok:3 }; return o.map((x,i)=>({ ...x, i })).sort((a,b)=>rk[a.lvl]-rk[b.lvl] || a.i-b.i).slice(0,14);
+}
+
+/* ----- Modal ----- */
+let concM = null, concChart = null, pdfName = null;
+const TONE = { bad:'var(--expense)', warn:'var(--accent)', info:'var(--primary)', ok:'var(--income)' };
+const ICON = { bad:'⛔', warn:'⚠️', info:'💡', ok:'✅' };
+const sgn = v => v < -0.004 ? 'var(--expense)' : v > 0.004 ? 'var(--income)' : 'var(--muted)';
+
+const kfmt = v => Math.abs(v) >= 1000 ? 'R$ ' + fx(v/1000, 1).replace(/,0$/, '') + ' mil' : 'R$ ' + fx(v, 0);
+function tlChart(canvas, M, light){
+  const c = light ? { pay:'#d6493f', rec:'#1f9d6b', line:'#0f5c56', txt:'#5f6b69', grid:'#e2ddd2' }
+    : { pay:cssv('--expense','#d6493f'), rec:cssv('--income','#1f9d6b'), line:cssv('--primary-2','#14857b'), txt:cssv('--muted','#5f6b69'), grid:cssv('--border','#e2ddd2') };
+  return new Chart(canvas, { data:{ labels:M.tl.map(b=>b.label), datasets:[
+      { type:'bar', label:'A pagar', data:M.tl.map(b=>b.pagar), backgroundColor:c.pay, borderRadius:4, order:2 },
+      { type:'bar', label:'A receber', data:M.tl.map(b=>b.receber), backgroundColor:c.rec, borderRadius:4, order:2 },
+      { type:'line', label:'Caixa projetado (eixo direito)', data:M.tl.map(b=>b.saldo), borderColor:c.line, backgroundColor:c.line, tension:.3, pointRadius:3, borderWidth:2.5, order:1, yAxisID:'y1' } ] },
+    options:{ responsive:!light, maintainAspectRatio:false, animation:false, devicePixelRatio: light ? 2 : undefined,
+      plugins:{ legend:{ labels:{ color:c.txt, usePointStyle:true } }, tooltip:{ callbacks:{ label:i => `${i.dataset.label}: ${brl(i.parsed.y)}` } } },
+      scales:{ x:{ ticks:{ color:c.txt }, grid:{ display:false } }, y:{ beginAtZero:true, title:{ display:true, text:'Pagar / receber', color:c.txt }, ticks:{ color:c.txt, callback:kfmt }, grid:{ color:c.grid } }, y1:{ position:'right', title:{ display:true, text:'Caixa projetado', color:c.line }, ticks:{ color:c.line, callback:kfmt }, grid:{ display:false } } } },
+    plugins:[{ id:'bg', beforeDraw(ch){ if(!light) return; ch.ctx.save(); ch.ctx.fillStyle='#fff'; ch.ctx.fillRect(0,0,ch.width,ch.height); ch.ctx.restore(); } }] });
+}
+
+function renderConc(){
+  const iso = $('#cDate').value; if (!iso) return;
+  const M = concM = concModel(new Date(iso + 'T12:00')), body = $('#cBody');
+  $('#cSub').textContent = `Posição em ${longDate(M.X)} · ${M.n} lançamento(s) considerados`;
+  if (!M.n) { body.innerHTML = '<div class="empty">Não há lançamentos para conciliar.</div>'; return; }
+  const kpi = (l, v, c, h) => `<div class="cc-k" style="--c:${c}"><span>${l}</span><b style="color:${c}">${v}</b><small>${h||''}</small></div>`;
+  const row = (l, v, tot, c, sub) => `<div class="cc-line"><div class="cc-row"><span>${l}</span><b>${brl(v)}</b></div><div class="cc-meter"><i style="width:${Math.min(100,Math.max(0,tot>0?v/tot*100:0)).toFixed(1)}%;--c:${c}"></i></div>${sub?`<div class="cc-sub">${sub}</div>`:''}</div>`;
+  const tot = M.ativos + M.passivos, wa = tot > 0 ? M.ativos / tot * 100 : 50;
+  const catsTxt = M.invCat.slice(0,4).map(x=>`${esc(x.k)}: ${brl(x.v)}`).join(' · ');
+  const near = [...M.pag].sort((a,b)=>a.p-b.p || a.d-b.d).slice(0,8);
+  let h = `<div class="cc-hero">
+    ${kpi('Patrimônio líquido', brl(M.pl), sgn(M.pl), 'Ativos − passivos')}
+    ${kpi('Total de ativos', brl(M.ativos), 'var(--income)', 'Recursos e direitos')}
+    ${kpi('Total de passivos', brl(M.passivos), 'var(--expense)', 'Obrigações a cumprir')}
+    ${kpi('Disponível em caixa', brl(M.caixa), sgn(M.caixa), 'Realizado até a data')}
+    ${kpi('Investimentos', brl(M.inv), 'var(--primary)', 'Patrimônio investido')}
+    ${kpi('Passivo vencido', brl(M.pagV), M.pagV>0.004?'var(--expense)':'var(--income)', M.pagVn ? `${M.pagVn} lançamento(s)` : 'Nada em atraso')}
+  </div>
+  <div class="cc-eq" title="Proporção entre ativos e passivos"><i style="width:${wa.toFixed(1)}%;background:var(--income)"></i><i style="width:${(100-wa).toFixed(1)}%;background:var(--expense)"></i></div>
+  <div class="cc-eqlbl"><span>Ativos ${fx(wa,0)}%</span><span>Passivos ${fx(100-wa,0)}%</span></div>
+
+  <div class="cc-sec"><h4>Balanço patrimonial</h4><div class="cc-2">
+    <div class="cc-box"><h5 style="color:var(--income)">Ativos · ${brl(M.ativos)}</h5>
+      ${row('Disponibilidades (caixa)', M.disp, M.ativos, 'var(--income)', 'Receitas − despesas já ocorridas')}
+      ${row('Investimentos', M.inv, M.ativos, 'var(--primary)', catsTxt || 'Sem investimentos realizados')}
+      ${row('Recebimentos vencidos', M.recV, M.ativos, 'var(--accent)', M.recVn ? `${M.recVn} lançamento(s) esperados até a data` : '')}
+      ${row('Recebimentos a vencer', M.recA, M.ativos, 'var(--income)', M.recAn ? `${M.recAn} lançamento(s) futuros` : '')}
+      ${M.apProg>0.004 ? `<div class="cc-memo">Memo: ${brl(M.apProg)} em aportes programados (não incluídos nos ativos nem nos passivos)</div>` : ''}</div>
+    <div class="cc-box"><h5 style="color:var(--expense)">Passivos · ${brl(M.passivos)}</h5>
+      ${row('Contas vencidas', M.pagV, M.passivos, 'var(--expense)', M.pagVn ? `${M.pagVn} lançamento(s) com previsão já vencida` : '')}
+      ${M.age.map((a,i)=>row('A vencer · '+a.l, a.v, M.passivos, ['var(--accent)','var(--accent)','var(--primary)','var(--primary)'][i], a.n ? `${a.n} lançamento(s)` : '')).join('')}
+      ${M.descob>0.004 ? row('Descoberto em caixa', M.descob, M.passivos, 'var(--expense)', 'Saldo realizado negativo') : ''}
+      <div class="cc-memo">Parcelado: ${brl(M.pagParc)} · Avulso: ${brl(M.pagAvulso)}</div></div>
+  </div></div>
+
+  <div class="cc-sec"><h4>Indicadores</h4><div class="cc-ind">${M.ind.map(i=>`<div class="cc-k" style="--c:${TONE[i.tone]}"><span>${i.l}</span><b style="color:${TONE[i.tone]}">${i.v}</b><small>${i.h}</small></div>`).join('')}</div></div>
+
+  <div class="cc-sec"><h4>Linha do tempo · projeção de caixa</h4>
+    <div class="cc-chart"><canvas id="cTl"></canvas></div>
+    <div class="table-wrap"><table class="cc-t"><thead><tr><th>Período</th><th class="r">A pagar</th><th class="r">A receber</th><th class="r">Fluxo líquido</th><th class="r">Caixa projetado</th></tr></thead><tbody>
+      ${M.tl.map(b=>`<tr><td>${b.label}</td><td class="num" style="color:var(--expense)">${b.pagar?brl(b.pagar):'—'}</td><td class="num" style="color:var(--income)">${b.receber?brl(b.receber):'—'}</td><td class="num" style="color:${sgn(b.liq)}">${brl(b.liq)}</td><td class="num" style="color:${sgn(b.saldo)}">${brl(b.saldo)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="cc-note">Os períodos seguem o mês da Previsão; itens vencidos entram em "Em atraso". O primeiro mês refere-se ao restante do mês da data escolhida.</p></div>`;
+  if (near.length) h += `<div class="cc-sec"><h4>Próximos vencimentos</h4><div class="table-wrap"><table class="cc-t"><thead><tr><th>Previsão</th><th>Descrição</th><th>Forma</th><th class="r">Valor</th><th>Situação</th></tr></thead><tbody>
+    ${near.map(x=>`<tr><td>${toBR(x.p)}</td><td>${esc(x.r.descricao)}</td><td>${esc(x.pay)}</td><td class="num" style="color:var(--expense)">${brl(x.v)}</td><td>${x.overdue ? `<span class="pill exp">Vencido há ${-x.days} dia(s)</span>` : x.days<=7 ? `<span class="pill" style="background:color-mix(in oklab,var(--accent) 22%,transparent)">em ${x.days} dia(s)</span>` : `em ${x.days} dias`}</td></tr>`).join('')}
+    </tbody></table></div></div>`;
+  h += `<div class="cc-sec"><h4>Insights do analista</h4><div class="cc-ins">${M.ins.map(i=>`<div class="cc-i" style="--c:${TONE[i.lvl]}"><b>${ICON[i.lvl]} ${i.t}</b><p>${i.d}</p></div>`).join('')}</div></div>`;
+  if (M.parc.length) h += `<div class="cc-sec"><h4>Parcelamentos em aberto</h4><div class="table-wrap"><table class="cc-t" style="min-width:640px"><thead><tr><th>Descrição</th><th>Forma</th><th>Progresso</th><th class="r">Parcela</th><th class="r">Saldo devedor</th><th>Próxima</th><th>Término</th></tr></thead><tbody>
+    ${M.parc.map(x=>`<tr><td>${esc(x.base)}${x.vencida?' <span class="pill exp">vencida</span>':''}</td><td>${esc(x.pay)}</td><td><div class="cc-meter" style="width:90px;display:inline-block;vertical-align:middle"><i style="width:${(x.pagas/x.n*100).toFixed(0)}%;--c:var(--primary)"></i></div> ${x.pagas}/${x.n}</td><td class="num">${brl(x.valor)}</td><td class="num" style="color:var(--expense)">${brl(x.saldo)}</td><td>${toBR(x.prox)}</td><td>${mLbl(x.fim)}</td></tr>`).join('')}
+    </tbody></table></div>${M.quitadas ? `<p class="cc-note">${M.quitadas} parcelamento(s) já quitado(s) até a data.</p>` : ''}</div>`;
+  const rc = concRecon(M);
+  h += `<div class="cc-sec"><h4>Conciliação geral dos lançamentos</h4><div class="table-wrap"><table class="cc-t" style="min-width:600px"><thead><tr><th>Conta</th><th class="r">Lançamentos</th><th class="r">Total lançado</th><th class="r">Realizado até a data</th><th class="r">A realizar</th></tr></thead><tbody>
+    ${rc.rows.map(x=>`<tr class="${x.t?'cc-tot':''}"><td>${x.l}</td><td class="num">${x.n??''}</td><td class="num">${brl(x.a)}</td><td class="num">${brl(x.b)}</td><td class="num">${brl(x.c)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="cc-check">${rc.checks.map(c=>`<div class="${c.ok?'ok':'bad'}">${c.ok?'✔':'✖'} ${c.t}</div>`).join('')}</div></div>
+  <details class="cc-met"><summary>Como esta conciliação é calculada</summary><ul>${METODO.map(t=>`<li>${t}</li>`).join('')}</ul></details>`;
+  body.innerHTML = h;
+  if (concChart) { concChart.destroy(); concChart = null; }
+  if ($('#cTl') && M.tl.length) concChart = tlChart($('#cTl'), M, false);
+}
+
+// Prova de fechamento: realizado + a realizar = total lançado; ativo − passivo = soma dos lançamentos.
+function concRecon(M){
+  const q = (mod, f) => M.L.filter(x=>x.mod===mod && f(x)), line = (l, list, sign=1) => ({ l, n:list.length, a:sign*sumv(list), b:sign*sumv(list.filter(x=>x.done)), c:sign*sumv(list.filter(x=>!x.done)) });
+  const F = [line('Fluxo de caixa · Receitas', q('F',x=>x.nat==='R')), line('Fluxo de caixa · Despesas', q('F',x=>x.nat==='D'), -1)];
+  const I = [line('Investimentos · Aportes', q('I',x=>x.nat==='R' && !x.y)), line('Investimentos · Rendimentos', q('I',x=>x.y)), line('Investimentos · Resgates e taxas', q('I',x=>x.nat==='D'), -1)];
+  const tt = (l, a) => ({ l, t:true, a:sumv(a.map(x=>({v:x.a}))), b:sumv(a.map(x=>({v:x.b}))), c:sumv(a.map(x=>({v:x.c}))) });
+  const sF = tt('Saldo · Fluxo de caixa', F), sI = tt('Saldo · Investimentos', I), rows = [...F, sF, ...I, sI];
+  const e1 = Math.abs(sF.a - sF.b - sF.c) + Math.abs(sI.a - sI.b - sI.c), plProva = sF.a + sI.b, e2 = Math.abs(M.pl - plProva);
+  return { rows, checks:[
+    { ok:e1 < 0.005, t:`Realizado + a realizar = total lançado (diferença de ${brl(e1)})` },
+    { ok:e2 < 0.005, t:`Ativos − passivos (${brl(M.pl)}) = saldo total do Fluxo de caixa + patrimônio investido realizado (${brl(plProva)})` },
+    { ok:!M.invalid, t: M.invalid ? `${M.invalid} lançamento(s) com data ou valor inválido ficaram de fora` : 'Todos os lançamentos possuem data e valor válidos' },
+    { ok:!M.dups && !M.incompletas.length, t: (M.dups || M.incompletas.length) ? 'Há séries incompletas ou possíveis duplicidades a revisar' : 'Sem séries parceladas incompletas ou duplicidades aparentes' } ] };
+}
+
+$('#concBtn').onclick = () => {
+  if (!rows.length) return toast('Não há lançamentos para conciliar.');
+  if (!$('#cDate').value) $('#cDate').value = isoDate(new Date());
+  $('#concModal').classList.remove('hidden'); renderConc();
+};
+$('#cDate').addEventListener('input', renderConc);
+$('#cQuick').onclick = e => { const b = e.target.closest('[data-q]'); if (!b) return; const t = new Date(), q = b.dataset.q;
+  const d = q==='today' ? t : q==='eom' ? new Date(t.getFullYear(), t.getMonth()+1, 0) : q==='p30' ? new Date(t.getFullYear(), t.getMonth(), t.getDate()+30) : q==='p90' ? new Date(t.getFullYear(), t.getMonth(), t.getDate()+90) : new Date(t.getFullYear(), 11, 31);
+  $('#cDate').value = isoDate(d); renderConc(); };
+$('#cPdf').onclick = () => { if (!concM || !concM.n) return toast('Não há lançamentos para conciliar.');
+  try { pdfDoc = buildConcPDF(concM); pdfName = `conciliacao-patrimonial-${isoDate(concM.X)}.pdf`; $('#pdfFrame').src = pdfDoc.output('bloburl'); $('#pdfModal').classList.remove('hidden'); }
+  catch (e) { console.error(e); toast('Não foi possível gerar o PDF: ' + e.message); } };
+
+/* ----- PDF profissional (A4 retrato) ----- */
+function buildConcPDF(M){
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W = 210, H = 297, mx = 14, cw = W - 2*mx;
+  const brand = [15,92,86], gold = [232,163,61], pos = [31,157,107], neg = [214,73,63], ink = [20,32,31], mute = [95,107,105], paper = [245,243,238], ln = [226,221,210], info = [45,74,154];
+  const tone = { bad:neg, warn:gold, info:info, ok:pos }, sgc = v => v < -0.004 ? neg : pos;
+  const fill = c => doc.setFillColor(...c), txt = c => doc.setTextColor(...c), font = (st='normal', sz=9) => { doc.setFont('helvetica', st); doc.setFontSize(sz); };
+  let y = 0;
+  const need = h => { if (y + h > H - 18) { doc.addPage(); y = 16; } };
+  const sec = (t, sub) => { need(sub ? 22 : 14); fill(gold); doc.rect(mx, y, 1.6, 6, 'F'); font('bold', 12.5); txt(brand); doc.text(t, mx + 4.5, y + 4.8); y += 8.5;
+    if (sub) { font('normal', 8.4); txt(mute); const ls = doc.splitTextToSize(sub, cw); doc.text(ls, mx, y + 1.8); y += ls.length * 3.8 + 3.6; } };
+  const tbl = o => { const numCols = o.numCols || [], colored = o.colored || null;
+    doc.autoTable({ margin:{ left:mx, right:mx, top:16, bottom:18 }, theme:'grid', styles:{ fontSize:8, cellPadding:2, lineColor:ln, lineWidth:.1, textColor:ink, overflow:'linebreak' },
+      headStyles:{ fillColor:brand, textColor:255, fontStyle:'bold' }, footStyles:{ fillColor:[240,237,230], textColor:ink, fontStyle:'bold' }, alternateRowStyles:{ fillColor:[250,249,246] },
+      ...o, startY:y, didParseCell:d => { if (d.section==='body' || d.section==='foot') { const raw = String(d.cell.raw ?? ''); if (numCols.includes(d.column.index)) { d.cell.styles.halign = 'right'; if (raw.startsWith('-')) { d.cell.styles.textColor = neg; } else if (colored && colored.includes(d.column.index) && raw && raw !== '-') d.cell.styles.textColor = pos; } } if (o.didParseCell) o.didParseCell(d); } });
+    y = doc.lastAutoTable.finalY + 6; };
+  const card = (x, yy, w, h, label, value, c, sub, big) => { fill(paper); doc.roundedRect(x, yy, w, h, 2.5, 2.5, 'F'); fill(c); doc.rect(x, yy, 1.8, h, 'F');
+    font('bold', 7); txt(mute); doc.text(label.toUpperCase(), x + 5, yy + 6); font('bold', big ? 15 : 12); txt(c); doc.text(value, x + 5, yy + (big ? 14.5 : 13.5));
+    if (sub) { font('normal', 7); txt(mute); doc.text(doc.splitTextToSize(sub, w - 8)[0], x + 5, yy + h - 3.2); } };
+
+  /* Cabeçalho */
+  fill(brand); doc.rect(0, 0, W, 40, 'F'); fill(gold); doc.rect(0, 40, W, 1.6, 'F');
+  txt([255,255,255]); font('bold', 21); doc.text('Conciliação Patrimonial', mx, 17);
+  font('normal', 11); doc.text(`Posição em ${longDate(M.X)}`, mx, 25);
+  font('normal', 8.5); const who = demo ? 'Modo demonstração' : (sessionStorage.getItem('fp-user') || ''); doc.text(`${who ? who + '  ·  ' : ''}${M.n} lançamentos considerados`, mx, 32);
+  font('bold', 11); doc.text('Finanças Plus', W - mx, 17, { align:'right' }); font('normal', 8); doc.text(`Emitido em ${new Date().toLocaleString('pt-BR')}`, W - mx, 24, { align:'right' });
+  y = 49;
+
+  /* Cards */
+  const w3 = (cw - 8) / 3;
+  card(mx, y, w3, 26, 'Patrimônio líquido', brl(M.pl), sgc(M.pl), 'Ativos menos passivos', true);
+  card(mx + w3 + 4, y, w3, 26, 'Total de ativos', brl(M.ativos), pos, 'Recursos e direitos', true);
+  card(mx + 2*(w3 + 4), y, w3, 26, 'Total de passivos', brl(M.passivos), neg, 'Obrigações a cumprir', true); y += 30;
+  card(mx, y, w3, 21, 'Disponível em caixa', brl(M.caixa), sgc(M.caixa), 'Realizado até a data');
+  card(mx + w3 + 4, y, w3, 21, 'Investimentos', brl(M.inv), info, 'Patrimônio investido');
+  card(mx + 2*(w3 + 4), y, w3, 21, 'Passivo vencido', brl(M.pagV), M.pagV > 0.004 ? neg : pos, M.pagVn ? `${M.pagVn} lançamento(s) em atraso` : 'Nada em atraso'); y += 26;
+
+  /* Resumo executivo */
+  const resumo = `Em ${toBR(M.X)}, os ativos somam ${brl(M.ativos)} e os passivos ${brl(M.passivos)}, o que resulta em patrimônio líquido de ${brl(M.pl)}. ` +
+    `O caixa realizado é de ${brl(M.caixa)} e o patrimônio investido, de ${brl(M.inv)}. ` +
+    (M.pagTot > 0.004 ? `Há ${brl(M.pagTot)} em contas a pagar (${brl(M.pagV)} vencidas), das quais ${brl(M.pag30)} vencem até 30 dias` + (M.liq30 != null ? `, com liquidez imediata de ${fx(M.liq30,2)}x. ` : '. ') : 'Não há contas a pagar em aberto. ') +
+    (M.receber > 0.004 ? `Os recebimentos pendentes totalizam ${brl(M.receber)}.` : '');
+  font('normal', 9); const rl = doc.splitTextToSize(resumo, cw - 8), rh = rl.length * 4.2 + 8; need(rh);
+  fill([250,249,246]); doc.roundedRect(mx, y, cw, rh, 2, 2, 'F'); fill(brand); doc.rect(mx, y, 1.4, rh, 'F'); font('bold', 8); txt(brand); doc.text('RESUMO EXECUTIVO', mx + 5, y + 5); font('normal', 9); txt(ink); doc.text(rl, mx + 5, y + 10); y += rh + 7;
+
+  /* Balanço */
+  sec('Balanço patrimonial', 'Ativos (recursos e direitos) e passivos (obrigações) na data da posição.');
+  const A = [['Disponibilidades (caixa)', brl(M.disp)], ['Investimentos', brl(M.inv)], ['Recebimentos vencidos', brl(M.recV)], ['Recebimentos a vencer', brl(M.recA)]];
+  const P = [['Contas vencidas', brl(M.pagV)], ...M.age.map(a => ['A vencer · ' + a.l, brl(a.v)]), ['Descoberto em caixa', brl(M.descob)]];
+  const n = Math.max(A.length, P.length), body = []; for (let i = 0; i < n; i++) body.push([...(A[i] || ['','']), ...(P[i] || ['',''])]);
+  tbl({ head:[['Ativos','Valor','Passivos','Valor']], body, foot:[['Total de ativos', brl(M.ativos), 'Total de passivos', brl(M.passivos)]], numCols:[1,3], showFoot:'lastPage',
+    columnStyles:{ 0:{ cellWidth:50 }, 1:{ cellWidth:32 }, 2:{ cellWidth:50 }, 3:{ cellWidth:32 } } });
+  y -= 3; font('bold', 9.5); txt(sgc(M.pl)); doc.text(`Patrimônio líquido: ${brl(M.pl)}`, W - mx, y + 2, { align:'right' }); y += 9;
+  if (M.apProg > 0.004) { font('italic', 8); txt(mute); doc.text(`Memo: ${brl(M.apProg)} em aportes programados (compromisso voluntário, fora do balanço).`, mx, y - 3); y += 3; }
+
+  /* Indicadores */
+  need(78); sec('Indicadores de saúde financeira');
+  tbl({ head:[['Indicador','Resultado','Como interpretar']], body:M.ind.map(i => [i.l, i.v, i.h]),
+    columnStyles:{ 0:{ cellWidth:52, fontStyle:'bold' }, 1:{ cellWidth:30, halign:'center', fontStyle:'bold' } },
+    didParseCell:d => { if (d.section==='body' && d.column.index===1) d.cell.styles.textColor = tone[M.ind[d.row.index].tone]; } });
+
+  /* Insights */
+  sec('Insights do analista', 'Leituras automáticas da posição, ordenadas da maior para a menor urgência.');
+  M.ins.forEach(i => { font('normal', 8.6); const ls = doc.splitTextToSize(i.d, cw - 9), h = 9.5 + ls.length * 3.9; need(h + 2);
+    fill([250,249,246]); doc.roundedRect(mx, y, cw, h, 2, 2, 'F'); fill(tone[i.lvl]); doc.rect(mx, y, 1.5, h, 'F');
+    font('bold', 9); txt(ink); doc.text(i.t, mx + 5, y + 5.2); font('normal', 8.6); txt(mute); doc.text(ls, mx + 5, y + 9.8); y += h + 2.2; });
+  y += 4;
+
+  /* Linha do tempo */
+  if (M.tl.length) {
+    sec('Linha do tempo · projeção de caixa', 'Recebimentos e pagamentos a realizar por mês de previsão, partindo do caixa realizado na data. Itens vencidos entram em "Em atraso".');
+    const cv = document.createElement('canvas'); cv.width = 1100; cv.height = 420; let img = null;
+    try { const ch = tlChart(cv, M, true); img = cv.toDataURL('image/png'); ch.destroy(); } catch (e) { console.warn('Gráfico do PDF indisponível', e); }
+    if (img) { const ih = cw * 420 / 1100; need(ih + 4); doc.addImage(img, 'PNG', mx, y, cw, ih); y += ih + 5; }
+    need(30);
+    tbl({ head:[['Período','A pagar','A receber','Fluxo líquido','Caixa projetado']], body:M.tl.map(b => [b.label, b.pagar ? brl(b.pagar) : '-', b.receber ? brl(b.receber) : '-', brl(b.liq), brl(b.saldo)]), numCols:[1,2,3,4], columnStyles:{ 0:{ cellWidth:34 } } });
+  }
+
+  /* Parcelamentos */
+  if (M.parc.length) { sec('Parcelamentos em aberto', `${M.parc.length} em andamento` + (M.quitadas ? ` · ${M.quitadas} já quitado(s)` : '') + '.');
+    tbl({ head:[['Descrição','Forma','Parcelas','Valor','Saldo devedor','Próxima','Término']], body:M.parc.map(x => [x.base + (x.vencida ? ' (vencida)' : ''), x.pay, `${x.pagas}/${x.n}`, brl(x.valor), brl(x.saldo), toBR(x.prox), mLbl(x.fim)]),
+      foot:[['Total', '', '', brl(M.parc.reduce((s,x)=>s+x.valor,0)), brl(M.parc.reduce((s,x)=>s+x.saldo,0)), '', '']], numCols:[3,4], columnStyles:{ 2:{ halign:'center' }, 5:{ halign:'center' }, 6:{ halign:'center' } } }); }
+
+  /* Composição */
+  if (M.payBy.length) { sec('Passivo por forma de pagamento');
+    tbl({ head:[['Forma de pagamento','Valor','% do passivo a pagar']], body:M.payBy.map(x => [x.k, brl(x.v), fx(M.pagTot > 0 ? x.v / M.pagTot * 100 : 0) + '%']), numCols:[1,2] }); }
+  if (M.invCat.length) { const ti = sumv(M.invCat); sec('Investimentos por categoria');
+    tbl({ head:[['Categoria','Patrimônio','% do total']], body:M.invCat.map(x => [x.k, brl(x.v), fx(x.v / ti * 100) + '%']), numCols:[1,2] }); }
+
+  /* Conciliação */
+  const rc = concRecon(M); sec('Conciliação geral dos lançamentos', 'Prova de fechamento entre o total lançado, o que já ocorreu e o que ainda vai ocorrer.');
+  tbl({ head:[['Conta','Lanç.','Total lançado','Realizado até a data','A realizar']], body:rc.rows.map(x => [x.l, x.n ?? '', brl(x.a), brl(x.b), brl(x.c)]), numCols:[2,3,4], columnStyles:{ 1:{ halign:'center', cellWidth:16 } },
+    didParseCell:d => { if (d.section==='body' && rc.rows[d.row.index].t) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.fillColor = [240,237,230]; } } });
+  rc.checks.forEach(c => { font('normal', 8.6); const ls = doc.splitTextToSize((c.ok ? 'OK  ' : 'ATENÇÃO  ') + c.t, cw - 4); need(ls.length * 4 + 2); txt(c.ok ? pos : neg); doc.text(ls, mx + 2, y); y += ls.length * 4 + 1.2; });
+  y += 4;
+
+  /* Anexos */
+  const stat = x => x.done ? 'Realizado' : x.overdue ? 'Vencido' : 'A vencer';
+  const annex = (title, sub, list, withDays) => { if (!list.length) return; need(48); sec(title, sub);
+    tbl({ head:[['Previsão','Ocorrência','Descrição','Forma','Classificação','Valor', withDays ? 'Situação' : 'Situação']], body:list.map(x => [toBR(x.p), toBR(x.d), x.r.descricao, x.pay, x.cls, brl(x.nat==='D' ? -x.v : x.v), x.overdue ? `Vencido há ${-x.days} dia(s)` : `em ${x.days} dia(s)`]),
+      foot:[['', '', 'Total', '', '', brl(list.reduce((s,x)=>s+(x.nat==='D'?-x.v:x.v),0)), '']], numCols:[5], colored:[5], styles:{ fontSize:7.6, cellPadding:1.8, lineColor:ln, lineWidth:.1, textColor:ink }, columnStyles:{ 0:{ halign:'center', cellWidth:20 }, 1:{ halign:'center', cellWidth:20 }, 6:{ cellWidth:30 } } }); };
+  annex('Anexo A · Contas a pagar em aberto', 'Despesas com ocorrência posterior à data, em ordem de previsão.', [...M.pag].sort((a,b)=>a.p-b.p||a.d-b.d), true);
+  annex('Anexo B · Recebimentos a realizar', 'Receitas com ocorrência posterior à data, em ordem de previsão.', [...M.rec].sort((a,b)=>a.p-b.p||a.d-b.d), true);
+
+  const led = [...M.L].sort((a,b)=>a.d-b.d || a.p-b.p || a.nat.localeCompare(b.nat)), acc = { F:0, I:0 };
+  const ledRows = led.map(x => { const s = x.nat==='D' ? -x.v : x.v; acc[x.mod] += s; return [toBR(x.d), toBR(x.p), x.r.descricao, x.mod==='F' ? 'Caixa' : 'Invest.', natName(x.r), brl(s), stat(x), brl(acc[x.mod])]; });
+  doc.addPage(); y = 16; sec('Anexo C · Razão completo dos lançamentos', 'Todos os lançamentos em ordem de ocorrência, com o saldo acumulado de cada módulo (Caixa e Investimentos).');
+  tbl({ head:[['Ocorrência','Previsão','Descrição','Módulo','Natureza','Valor','Situação','Saldo acum.']], body:ledRows, numCols:[5,7], colored:[5], styles:{ fontSize:7.4, cellPadding:1.6, lineColor:ln, lineWidth:.1, textColor:ink },
+    columnStyles:{ 0:{ halign:'center', cellWidth:19 }, 1:{ halign:'center', cellWidth:19 }, 3:{ cellWidth:15 }, 6:{ cellWidth:19 } },
+    didParseCell:d => { if (d.section==='body' && d.column.index===6) { const v = String(d.cell.raw); if (v==='Vencido') { d.cell.styles.textColor = neg; d.cell.styles.fontStyle = 'bold'; } else if (v==='A vencer') d.cell.styles.textColor = gold; } } });
+
+  /* Metodologia */
+  need(60); sec('Notas e metodologia');
+  font('normal', 8.4); txt(mute); METODO.forEach(t => { const ls = doc.splitTextToSize('•  ' + t, cw - 3); need(ls.length * 3.8 + 1.5); doc.text(ls, mx + 1, y); y += ls.length * 3.8 + 1.6; });
+
+  /* Rodapé em todas as páginas */
+  const N = doc.getNumberOfPages();
+  for (let i = 1; i <= N; i++) { doc.setPage(i); doc.setDrawColor(...ln); doc.setLineWidth(.2); doc.line(mx, H - 12, W - mx, H - 12); font('normal', 7.5); txt([140,140,140]);
+    doc.text(`Finanças Plus · Conciliação patrimonial em ${toBR(M.X)}`, mx, H - 8); doc.text(`Página ${i} de ${N}`, W - mx, H - 8, { align:'right' }); }
+  return doc;
+}
 </script>
 </body>
 </html>
