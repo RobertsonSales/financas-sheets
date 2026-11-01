@@ -271,6 +271,9 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
 .cad-it .del:disabled{opacity:.4;cursor:not-allowed;color:var(--muted)}
 .cad-it .del:focus-visible{outline:3px solid color-mix(in oklab,var(--primary) 45%,transparent)}
 .cad-warn{margin-top:8px;padding:8px 12px;border-radius:10px;font-size:.82rem;background:color-mix(in oklab,var(--accent) 16%,transparent)}
+.pill.warn{background:color-mix(in oklab,var(--accent) 22%,transparent);color:color-mix(in oklab,var(--accent) 70%,var(--text))}
+.btn-ok{color:var(--income)}
+.pill{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -330,6 +333,7 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
     <button class="chip" data-q="90">Últimos 90 dias</button>
     <button class="chip" data-q="year">Este ano</button>
     <button class="chip" data-q="future">Futuros (parcelas)</button>
+    <button class="chip" data-q="open" title="Despesas ainda não quitadas">A pagar</button>
   </div>
   <div class="card filters">
     <div class="field"><label>Buscar</label><input id="fText" placeholder="Descrição, forma..."></div>
@@ -378,8 +382,19 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
       <div class="field hidden" id="diaWrap"><label>Dia do vencimento</label><input type="number" id="iDia" min="1" max="31" inputmode="numeric"><div class="hint" id="diaHint"></div></div>
       <div class="field"><label>Categoria</label><div class="fld-row"><select id="iCat" required></select><button type="button" class="btn" data-add="cat" title="Cadastrar nova categoria" aria-label="Cadastrar nova categoria">＋</button></div></div>
       <div class="field"><label id="lblIPay">Forma de pagto./receb.</label><div class="fld-row"><select id="iPay" required></select><button type="button" class="btn" data-add="pay" title="Cadastrar nova forma de pagamento/recebimento" aria-label="Cadastrar nova forma de pagamento ou recebimento">＋</button></div></div>
+      <div class="field full hidden" id="quitWrap"><label class="chk" for="iQuit" style="display:flex;gap:10px;align-items:center;cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;font-size:.95rem"><input type="checkbox" id="iQuit" style="width:20px;height:20px;accent-color:var(--primary)"><span>Quitado (despesa já paga)</span></label><div class="hint" id="quitHint"></div></div>
     </div>
     <div class="modal-foot"><button type="button" class="btn" data-close>Cancelar</button><button class="btn btn-primary" type="submit">Salvar</button></div>
+  </form>
+</div>
+
+<!-- QUITAR DESPESA -->
+<div class="modal hidden" id="payModal">
+  <form class="card" id="payForm" style="width:min(440px,100%)">
+    <h3>Quitar despesa</h3>
+    <p id="payInfo" style="line-height:1.5"></p>
+    <div class="field" style="margin-top:12px"><label for="payDate">Data do pagamento</label><input type="date" id="payDate" required><div class="hint">Passa a ser a Ocorrência do lançamento. A Previsão (vencimento) não muda e a data não pode ser futura.</div></div>
+    <div class="modal-foot"><button type="button" class="btn" data-close>Cancelar</button><button class="btn btn-primary" type="submit">Confirmar quitação</button></div>
   </form>
 </div>
 
@@ -568,7 +583,8 @@ function demoSeed(){
   const rs = s.map(a=>({data:a[0],previsao:a[0],descricao:a[1],valor:a[2],tipoDespesa:a[3],parcelas:a[4],formaPagto:a[5],tipoReceita:a[6],id:uid()}));
   rs[3].previsao = m(0,2);        // freelance: ocorreu no mês passado, estava previsto para este mês
   rs[9].previsao = m(-1,28);      // combustível: ocorreu neste mês, estava previsto para o mês passado
-  for (let i=0;i<6;i++) rs.push({data:toBR(addMonths(new Date(t.getFullYear(),t.getMonth()-1,15),i)),previsao:toBR(addMonths(new Date(t.getFullYear(),t.getMonth()-1,15),i)),descricao:`Notebook (${i+1}/6)`,valor:450,tipoDespesa:'Fixa',parcelas:6,formaPagto:'Cartão de Crédito',tipoReceita:'',id:uid()});
+  for (let i=0;i<6;i++) { const dd = addMonths(new Date(t.getFullYear(),t.getMonth()-1,15),i); rs.push({data:toBR(dd),previsao:toBR(dd),descricao:`Notebook (${i+1}/6)`,valor:450,tipoDespesa:'Fixa',parcelas:6,formaPagto:'Cartão de Crédito',tipoReceita:'',quitado: dd <= todayD() ? 'Sim' : 'Não',id:uid()}); }
+  rs.push({data:m(-1,20),previsao:m(-1,20),descricao:'Internet',valor:120,tipoDespesa:'Fixa',parcelas:1,formaPagto:'Boleto',tipoReceita:'',quitado:'Não',id:uid()});   // vencida e não quitada
   // Investimentos de exemplo (módulo I)
   const inv = (data,descricao,valor,natureza,cls,categoria,formaPagto,parcelas='') => {
     const e = natureza==='Aplicação' || natureza==='Rendimento';
@@ -606,7 +622,16 @@ function offerDemo(e){
   return false;
 }
 // Lançamentos antigos não têm módulo/natureza: viram "Fluxo de caixa" (F) com Receita/Despesa.
-const normRow = r => ({ ...r, previsao: r.previsao || r.data, diaVenc: r.diaVenc || '', modulo: r.modulo==='I' ? 'I' : 'F', natureza: r.natureza || (r.tipoReceita ? 'Receita' : 'Despesa'), categoria: r.categoria || '' });
+const normRow = r => { const o = { ...r, previsao: r.previsao || r.data, diaVenc: r.diaVenc || '', modulo: r.modulo==='I' ? 'I' : 'F', natureza: r.natureza || (r.tipoReceita ? 'Receita' : 'Despesa'), categoria: r.categoria || '' };
+  const q = String(r.quitado || '').trim().toLowerCase(); o.quitado = (o.modulo==='F' && !o.tipoReceita && (q==='sim' || q==='não' || q==='nao')) ? (q==='sim' ? 'Sim' : 'Não') : ''; return o; };
+/* Quitado: só vale para despesas do Fluxo de caixa. 'Sim' = paga (Ocorrência = data do pagamento) · 'Não' = em aberto ·
+   vazio (lançamentos antigos) = paga se a ocorrência já passou. Despesa em aberto não reduz o caixa, o saldo nem a conciliação realizada. */
+const isDesp = r => r.modulo==='F' && !r.tipoReceita;
+const todayD = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+const isPaid = r => !isDesp(r) || (r.quitado ? r.quitado==='Sim' : parseBR(r.data) <= todayD());
+const stTxt = r => !isDesp(r) ? '' : isPaid(r) ? 'Quitada' : (parseBR(prevOf(r)) < todayD() ? 'Vencida' : 'A pagar');
+const stPill = r => { if (!isDesp(r) || (isPaid(r) && r.quitado!=='Sim')) return ''; const l = stTxt(r); return ` <span class="pill ${l==='Quitada'?'inc':l==='Vencida'?'exp':'warn'}">${l}</span>`; };
+const payBtn = r => !isDesp(r) ? '' : isPaid(r) ? `<button class="btn btn-sm" data-rb="${esc(r.id)}" title="Reabrir: marcar como não quitada">↩</button> ` : `<button class="btn btn-sm btn-ok" data-qt="${esc(r.id)}" title="Quitar">✔</button> `;
 async function load(){
   try { await ensureAuth(); }
   catch (e) { loading(false); if (e.cancel) return false; if (offerDemo(e)) return load(); return false; }
@@ -822,18 +847,18 @@ function paintMod(){
   document.documentElement.dataset.mod = MOD;
   document.querySelector('meta[name="theme-color"]').content = c.theme;
   $('#dTitle').textContent = c.title; $('#chT1').textContent = c.c1 + (DM==='previsao' ? ' (por previsão)' : ''); $('#chT2').textContent = c.c2;
-  paintDM();
+  paintDM(); $('#quick [data-q=open]').classList.toggle('hidden', MOD==='I');
   $('#lblFPay').textContent = MOD==='I' ? 'Aporte / saque' : 'Forma pagto'; $('#thPay').textContent = payLbl() + ' ↕';
   $('#lblIPay').textContent = MOD==='I' ? 'Forma de aporte ou saque' : 'Forma de pagto./receb.';
   document.querySelectorAll('.modtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.m===MOD)));
 }
 function tabStats(){
   ['F','I'].forEach(m => {
-    const v = rows.filter(r=>r.modulo===m).reduce((a,r)=>a+(natOf(r)==='R'?1:-1)*+r.valor, 0);
+    const v = rows.filter(r=>r.modulo===m && isPaid(r)).reduce((a,r)=>a+(natOf(r)==='R'?1:-1)*+r.valor, 0);
     const el = document.querySelector(`.modtab[data-m="${m}"] small`); if (el) el.textContent = `${m==='F'?'Saldo geral':'Patrimônio'} ${brl(v)}`;
   });
 }
-function resetFilters(){ ['#fText','#fFrom','#fTo'].forEach(s=>$(s).value=''); MS.fNat.clear(); MS.fCls.clear(); MS.fPay.clear(); MS.fCat.clear(); setChip('all'); page=1; }
+function resetFilters(){ ['#fText','#fFrom','#fTo'].forEach(s=>$(s).value=''); MS.fNat.clear(); MS.fCls.clear(); MS.fPay.clear(); MS.fCat.clear(); openOnly = false; setChip('all'); page=1; }
 function setMod(m, force){
   if (m===MOD && !force) return;
   MOD = m; localStorage.setItem('fp-mod', m); resetFilters(); paintMod(); fillLists(); render();
@@ -1049,6 +1074,7 @@ $('#cadBody').onclick = async e => {
 };
 
 /* ===================== FILTROS ===================== */
+let openOnly = false;
 function filtered(mode){   // mode='before' => lançamentos anteriores à data inicial (para o saldo inicial)
   const q = $('#fText').value.trim().toLowerCase(), from = $('#fFrom').value, to = $('#fTo').value;
   const nSel = MS.fNat, cSel = MS.fCls, pSel = MS.fPay, kSel = MS.fCat;
@@ -1056,6 +1082,7 @@ function filtered(mode){   // mode='before' => lançamentos anteriores à data i
   return data().filter(r => {
     const d = dateOf(r);
     if (mode==='before'){ if (!fd || d >= fd) return false; } else { if (fd && d < fd) return false; if (td && d > td) return false; }
+    if (openOnly && mode!=='before' && !(isDesp(r) && !isPaid(r))) return false;
     if (!nSel.pass(natName(r))) return false; if (!cSel.pass(clsOf(r))) return false;
     if (!pSel.pass(r.formaPagto)) return false;
     if (!kSel.pass(r.categoria || NO_CAT)) return false;
@@ -1067,19 +1094,20 @@ function filtered(mode){   // mode='before' => lançamentos anteriores à data i
 $('#clearBtn').onclick = () => { resetFilters(); render(); };
 function setChip(q){ document.querySelectorAll('#quick .chip').forEach(c=>c.classList.toggle('on',c.dataset.q===q)); }
 $('#quick').onclick = e => {
-  const q = e.target.dataset.q; if (!q) return; setChip(q);
+  const q = e.target.dataset.q; if (!q) return; setChip(q); openOnly = q==='open';
   const t = new Date(), y=t.getFullYear(), m=t.getMonth(); let a='', b='';
   if (q==='month'){ a=new Date(y,m,1); b=new Date(y,m+1,0); }
   if (q==='prev'){ a=new Date(y,m-1,1); b=new Date(y,m,0); }
   if (q==='90'){ a=new Date(t-90*864e5); b=t; }
   if (q==='year'){ a=new Date(y,0,1); b=new Date(y,11,31); }
   if (q==='future'){ a=new Date(t.getTime()+864e5); b=''; }
+  if (q==='open'){ a=''; b=''; }
   const f = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : '';
   $('#fFrom').value=f(a); $('#fTo').value=f(b); page=1; render();
 };
 
 /* ===================== RENDER ===================== */
-function totals(list){ const inc = list.filter(r=>natOf(r)==='R').reduce((s,r)=>s+ +r.valor,0); const exp = list.filter(r=>natOf(r)==='D').reduce((s,r)=>s+ +r.valor,0); return {inc,exp,bal:inc-exp}; }
+function totals(list){ const sm = a => a.reduce((s,r)=>s+ +r.valor,0), D = list.filter(r=>natOf(r)==='D'); const inc = sm(list.filter(r=>natOf(r)==='R')), exp = sm(D.filter(isPaid)), open = sm(D.filter(r=>!isPaid(r))); return {inc,exp,open,bal:inc-exp}; }   // despesas em aberto não entram no saldo
 function balances(list, t){
   // Saldo inicial = acumulado antes da data "De" (mesmos demais filtros); sem "De", parte de zero. Final = inicial + período.
   const fromISO = $('#fFrom').value, open = fromISO ? totals(filtered('before')).bal : 0;
@@ -1108,7 +1136,8 @@ function metrics(list){
   return { t, b, items:[
     { l:'Saldo inicial', v:b.open, sg:true, hint:openHint },
     { l:'Receitas', v:t.inc, cls:'inc', bar:true },
-    { l:'Despesas', v:t.exp, cls:'exp', bar:true },
+    { l:'Despesas', v:t.exp, cls:'exp', bar:true, hint:'Somente quitadas' },
+    { l:'A pagar', v:t.open, cls:'exp', bar:true, hint:'Despesas em aberto (fora do saldo)' },
     { l:'Saldo do período', v:t.bal, sg:true, hint: t.inc ? `Comprometimento: ${(t.exp/t.inc*100).toFixed(1)}% da receita` : '' },
     { l:'Saldo final', v:b.close, sg:true, hint:closeHint },
     cnt ] };
@@ -1136,10 +1165,10 @@ function render(){
   const pages = Math.max(1, Math.ceil(list.length/PAGE)); page = Math.min(page, pages);
   const slice = list.slice((page-1)*PAGE, page*PAGE);
   $('#tbody').innerHTML = slice.length ? slice.map(r=>{ const n=natOf(r); return `<tr>
-    <td>${esc(r.data)}</td><td class="${prevOf(r)!==r.data?'diff':''}"${prevOf(r)!==r.data?' title="Previsão diferente da ocorrência"':''}>${esc(prevOf(r))}</td><td>${esc(r.descricao)}</td><td>${esc(r.categoria||'—')}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${esc(natName(r))}</span></td>
+    <td>${esc(r.data)}</td><td class="${prevOf(r)!==r.data?'diff':''}"${prevOf(r)!==r.data?' title="Previsão diferente da ocorrência"':''}>${esc(prevOf(r))}</td><td>${esc(r.descricao)}${stPill(r)}</td><td>${esc(r.categoria||'—')}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${esc(natName(r))}</span></td>
     <td class="num" style="color:var(--${n==='R'?'income':'expense'})">${n==='R'?'':'− '}${brl(+r.valor)}</td>
     <td>${esc(clsOf(r))}</td><td>${esc(r.parcelas)}</td><td>${esc(r.formaPagto)}</td>
-    <td style="white-space:nowrap">${isLocked(r) ? `<button class="btn btn-sm lockbtn" data-e="${esc(r.id)}" title="Parcela seguinte: só muda pela 1ª parcela">🔒</button>` : `<button class="btn btn-sm" data-e="${esc(r.id)}" title="Editar">✏️</button>`} <button class="btn btn-sm btn-danger" data-d="${esc(r.id)}" title="Excluir">🗑</button></td></tr>`; }).join('')
+    <td style="white-space:nowrap">${payBtn(r)}${isLocked(r) ? `<button class="btn btn-sm lockbtn" data-e="${esc(r.id)}" title="Parcela seguinte: só muda pela 1ª parcela">🔒</button>` : `<button class="btn btn-sm" data-e="${esc(r.id)}" title="Editar">✏️</button>`} <button class="btn btn-sm btn-danger" data-d="${esc(r.id)}" title="Excluir">🗑</button></td></tr>`; }).join('')
     : `<tr><td colspan="10" class="empty">Nenhum lançamento encontrado para os filtros atuais.</td></tr>`;
   $('#pgInfo').textContent = `Página ${page} de ${pages} · ${list.length} registros`;
   $('#pgPrev').disabled = page<=1; $('#pgNext').disabled = page>=pages;
@@ -1149,7 +1178,7 @@ $('#pgPrev').onclick=()=>{page--;render();}; $('#pgNext').onclick=()=>{page++;re
 
 function monthAgg(list){
   const mo = {};
-  list.forEach(r=>{ const d=dateOf(r), k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; (mo[k] ??= {R:0,Y:0,D:0})[bucket(r)] += +r.valor; });
+  list.forEach(r=>{ if (!isPaid(r)) return; const d=dateOf(r), k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; (mo[k] ??= {R:0,Y:0,D:0})[bucket(r)] += +r.valor; });
   return mo;
 }
 const PALETTE = ['#0f5c56','#e8a33d','#d6493f','#2bb3a3','#6b7fd7','#8c6d4f','#c45ab3','#7aa33a','#3d8bd9','#b5651d','#5e548e','#2a9d8f'];
@@ -1174,7 +1203,7 @@ function renderCharts(list){
   }
   const g = {};
   if (MOD==='I') list.forEach(r=>{ const k=r.categoria||'Sem categoria'; g[k]=(g[k]||0)+(natOf(r)==='R'?1:-1)*+r.valor; });
-  else list.filter(r=>natOf(r)==='D').forEach(r=>{ const k=r.formaPagto||'—'; g[k]=(g[k]||0)+ +r.valor; });
+  else list.filter(r=>natOf(r)==='D' && isPaid(r)).forEach(r=>{ const k=r.formaPagto||'—'; g[k]=(g[k]||0)+ +r.valor; });
   const ent = Object.entries(g).filter(([,v])=>v>0.005).sort((a,b)=>b[1]-a[1]);
   charts.p?.destroy();
   charts.p = new Chart($('#chPay'), { type:'doughnut', data:{ labels:ent.map(e=>e[0]), datasets:[{ data:ent.map(e=>e[1]), borderWidth:0, backgroundColor:ent.map((_,i)=>PALETTE[i%PALETTE.length]) }]},
@@ -1257,16 +1286,25 @@ function tryEdit(r){
   if (confirm(`"${r.descricao}" é uma parcela seguinte: ela não pode ser alterada diretamente.\nTodas as parcelas seguintes acompanham a 1ª parcela (${first.descricao}).\n\nAbrir a 1ª parcela para edição?`)) openForm(first);
 }
 const canParc = () => MOD==='I' ? natSel==='Aplicação' : (signOfName(natSel)==='S' && $('#iCls').value==='Fixa');
+let quitTouched = false;
+function paintQuit(){
+  const on = MOD==='F' && signOfName(natSel)==='S'; $('#quitWrap').classList.toggle('hidden', !on); if (!on) return;
+  const ck = $('#iQuit').checked, par = canParc() && !editing && (+$('#iParc').value||1) > 1;
+  $('#quitHint').textContent = (ck ? 'A Ocorrência é a data do pagamento (não pode ser futura) e a despesa reduz o caixa.' : 'Em aberto: não reduz o caixa nem o saldo até ser quitada. A Previsão é o vencimento.')
+    + (par ? ' O status vale para a 1ª parcela; as demais nascem em aberto.' : editSeq ? ' Vale só para esta parcela; as demais têm status próprio.' : '');
+}
+$('#iQuit').addEventListener('change', () => { quitTouched = true; paintQuit(); });
 function updParc(){
   const ok = canParc(); $('#parcWrap').classList.toggle('hidden', !ok); $('#parcLbl').textContent = MODCFG[MOD].parc;
   const n = +$('#iParc').value||1, v = getValor();
   $('#parcHint').textContent = editing ? (editSeq ? `Alterações nesta 1ª parcela são projetadas nas demais. Aumente ou reduza a quantidade para criar ou remover parcelas no final da série (hoje: ${editGroup.length}).` : 'Edição altera apenas esta linha.') : (ok && n>1 ? `Serão geradas ${n} linhas mensais de ${brl(v)} (total ${brl(v*n)}).` : '');
-  syncSeq();
+  syncSeq(); paintQuit();
 }
 $('#iValor').addEventListener('input',()=>{ maskBRL($('#iValor')); updParc(); });
 ['#iCls','#iParc'].forEach(s=>$(s).addEventListener('input',updParc));
 const paintPrevHint = () => { $('#prevHint').innerHTML = prevLinked ? 'Acompanha a ocorrência até você alterá-la.' : 'Definida manualmente. <button type="button" class="linkbtn" id="prevSync">Igualar à ocorrência</button>'; };
-$('#iData').addEventListener('input', () => { if (prevLinked) { $('#iPrev').value = $('#iData').value; if (seqActive() && seqFromPrev()) seqPaint(); } });
+$('#iData').addEventListener('input', () => { if (!editing && !quitTouched) { $('#iQuit').checked = !!$('#iData').value && $('#iData').value <= isoDate(new Date()); paintQuit(); }
+  if (prevLinked) { $('#iPrev').value = $('#iData').value; if (seqActive() && seqFromPrev()) seqPaint(); } });
 // input: só registra o que foi digitado/escolhido (sem reescrever o campo); change: ao confirmar, ajusta para dia útil
 $('#iPrev').addEventListener('input', () => { prevLinked = false; paintPrevHint(); if (seqActive() && seqFromPrev()) seqHint(); });
 $('#iPrev').addEventListener('change', () => { if (seqActive() && seqFromPrev()) seqPaint(); });
@@ -1279,6 +1317,7 @@ function openForm(r){
   $('#iPrev').value = r ? brToISO(prevOf(r)) : $('#iData').value; prevLinked = !r || prevOf(r)===r.data; paintPrevHint(); $('#iValor').value = r ? centsToBRL(Math.round(r.valor*100)) : ''; $('#iDesc').value = r ? (editSeq ? parcelaInfo(r).base : r.descricao) : '';
   if (editSeq) { const D = +r.diaVenc || parseBR(prevOf(r)).getDate(); $('#iDia').value = D; diaTouched = true; prevNom = nomOf(prevOf(r), D); seqPainted = $('#iPrev').value; } else $('#iDia').value = '';
   $('#iParc').value = r?.parcelas || 1; $('#iParc').disabled = !!r && !editSeq;
+  quitTouched = false; $('#iQuit').checked = r ? isPaid(r) : $('#iData').value <= isoDate(new Date());
   $('#iCls').disabled = editSeq; const addCls = $('#form [data-add="cls"]'); if (addCls) addCls.disabled = editSeq;   // 1ª parcela: classificação não editável
   setNat(r ? natName(r) : MODCFG[MOD].defNat, { cls: r ? clsOf(r) : undefined, cat: r?.categoria || '', pay: r?.formaPagto || '' });
   $('#formModal').classList.remove('hidden'); $('#iDesc').focus();
@@ -1294,6 +1333,8 @@ $('#form').onsubmit = async e => {
   if (!cls) return toast('Escolha ou cadastre uma classificação (＋).');
   if (!cat) return toast('Escolha ou cadastre uma categoria (＋).');
   if (!(valor>0) || !desc || !pay || !$('#iData').value || !$('#iPrev').value) return toast('Preencha todos os campos corretamente.');
+  const isD = MOD==='F' && signOfName(natSel)==='S', qv = isD ? ($('#iQuit').checked ? 'Sim' : 'Não') : '';
+  if (qv==='Sim' && $('#iData').value > isoDate(new Date())) return toast('Para marcar como quitada, a Ocorrência (data do pagamento) não pode ser futura.');
   const sg = signOfName(natSel), par = canParc(), n = par ? Math.max(1, Math.min(120, parseInt($('#iParc').value)||1)) : '';
   const seq = seqActive(), D = seq ? parseInt($('#iDia').value) : '';
   if (seq && !(D>=1 && D<=31)) return toast('Informe o dia do vencimento (1 a 31).');
@@ -1310,9 +1351,13 @@ $('#form').onsubmit = async e => {
     const resize = N !== pi0.n;
     const keepG = editGroup.filter(x => parcelaInfo(x).i <= N);
     seqDel = editGroup.filter(x => parcelaInfo(x).i > N).map(x => x.id);
-    if (resize) { const have = new Set(editGroup.map(x => parcelaInfo(x).i)); for (let j = pi0.n + 1; j <= N; j++) if (!have.has(j)) seqNew.push({ ...base, ...proj(j), descricao:`${desc} (${j}/${N})`, parcelas:N, diaVenc:D }); }
-    if (editGroup.length>1 || resize) { const extra = resize ? `\n\nParcelas: ${pi0.n} → ${N} (${seqNew.length} a criar, ${seqDel.length} a excluir).` : ''; if (!confirm(`Esta é a 1ª parcela de ${editGroup.length}. As demais serão recalculadas (descrição, valor, forma, categoria, ocorrência e previsão, no dia ${D} e em dia útil). A classificação (${clsKeep}) não muda.${extra}\n\nContinuar?`)) return; }
-    seqUps = keepG.map(x => { const j = parcelaInfo(x).i; return { ...x, ...base, descricao:`${desc} (${j}/${N})`, parcelas:N, ...proj(j), diaVenc:D }; });
+    if (resize) { const have = new Set(editGroup.map(x => parcelaInfo(x).i)); for (let j = pi0.n + 1; j <= N; j++) if (!have.has(j)) seqNew.push({ ...base, ...proj(j), descricao:`${desc} (${j}/${N})`, parcelas:N, diaVenc:D, quitado:'Não' }); }
+    const keepPaid = keepG.filter(x => x.id!==editing.id && isPaid(x)).length, delPaid = editGroup.filter(x => parcelaInfo(x).i > N && isPaid(x)).length;
+    const qtxt = (keepPaid ? `\n\n${keepPaid} parcela(s) já quitada(s) não serão alteradas (valor, datas e forma); só a numeração acompanha.` : '') + (delPaid ? `\n\nATENÇÃO: ${delPaid} parcela(s) quitada(s) serão excluídas.` : '');
+    if (editGroup.length>1 || resize) { const extra = (resize ? `\n\nParcelas: ${pi0.n} → ${N} (${seqNew.length} a criar, ${seqDel.length} a excluir).` : '') + qtxt; if (!confirm(`Esta é a 1ª parcela de ${editGroup.length}. As demais em aberto serão recalculadas (descrição, valor, forma, categoria, ocorrência e previsão, no dia ${D} e em dia útil). A classificação (${clsKeep}) não muda.${extra}\n\nContinuar?`)) return; }
+    seqUps = keepG.map(x => { const j = parcelaInfo(x).i, first = x.id===editing.id;
+      if (!first && isPaid(x)) return { ...x, quitado:'Sim', descricao:`${desc} (${j}/${N})`, parcelas:N };   // já quitada: preserva valor, datas e forma
+      return { ...x, ...base, descricao:`${desc} (${j}/${N})`, parcelas:N, ...proj(j), diaVenc:D, quitado: first ? qv : 'Não' }; });
   }
   loading(true);
   try {
@@ -1322,10 +1367,10 @@ $('#form').onsubmit = async e => {
       if (seqDel.length) await api('POST', { action:'delete', ids:seqDel });
       toast(`1ª parcela atualizada, ${seqUps.length-1} reprojetada(s)` + (seqNew.length ? `, ${seqNew.length} criada(s)` : '') + (seqDel.length ? `, ${seqDel.length} excluída(s)` : '') + '.');
     }
-    else if (editing) { await api('POST', { action:'update', row:{ ...editing, ...base, parcelas: par ? editing.parcelas || n : '', data: isoToBR($('#iData').value), previsao: isoToBR($('#iPrev').value) } }); toast('Lançamento atualizado.'); }
+    else if (editing) { await api('POST', { action:'update', row:{ ...editing, ...base, quitado:qv, parcelas: par ? editing.parcelas || n : '', data: isoToBR($('#iData').value), previsao: isoToBR($('#iPrev').value) } }); toast('Lançamento atualizado.'); }
     else {
       const d0 = new Date($('#iData').value+'T12:00'), p0 = new Date($('#iPrev').value+'T12:00');
-      const list = par && n>1 ? Array.from({length:n},(_,i)=>({ ...base, data:toBR(addMonths(d0,i)), previsao:toBR(seq ? projPrev(prevNom, D, i) : addMonths(p0,i)), descricao:`${desc} (${i+1}/${n})` })) : [{ ...base, data:toBR(d0), previsao:toBR(p0) }];
+      const list = par && n>1 ? Array.from({length:n},(_,i)=>({ ...base, quitado: i===0 ? qv : (isD ? 'Não' : ''), data:toBR(addMonths(d0,i)), previsao:toBR(seq ? projPrev(prevNom, D, i) : addMonths(p0,i)), descricao:`${desc} (${i+1}/${n})` })) : [{ ...base, quitado:qv, data:toBR(d0), previsao:toBR(p0) }];
       await api('POST', { action:'create', rows:list }); toast(list.length>1?`${list.length} parcelas registradas.`:'Lançamento registrado.');
     }
     $('#formModal').classList.add('hidden'); loading(false); await load();
@@ -1342,7 +1387,7 @@ function groupOf(r){   // parcelas irmãs: mesmo painel, descrição-base, total
 // do lugar correspondente na série original e a numeração passa a ser 1..N (N = parcelas restantes).
 function planReorder(g, delId){
   const slots = g.map(x => ({ data:x.data, previsao:prevOf(x) })), rest = g.filter(x => x.id!==delId), base = parcelaInfo(g[0]).base;
-  return rest.map((x,k) => { const row = { ...x, data:slots[k].data, previsao:slots[k].previsao, descricao:`${base} (${k+1}/${rest.length})`, parcelas:rest.length };
+  return rest.map((x,k) => { const row = { ...x, data: x.quitado==='Sim' ? x.data : slots[k].data, previsao:slots[k].previsao, descricao:`${base} (${k+1}/${rest.length})`, parcelas:rest.length };
     return { old:x, row, changed: row.data!==x.data || row.previsao!==prevOf(x) || row.descricao!==x.descricao }; });
 }
 async function updateMany(list){
@@ -1354,6 +1399,25 @@ async function runDelete(ids, updates, msg){
   try { await api('POST', { action:'delete', ids }); } catch (err) { loading(false); return toast('Erro: '+err.message); }
   try { if (updates.length) await updateMany(updates); } catch (err) { warn = ' Não foi possível reordenar as demais parcelas: '+err.message; }
   loading(false); toast(msg + warn); await load();
+}
+let payRow = null;
+function openPay(r){
+  if (!r) return; payRow = r;
+  $('#payInfo').innerHTML = `<b>${esc(r.descricao)}</b><br>${brl(+r.valor)} · vencimento ${esc(prevOf(r))}`;
+  $('#payDate').value = isoDate(new Date()); $('#payDate').max = isoDate(new Date()); $('#payModal').classList.remove('hidden'); $('#payDate').focus();
+}
+$('#payForm').onsubmit = async e => {
+  e.preventDefault(); const r = payRow, d = $('#payDate').value; if (!r || !d) return;
+  if (d > isoDate(new Date())) return toast('A data do pagamento não pode ser futura.');
+  loading(true);
+  try { await api('POST', { action:'update', row:{ ...r, quitado:'Sim', data:isoToBR(d), previsao:prevOf(r) } }); $('#payModal').classList.add('hidden'); loading(false); toast('Despesa quitada.'); await load(); }
+  catch (err) { loading(false); toast('Erro: ' + err.message); }
+};
+async function reopenRow(r){
+  if (!r || !confirm(`Reabrir “${r.descricao}”?\nEla volta a ficar em aberto e deixa de reduzir o caixa até ser quitada de novo. A ocorrência passa a ser a data de vencimento (${prevOf(r)}).`)) return;
+  loading(true);
+  try { await api('POST', { action:'update', row:{ ...r, quitado:'Não', data:prevOf(r) } }); loading(false); toast('Despesa reaberta (em aberto).'); await load(); }
+  catch (err) { loading(false); toast('Erro: ' + err.message); }
 }
 let delCtx = null;
 const dlFoot = html => { $('#dlFoot').innerHTML = html; };
@@ -1396,6 +1460,8 @@ $('#delModal').addEventListener('click', e => {
 });
 $('#tbody').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.qt) return openPay(rows.find(r=>r.id===b.dataset.qt));
+  if (b.dataset.rb) return reopenRow(rows.find(r=>r.id===b.dataset.rb));
   if (b.dataset.e) return tryEdit(rows.find(r=>r.id===b.dataset.e));
   const r = rows.find(x=>x.id===b.dataset.d); if (r) openDel(r);
 };
@@ -1418,13 +1484,14 @@ function buildPDF(){
   doc.setTextColor(95,107,105); doc.setFont('helvetica','normal'); doc.setFontSize(8);
   doc.text(`${MOD==='I'?'Patrimônio':'Saldo'} inicial: ${b.fromISO?'acumulado antes de '+isoToBR(b.fromISO):'sem data inicial (parte de zero)'}  ·  ${MOD==='I'?'Patrimônio':'Saldo'} final: ${b.last?'posição em '+toBR(b.last):'sem lançamentos no período'}`,14,62);
   const sum = mt.items.filter(i=>!i.count && !i.pct);
-  doc.autoTable({ startY:68, head:[['Ocorrência','Previsão','Descrição','Natureza','Valor','Classificação','Qt Parc.',payLbl(),'Categoria']],
-    body:list.map(r=>[r.data,prevOf(r),r.descricao,natName(r),brl(+r.valor),clsOf(r),r.parcelas,r.formaPagto,r.categoria||'']),
-    foot:sum.map(i=>['','',i.l.toUpperCase(),'',brl(i.v),'','','','']),
+  doc.autoTable({ startY:68, head:[['Ocorrência','Previsão','Descrição','Natureza','Valor','Situação','Classificação','Qt Parc.',payLbl(),'Categoria']],
+    body:list.map(r=>[r.data,prevOf(r),r.descricao,natName(r),brl(+r.valor),stTxt(r),clsOf(r),r.parcelas,r.formaPagto,r.categoria||'']),
+    foot:sum.map(i=>['','',i.l.toUpperCase(),'',brl(i.v),'','','','','']),
     theme:'grid', styles:{fontSize:8,cellPadding:2.2,lineColor:[226,221,210],lineWidth:.1},
     headStyles:{fillColor:brand,textColor:255,fontStyle:'bold'}, footStyles:{fillColor:[240,237,230],textColor:[20,32,31],fontStyle:'bold'},
-    alternateRowStyles:{fillColor:[250,249,246]}, columnStyles:{0:{halign:'center'},1:{halign:'center'},4:{halign:'right'},6:{halign:'center'}},
-    didParseCell:d=>{ if(d.section==='body'&&d.column.index===4){ d.cell.styles.textColor = list[d.row.index] && natOf(list[d.row.index])==='R'?pos:neg; d.cell.styles.fontStyle='bold'; } },
+    alternateRowStyles:{fillColor:[250,249,246]}, columnStyles:{0:{halign:'center'},1:{halign:'center'},4:{halign:'right'},5:{halign:'center'},7:{halign:'center'}},
+    didParseCell:d=>{ if(d.section==='body'&&d.column.index===4){ d.cell.styles.textColor = list[d.row.index] && natOf(list[d.row.index])==='R'?pos:neg; d.cell.styles.fontStyle='bold'; }
+      if(d.section==='body'&&d.column.index===5){ const v=d.cell.raw; if(v==='Vencida'){ d.cell.styles.textColor=neg; d.cell.styles.fontStyle='bold'; } else if(v==='A pagar'){ d.cell.styles.textColor=[200,130,20]; d.cell.styles.fontStyle='bold'; } else if(v==='Quitada') d.cell.styles.textColor=pos; } },
     didDrawPage:()=>{ const H=doc.internal.pageSize.getHeight(); doc.setFontSize(8); doc.setTextColor(140); doc.text('FinançaPro · Dados sincronizados com Google Sheets',14,H-8);
       doc.text(`Página ${doc.internal.getNumberOfPages()}`,W-14,H-8,{align:'right'}); }, margin:{top:14,bottom:14} });
   return doc;
@@ -1437,22 +1504,22 @@ $('#xlsBtn').onclick = () => {
   const list = sorted(filtered()), mt = metrics(list), X = XLSX, brandHex = MOD==='I' ? '2D4A9A' : '0F5C56', isI = MOD==='I';
   const border = { top:{style:'thin',color:{rgb:'E2DDD2'}}, bottom:{style:'thin',color:{rgb:'E2DDD2'}}, left:{style:'thin',color:{rgb:'E2DDD2'}}, right:{style:'thin',color:{rgb:'E2DDD2'}} };
   const money = '"R$" #,##0.00;[Red]-"R$" #,##0.00';
-  const H = ['Ocorrência','Previsão','Descrição','Valor','Natureza','Classificação','Qt Parcelas',payLbl(),'Categoria'];
+  const H = ['Ocorrência','Previsão','Descrição','Valor','Natureza','Classificação','Qt Parcelas',payLbl(),'Categoria','Situação'];
   const lines = mt.items.filter(i=>!i.count && !i.pct).map(i=>({ l:i.l, v: i.cls==='exp' ? -i.v : i.v, sg:!!i.sg }));
   const aoa = [[MODCFG[MOD].pdf],[`Filtros: ${filterDesc()} · Emitido em ${new Date().toLocaleString('pt-BR')}`],[],H,
-    ...list.map(r=>[r.data,prevOf(r),r.descricao,natOf(r)==='R'?+r.valor:-r.valor,natName(r),clsOf(r),r.parcelas===''||r.parcelas==null?'':+r.parcelas,r.formaPagto,r.categoria||'']),
+    ...list.map(r=>[r.data,prevOf(r),r.descricao,natOf(r)==='R'?+r.valor:-r.valor,natName(r),clsOf(r),r.parcelas===''||r.parcelas==null?'':+r.parcelas,r.formaPagto,r.categoria||'',stTxt(r)]),
     [], ...lines.map(x=>['','',x.l,x.v])];
   const ws = X.utils.aoa_to_sheet(aoa), last = 4 + list.length;
-  ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:8}},{s:{r:1,c:0},e:{r:1,c:8}}];
-  ws['!cols'] = [{wch:12},{wch:12},{wch:38},{wch:15},{wch:16},{wch:18},{wch:12},{wch:24},{wch:26}];
+  ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:9}},{s:{r:1,c:0},e:{r:1,c:9}}];
+  ws['!cols'] = [{wch:12},{wch:12},{wch:38},{wch:15},{wch:16},{wch:18},{wch:12},{wch:24},{wch:26},{wch:12}];
   ws['!rows'] = [{hpt:30},{hpt:18},{},{hpt:22}];
-  ws['!autofilter'] = { ref:`A4:I${Math.max(last,5)}` }; ws['!freeze'] = { xSplit:0, ySplit:4 };
+  ws['!autofilter'] = { ref:`A4:J${Math.max(last,5)}` }; ws['!freeze'] = { xSplit:0, ySplit:4 };
   ws.A1.s = { font:{bold:true,sz:18,color:{rgb:'FFFFFF'}}, fill:{fgColor:{rgb:brandHex}}, alignment:{vertical:'center'} };
   ws.A2.s = { font:{italic:true,sz:10,color:{rgb:'5F6B69'}} };
   H.forEach((_,c)=>{ const a=X.utils.encode_cell({r:3,c}); ws[a].s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:brandHex}},alignment:{horizontal:'center',vertical:'center'},border}; });
-  for (let r=4;r<last;r++) for (let c=0;c<9;c++){ const a=X.utils.encode_cell({r,c}); ws[a] ??= {t:'s',v:''};
-    const neg = c===3 && ws[a].v<0; ws[a].s = { border, fill:{fgColor:{rgb:r%2?'FAF9F6':'FFFFFF'}}, alignment:{horizontal:[0,1,6].includes(c)?'center':c===3?'right':'left'},
-      font:{color:{rgb:c===3?(neg?'D6493F':'1F9D6B'):'14201F'},bold:c===3} }; if (c===3) ws[a].z=money; }
+  for (let r=4;r<last;r++) for (let c=0;c<10;c++){ const a=X.utils.encode_cell({r,c}); ws[a] ??= {t:'s',v:''};
+    const neg = c===3 && ws[a].v<0; ws[a].s = { border, fill:{fgColor:{rgb:r%2?'FAF9F6':'FFFFFF'}}, alignment:{horizontal:[0,1,6,9].includes(c)?'center':c===3?'right':'left'},
+      font:{color:{rgb:c===3?(neg?'D6493F':'1F9D6B'):c===9?({Vencida:'D6493F','A pagar':'C98214',Quitada:'1F9D6B'}[ws[a].v]||'14201F'):'14201F'},bold:c===3||(c===9&&ws[a].v==='Vencida')} }; if (c===3) ws[a].z=money; }
   lines.forEach((x,i)=>{ const r = last+1+i; ['C','D'].forEach(col=>{ const a=col+(r+1); if(ws[a]) ws[a].s={font:{bold:true,sz:12,color:{rgb:x.sg?(x.v>=0?'1F9D6B':'D6493F'):'14201F'}},fill:{fgColor:{rgb:'F0EDE6'}},border,alignment:{horizontal:col==='D'?'right':'left'}}; });
     const c=ws['D'+(r+1)]; if(c) c.z=money; });
   // Aba resumo mensal
@@ -1482,6 +1549,7 @@ const groupSum = (list, keyFn) => { const m = new Map(); list.forEach(x => { con
 const METODO = [
   'Todos os lançamentos (Fluxo de caixa e Investimentos) são considerados, sem aplicar os filtros do painel.',
   'Realizado: lançamentos cuja Ocorrência é igual ou anterior à data escolhida. Receitas somam e despesas subtraem do caixa; aportes e rendimentos somam e resgates e taxas subtraem do patrimônio investido.',
+  'Quitado: uma despesa do Fluxo de caixa só é realizada quando está quitada (a Ocorrência é a data do pagamento). Despesa em aberto não reduz o caixa e permanece no passivo, mesmo com data passada. Em lançamentos antigos, sem status, vale a data de ocorrência.',
   'A realizar: lançamentos com Ocorrência posterior à data escolhida. Receitas formam o ativo a receber; despesas (inclusive parcelas futuras) formam o passivo a pagar.',
   'Vencido: item a realizar cuja Previsão já chegou na data escolhida, ou seja, esperado até aqui e ainda sem ocorrência registrada.',
   'Caixa negativo é reclassificado como passivo (descoberto), de modo que nenhum ativo seja apresentado com saldo credor.',
@@ -1496,7 +1564,7 @@ function concModel(Xin, noPrev){
   rows.forEach(r => {
     const d = parseBR(r.data), p = parseBR(prevOf(r)), v = +r.valor;
     if (isNaN(d) || isNaN(p) || !isFinite(v)) { M.invalid++; return; }
-    const done = d <= X;
+    const done = d <= X && !(isDesp(r) && r.quitado==='Não');   // despesa marcada como não quitada nunca é realizada
     L.push({ r, mod:r.modulo, nat:natOf(r), d, p, v, done, overdue:!done && p <= X, days:Math.round((p - X)/DAY),
       y: r.modulo==='I' && natName(r)==='Rendimento', cat:r.categoria||'Sem categoria', cls:clsOf(r)||'Sem classificação', pay:r.formaPagto||'Não informada' });
   });
@@ -1587,7 +1655,7 @@ function concInsights(M){
   const o = [], add = (lvl,t,d) => o.push({ lvl, t, d }), P = M.prev;
   if (M.caixa < -0.004) add('bad','Caixa no vermelho', `O saldo realizado até a data é ${brl(M.caixa)}: as saídas superam as entradas. O valor foi tratado como passivo (descoberto) no balanço.`);
   else add('ok','Caixa positivo', `Há ${brl(M.caixa)} disponíveis, considerando tudo o que já ocorreu até a data.`);
-  if (M.pagV > 0.004) add('bad','Contas vencidas em aberto', `${M.pagVn} lançamento(s), somando ${brl(M.pagV)}, tinham previsão até a data e ainda não têm ocorrência registrada. Regularize o pagamento ou ajuste a data de ocorrência.`);
+  if (M.pagV > 0.004) add('bad','Contas vencidas em aberto', `${M.pagVn} lançamento(s), somando ${brl(M.pagV)}, tinham previsão até a data e ainda não foram quitados. Quite a despesa informando a data do pagamento ou renegocie o vencimento.`);
   if (M.recV > 0.004) add('warn','Recebimentos previstos não realizados', `${M.recVn} recebimento(s), somando ${brl(M.recV)}, eram esperados até a data e ainda não ocorreram. Vale confirmar com o pagador.`);
   if (M.liq30 != null) { const ok = M.liq30 >= 1.5, warn = M.liq30 >= 1;
     add(ok?'ok':warn?'warn':'bad','Cobertura das obrigações de 30 dias', `Para cada R$ 1,00 a pagar nos próximos 30 dias (${brl(M.pag30 + M.descob)}), há ${brl(M.liq30)} em recursos imediatos (caixa e recebíveis do período).${ok?'' : warn ? ' A folga é pequena: evite novos compromissos no curto prazo.' : ' Os recursos imediatos não cobrem as obrigações: priorize receitas ou renegociação.'}`); }
