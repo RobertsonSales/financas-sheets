@@ -245,6 +245,32 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
 .cc-met{margin-top:18px;font-size:.84rem;color:var(--muted)}.cc-met summary{cursor:pointer;font-weight:700;color:var(--text)}
 .cc-met ul{margin:8px 0 4px 18px;display:grid;gap:5px;line-height:1.45}
 @media (max-width:640px){.cc-hero{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-bar .field{flex:1 1 100%}.cc-chart{height:240px}}
+
+/* ===== Cadastros em lista expansível ===== */
+.cad-sec{border:1px solid var(--border);border-radius:14px;background:var(--surface-2);margin-top:10px;overflow:hidden}
+.cad-sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;font-weight:700;user-select:none}
+.cad-sec>summary::-webkit-details-marker{display:none}
+.cad-sec>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+.cad-sec[open]>summary::before{transform:rotate(90deg)}
+.cad-sec>summary:focus-visible{outline:3px solid color-mix(in oklab,var(--primary) 45%,transparent);outline-offset:-3px}
+.cad-sec .cnt{margin-left:auto;font-size:.76rem;color:var(--muted);font-weight:600;text-align:right}
+.cad-sec .mini{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:.76rem;font-weight:700;cursor:pointer;color:var(--text)}
+.cad-in{padding:2px 14px 14px;max-height:48vh;overflow:auto}
+.cad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}
+.cad-it{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:.88rem;min-width:0}
+.cad-it .wr{flex:1;min-width:0}
+.cad-it .nm{display:block;overflow-wrap:break-word;word-break:normal;font-weight:600;line-height:1.25}
+.cad-it .meta{display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap}
+.cad-it .nm em{font-style:normal;font-weight:800;color:var(--muted)}
+.cad-it .bd{font-size:.64rem;font-weight:800;padding:2px 7px;border-radius:999px;background:var(--border);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.cad-it .bd.cu{background:color-mix(in oklab,var(--primary) 16%,transparent);color:var(--primary)}
+.cad-it .use{font-size:.72rem;color:var(--muted);white-space:nowrap}
+.cad-it .use.on{color:var(--accent);font-weight:700}
+.cad-it .del{border:none;background:none;cursor:pointer;font-size:1rem;line-height:1;padding:6px 8px;border-radius:8px;color:var(--expense)}
+.cad-it .del:not(:disabled):hover{background:color-mix(in oklab,var(--expense) 14%,transparent)}
+.cad-it .del:disabled{opacity:.4;cursor:not-allowed;color:var(--muted)}
+.cad-it .del:focus-visible{outline:3px solid color-mix(in oklab,var(--primary) 45%,transparent)}
+.cad-warn{margin-top:8px;padding:8px 12px;border-radius:10px;font-size:.82rem;background:color-mix(in oklab,var(--accent) 16%,transparent)}
 </style>
 </head>
 <body>
@@ -373,12 +399,11 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
 
 <!-- GERENCIAR CADASTROS -->
 <div class="modal hidden" id="cadModal">
-  <div class="card">
+  <div class="card" style="width:min(860px,100%)">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
       <h3 id="cadTitle" style="margin:0">Cadastros</h3>
-      <div class="actions"><button class="btn btn-primary" id="cadAdd">＋ Novo</button><button class="btn" data-close>Fechar</button></div>
+      <div class="actions"><button class="btn" data-close>Fechar</button></div>
     </div>
-    <div class="chips" id="cadTabs" role="tablist" style="margin:14px 0 4px"></div>
     <p class="cad-note" id="cadNote"></p>
     <div id="cadBody"></div>
   </div>
@@ -563,6 +588,7 @@ function demoSeed(){
 function demoApi(method, b){
   if (b?.action==='cfg_get') return { ok:true, cfg: JSON.parse(localStorage.getItem('fp-cfg:demo') || 'null') };
   if (b?.action==='cfg_set') { localStorage.setItem('fp-cfg:demo', JSON.stringify(b.cfg)); return { ok:true }; }
+  if (b?.action==='cfg_usage') return { ok:true, usage: usageFromRows((JSON.parse(localStorage.getItem('fp-demo') || 'null') || demoSeed()).map(normRow)) };
   let d = JSON.parse(localStorage.getItem('fp-demo') || 'null') || demoSeed();
   if (method==='POST'){
     if (b.action==='create') d.push(...b.rows.map(r=>({...r,id:uid()})));
@@ -846,8 +872,8 @@ const DEF = {
             ...['Resgate para conta corrente','Pix','TED','Resgate automático no vencimento','Saque em espécie','Portabilidade enviada'].map(n=>({n,nat:'Resgate'})),
             ...['Retenção na fonte','Descontado do resgate','Débito em conta'].map(n=>({n,nat:'Taxas e IR'})) ] }
 };
-const emptyCfg = () => ({ F:{nat:[],cls:[],cat:[],pay:[]}, I:{nat:[],cls:[],cat:[],pay:[]} });
-let CFG = emptyCfg(), natSel = '', quickCtx = null, cadKind = 'nat', cfgWarned = false;
+const emptyCfg = () => ({ F:{nat:[],cls:[],cat:[],pay:[],hid:{cls:[],cat:[],pay:[]}}, I:{nat:[],cls:[],cat:[],pay:[],hid:{cls:[],cat:[],pay:[]}} });   // hid = itens padrão que o operador removeu da lista
+let CFG = emptyCfg(), natSel = '', quickCtx = null, cfgWarned = false, CAD_USE = null, cadUseMsg = '', cadLoading = false; const cadOpen = new Set();
 const arr = v => Array.isArray(v) ? v : [];
 function cleanCfg(raw){
   const c = emptyCfg(); if (!raw || typeof raw !== 'object') return c;
@@ -856,7 +882,8 @@ function cleanCfg(raw){
     arr(src.nat).forEach(x => { const n = t(x?.n); if (n) c[m].nat.push({ n, s: x.s==='E' ? 'E' : 'S' }); });
     ['cls','cat'].forEach(k => arr(src[k]).forEach(x => { const n = t(x?.n); if (n) c[m][k].push({ n, nat: t(x.nat) || '*' }); }));
     arr(src.pay).forEach(x => { const n = t(x?.n); if (n) c[m].pay.push({ n, nat: t(x.nat) || '*' }); });
-    Object.keys(c[m]).forEach(k => c[m][k] = c[m][k].slice(0,200));
+    ['nat','cls','cat','pay'].forEach(k => c[m][k] = c[m][k].slice(0,200));
+    const hs = src.hid || {}; ['cls','cat','pay'].forEach(k => arr(hs[k]).slice(0,400).forEach(x => { const n = t(x?.n); if (n) c[m].hid[k].push({ n, nat: t(x.nat) }); }));
   });
   return c;
 }
@@ -876,7 +903,8 @@ async function saveCfg(){
 }
 const norm = s => String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 const uniq = a => [...new Set(a)];
-const items = (m,k) => [ ...DEF[m][k].map(x=>({...x,def:true})), ...arr(CFG[m][k]).map(x=>({...x,def:false})) ];
+const isHid = (m,k,x) => arr(CFG[m].hid?.[k]).some(h => h.n===x.n && (h.nat||'')===(x.nat||''));
+const items = (m,k) => [ ...DEF[m][k].filter(x=>!isHid(m,k,x)).map(x=>({...x,def:true})), ...arr(CFG[m][k]).map(x=>({...x,def:false})) ];
 const natsOf = m => items(m,'nat');
 const signOfName = n => (natsOf(MOD).find(x=>x.n===n) || { s: editing && natName(editing)===n ? (natOf(editing)==='R'?'E':'S') : 'S' }).s;
 // Itens valem para a natureza escolhida ou "todas". Natureza nova sem itens próprios herda as de mesmo sinal (entrada/saída).
@@ -939,36 +967,85 @@ $('#quickForm').onsubmit = e => {
 };
 $('#form').addEventListener('click', e => { const b = e.target.closest('[data-add]'); if (b) openQuick(b.dataset.add, 'form'); });
 
-/* ---- Tela de gerenciamento ---- */
-const usageCount = (k, n) => data().filter(r => k==='nat' ? natName(r)===n : k==='cls' ? clsOf(r)===n : k==='cat' ? r.categoria===n : r.formaPagto===n).length;
-function tagsHTML(list, k){
-  return `<div class="tags">${list.map(x => `<span class="tag ${x.def?'def':'cu'}">${esc(x.n)}${k==='nat'?` <em title="${x.s==='E'?'Entrada: soma ao saldo':'Saída: subtrai do saldo'}">${x.s==='E'?'＋':'−'}</em>`:''}${x.def?'':`<button type="button" data-del="${k}" data-n="${esc(x.n)}" data-nat="${esc(x.nat||'')}" title="Remover" aria-label="Remover ${esc(x.n)}">×</button>`}</span>`).join('')}</div>`;
+/* ---- Tela de gerenciamento: tipos em listas expansíveis; a lixeira só vale para itens sem lançamento vinculado em toda a planilha ---- */
+function usageFromRows(list){   // mesma regra do Code.js (usageMap_): contagem por módulo, tipo e nome normalizado
+  const u = { F:{nat:{},cls:{},cat:{},pay:{}}, I:{nat:{},cls:{},cat:{},pay:{}} }, bump = (o,v) => { const k = norm(v); if (k) o[k] = (o[k]||0) + 1; };
+  list.forEach(r => { const t = u[r.modulo==='I' ? 'I' : 'F']; bump(t.nat, natName(r)); bump(t.cls, clsOf(r)); bump(t.cat, r.categoria); bump(t.pay, r.formaPagto); });
+  return u;
+}
+const useOf = (k, n) => CAD_USE ? (CAD_USE[MOD]?.[k]?.[norm(n)] || 0) : null;
+const isCore = (k, x) => x.def && (k==='nat' || (MOD==='F' && k==='cls'));   // base do sistema (sinal, parcelamento): não removível
+function delState(k, x){   // { ok, why }: por que a lixeira está (ou não) disponível
+  if (isCore(k, x)) return { ok:false, core:true, why:'Item essencial do sistema: não pode ser removido.' };
+  if (cadLoading) return { ok:false, why:'Verificando lançamentos vinculados…' };
+  if (!CAD_USE) return { ok:false, why: cadUseMsg || 'Não foi possível verificar os lançamentos vinculados.' };
+  const used = useOf(k, x.n);
+  if (used) return { ok:false, used, why:`Em uso por ${used} lançamento(s) na planilha (de qualquer usuário). Remova ou altere esses lançamentos antes.` };
+  if (k==='nat' && !x.def) { let kids = 0; ['cls','cat','pay'].forEach(kk => arr(CFG[MOD][kk]).filter(c => c.nat===x.n).forEach(c => kids += useOf(kk, c.n))); if (kids) return { ok:false, used:kids, why:`Itens exclusivos desta natureza estão em uso por ${kids} lançamento(s).` }; }
+  return { ok:true };
+}
+const kindName = k => k==='pay' && MOD==='I' ? 'Formas de aporte/saque' : KINDS[k];
+function itemHTML(k, x){
+  const st = delState(k, x), u = useOf(k, x.n);
+  const lbl = st.core ? '<span class="use">essencial</span>' : u == null ? '' : u ? `<span class="use on">em uso · ${u}</span>` : '<span class="use">sem uso</span>';
+  return `<div class="cad-it"><div class="wr"><span class="nm">${esc(x.n)}${k==='nat' ? ` <em title="${x.s==='E'?'Entrada: soma ao saldo':'Saída: subtrai do saldo'}">${x.s==='E'?'＋ entrada':'− saída'}</em>` : ''}</span><div class="meta">${x.def ? '<span class="bd">padrão</span>' : '<span class="bd cu">seu</span>'}${lbl}</div></div>`
+    + `<button type="button" class="del" data-del="${k}" data-n="${esc(x.n)}" data-nat="${esc(x.nat||'')}" data-def="${x.def?1:0}"${st.ok?'':' disabled'} title="${esc(st.ok ? 'Remover' : st.why)}" aria-label="${esc((st.ok ? 'Remover ' : 'Remoção indisponível para ') + x.n)}">${st.core ? '🔒' : '🗑'}</button></div>`;
+}
+function sectionHTML(k){
+  const all = items(MOD, k), inUse = CAD_USE ? all.filter(x => useOf(k, x.n) > 0).length : null, hid = arr(CFG[MOD].hid?.[k]).length;
+  let inner;
+  if (k==='nat' || (k==='pay' && MOD==='F')) inner = `<div class="cad-grid">${all.map(x => itemHTML(k, x)).join('')}</div>`;
+  else inner = [...natsOf(MOD).map(x=>x.n), '*'].map(g => {
+    const l = all.filter(x => x.nat===g); if (!l.length && g==='*') return '';
+    return `<div class="grp"><h4>${g==='*' ? 'Todas as naturezas' : esc(g)}</h4>${l.length ? `<div class="cad-grid">${l.map(x => itemHTML(k, x)).join('')}</div>` : '<div class="hint">Nenhum item próprio: usa os de naturezas equivalentes.</div>'}</div>`;
+  }).join('');
+  return `<details class="cad-sec" data-k="${k}"${cadOpen.has(k)?' open':''}><summary><span>${kindName(k)}</span>`
+    + `<span class="cnt">${all.length} ite${all.length===1?'m':'ns'}${inUse==null ? '' : ` · ${inUse} em uso`}</span>`
+    + `<button type="button" class="mini" data-addk="${k}">＋ Novo</button></summary>`
+    + `<div class="cad-in"><p class="cad-note" style="margin:6px 0 4px">${k==='pay' && MOD==='I' ? PAY_NOTE_I : KIND_NOTE[k]}</p>`
+    + (hid ? `<div class="hint"><button type="button" class="mini" data-restore="${k}">↺ Restaurar ${hid} padrão(ões) removido(s)</button></div>` : '') + inner + `</div></details>`;
 }
 function renderCad(){
   $('#cadTitle').textContent = `Cadastros · ${MODCFG[MOD].tab}`;
-  $('#cadTabs').innerHTML = Object.keys(KINDS).map(k => `<button type="button" role="tab" class="chip${k===cadKind?' on':''}" data-k="${k}" aria-selected="${k===cadKind}">${k==='pay' && MOD==='I' ? 'Formas de aporte/saque' : KINDS[k]}</button>`).join('');
-  $('#cadNote').textContent = (cadKind==='pay' && MOD==='I' ? PAY_NOTE_I : KIND_NOTE[cadKind]) + ' Itens com × foram cadastrados por você e podem ser removidos; os demais são padrão do sistema.';
-  const k = cadKind;
-  if (k==='nat' || (k==='pay' && MOD==='F')) $('#cadBody').innerHTML = `<div class="grp">${tagsHTML(items(MOD,k), k)}</div>`;
-  else $('#cadBody').innerHTML = [...natsOf(MOD).map(x=>x.n), '*'].map(g => {
-    const l = items(MOD,k).filter(x => x.nat===g); if (!l.length && g==='*') return '';
-    return `<div class="grp"><h4>${g==='*' ? 'Todas as naturezas' : esc(g)}</h4>${l.length ? tagsHTML(l,k) : '<div class="hint">Nenhum item próprio: usa os de naturezas equivalentes.</div>'}</div>`;
-  }).join('');
+  $('#cadNote').innerHTML = 'Abra um tipo para ver seus itens. A lixeira só fica ativa quando <b>nenhum lançamento da planilha, de qualquer usuário,</b> está vinculado ao item; itens essenciais do sistema ficam protegidos (🔒).'
+    + (cadLoading ? '<div class="cad-warn">Verificando os lançamentos vinculados…</div>' : !CAD_USE ? `<div class="cad-warn">${esc(cadUseMsg || 'Verificação de uso indisponível: a exclusão está bloqueada.')}</div>` : '');
+  $('#cadBody').innerHTML = Object.keys(KINDS).map(sectionHTML).join('');
 }
+async function refreshUsage(){ const j = await api('POST', { action:'cfg_usage' }); CAD_USE = j.usage || null; cadUseMsg = ''; }
+function usageError(e){ CAD_USE = null; cadUseMsg = /desconhecida/i.test(e.message) ? 'Publique a nova versão do Code.js para verificar os lançamentos de todos os usuários. Enquanto isso, a exclusão fica bloqueada.' : 'Não foi possível verificar os lançamentos vinculados (' + e.message + '). A exclusão fica bloqueada.'; }
 $('#helpBtn').onclick = e => {
   if (/SEU-USUARIO/.test(TUTORIAL_URL)) { e.preventDefault(); return toast('Defina TUTORIAL_URL no código com o endereço do tutorial no GitHub Pages.'); }
   e.currentTarget.href = `${TUTORIAL_URL}?tema=${document.documentElement.dataset.theme}&painel=${MOD}`;
 };
-$('#cadBtn').onclick = () => { renderCad(); $('#cadModal').classList.remove('hidden'); };
-$('#cadTabs').onclick = e => { const b = e.target.closest('[data-k]'); if (b) { cadKind = b.dataset.k; renderCad(); } };
-$('#cadAdd').onclick = () => openQuick(cadKind, 'cad');
-$('#cadBody').onclick = e => {
-  const b = e.target.closest('[data-del]'); if (!b) return;
-  const k = b.dataset.del, n = b.dataset.n, sc = b.dataset.nat || '', used = usageCount(k, n);
-  if (!confirm(`Remover “${n}”?` + (used ? `\n${used} lançamento(s) usam este cadastro e continuarão exibindo o valor, mas ele deixa de ser oferecido em novos lançamentos.` : '') + (k==='nat' ? '\nClassificações e categorias exclusivas dessa natureza também serão removidas.' : ''))) return;
-  const L = CFG[MOD][k], i = L.findIndex(x => x.n===n && (x.nat||'')===sc); if (i >= 0) L.splice(i,1);
-  if (k==='nat') ['cls','cat','pay'].forEach(kk => CFG[MOD][kk] = CFG[MOD][kk].filter(x => x.nat !== n));
-  saveCfg(); fillLists(); renderCad(); render();
+$('#cadBtn').onclick = async () => {
+  CAD_USE = null; cadUseMsg = ''; cadLoading = true; renderCad(); $('#cadModal').classList.remove('hidden');
+  try { await refreshUsage(); } catch (e) { if (e.cancel) { cadLoading = false; return; } usageError(e); }
+  cadLoading = false; renderCad();
+};
+$('#cadBody').addEventListener('toggle', e => { const d = e.target.closest?.('details[data-k]'); if (d) d.open ? cadOpen.add(d.dataset.k) : cadOpen.delete(d.dataset.k); }, true);
+$('#cadBody').onclick = async e => {
+  const add = e.target.closest('[data-addk]'); if (add) { e.preventDefault(); return openQuick(add.dataset.addk, 'cad'); }
+  const rs = e.target.closest('[data-restore]'); if (rs) { e.preventDefault(); CFG[MOD].hid[rs.dataset.restore] = []; saveCfg(); fillLists(); renderCad(); return toast('Itens padrão restaurados.'); }
+  const b = e.target.closest('[data-del]'); if (!b || b.disabled) return;
+  const k = b.dataset.del, n = b.dataset.n, sc = b.dataset.nat || '', isDef = b.dataset.def === '1';
+  loading(true);   // confere de novo, na hora, o uso em toda a planilha
+  try { await refreshUsage(); } catch (err) { loading(false); if (err.cancel) return; usageError(err); renderCad(); return toast(cadUseMsg); }
+  loading(false);
+  const x = items(MOD,k).find(i => i.n===n && (i.nat||'')===sc); if (!x) return renderCad();
+  const st = delState(k, x); if (!st.ok) { renderCad(); return toast('Remoção bloqueada: ' + st.why); }
+  if (!confirm(isDef ? `Remover “${n}” da lista?\nÉ um item padrão: ele deixa de ser oferecido, mas pode ser restaurado depois nesta mesma tela.`
+                     : `Remover “${n}” definitivamente?` + (k==='nat' ? '\nClassificações, categorias e formas exclusivas dessa natureza também serão removidas.' : ''))) return;
+  const snap = JSON.stringify(CFG), removed = [{ m:MOD, k, n }];
+  if (isDef) CFG[MOD].hid[k].push({ n, nat:sc });
+  else {
+    const L = CFG[MOD][k], i = L.findIndex(c => c.n===n && (c.nat||'')===sc); if (i >= 0) L.splice(i,1);
+    if (k==='nat') ['cls','cat','pay'].forEach(kk => { CFG[MOD][kk].filter(c => c.nat===n).forEach(c => removed.push({ m:MOD, k:kk, n:c.n })); CFG[MOD][kk] = CFG[MOD][kk].filter(c => c.nat !== n); });
+  }
+  loading(true);
+  try { await api('POST', { action:'cfg_set', cfg:CFG, removed }); try { localStorage.setItem(cfgKey(), JSON.stringify(CFG)); } catch {} }
+  catch (err) { CFG = cleanCfg(JSON.parse(snap)); loading(false); renderCad(); return toast('Não foi possível remover: ' + err.message); }   // o servidor recusa se houver vínculo
+  try { await refreshUsage(); } catch {}
+  loading(false); fillLists(); renderCad(); render(); toast(`“${n}” removido.`);
 };
 
 /* ===================== FILTROS ===================== */
