@@ -1473,7 +1473,7 @@ function buildPDF(){
   doc.autoTable({ startY:68, head:[['Ocorrência','Previsão','Descrição','Natureza','Valor','Situação','Classificação','Qt Parc.',payLbl(),'Categoria']],
     body:list.map(r=>[r.data,prevOf(r),r.descricao,natName(r),brl(+r.valor),stTxt(r),clsOf(r),r.parcelas,r.formaPagto,r.categoria||'']),
     foot:sum.map(i=>['','',i.l.toUpperCase(),'',brl(i.v),'','','','','']),
-    theme:'grid', styles:{fontSize:8,cellPadding:2.2,lineColor:[226,221,210],lineWidth:.1},
+    theme:'grid', showFoot:'lastPage', styles:{fontSize:8,cellPadding:2.2,lineColor:[226,221,210],lineWidth:.1},
     headStyles:{fillColor:brand,textColor:255,fontStyle:'bold'}, footStyles:{fillColor:[240,237,230],textColor:[20,32,31],fontStyle:'bold'},
     alternateRowStyles:{fillColor:[250,249,246]}, columnStyles:{0:{halign:'center'},1:{halign:'center'},4:{halign:'right'},5:{halign:'center'},7:{halign:'center'}},
     didParseCell:d=>{ if(d.section==='body'&&d.column.index===4){ d.cell.styles.textColor = list[d.row.index] && natOf(list[d.row.index])==='R'?pos:neg; d.cell.styles.fontStyle='bold'; }
@@ -1793,7 +1793,7 @@ function buildConcPDF(M){
   const sec = (t, sub) => { need(sub ? 22 : 14); fill(gold); doc.rect(mx, y, 1.6, 6, 'F'); font('bold', 12.5); txt(brand); doc.text(t, mx + 4.5, y + 4.8); y += 8.5;
     if (sub) { font('normal', 8.4); txt(mute); const ls = doc.splitTextToSize(sub, cw); doc.text(ls, mx, y + 1.8); y += ls.length * 3.8 + 3.6; } };
   const tbl = o => { const numCols = o.numCols || [], colored = o.colored || null;
-    doc.autoTable({ margin:{ left:mx, right:mx, top:16, bottom:18 }, theme:'grid', styles:{ fontSize:8, cellPadding:2, lineColor:ln, lineWidth:.1, textColor:ink, overflow:'linebreak' },
+    doc.autoTable({ margin:{ left:mx, right:mx, top:16, bottom:18 }, theme:'grid', showFoot:'lastPage', styles:{ fontSize:8, cellPadding:2, lineColor:ln, lineWidth:.1, textColor:ink, overflow:'linebreak' },
       headStyles:{ fillColor:brand, textColor:255, fontStyle:'bold' }, footStyles:{ fillColor:[240,237,230], textColor:ink, fontStyle:'bold' }, alternateRowStyles:{ fillColor:[250,249,246] },
       ...o, startY:y, didParseCell:d => { if (d.section==='body' || d.section==='foot') { const raw = String(d.cell.raw ?? ''); if (numCols.includes(d.column.index)) { d.cell.styles.halign = 'right'; if (raw.startsWith('-')) { d.cell.styles.textColor = neg; } else if (colored && colored.includes(d.column.index) && raw && raw !== '-') d.cell.styles.textColor = pos; } } if (o.didParseCell) o.didParseCell(d); } });
     y = doc.lastAutoTable.finalY + 6; };
