@@ -125,6 +125,26 @@ function cfgSet_(email, cfg) {
   else sh.getRange(r, 1, 1, 4).setValues([row]);
 }
 
+/* ===== Uso dos cadastros em TODA a planilha (todos os usuários) =====
+   Um item só pode ser removido quando nenhum lançamento, de qualquer usuário, está vinculado a ele.
+   A comparação ignora maiúsculas, acentos e espaços nas pontas. Retorna { F:{nat,cls,cat,pay}, I:{...} } com contagens por nome normalizado. */
+function normKey_(s) { return String(s == null ? '' : s).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function usageMap_() {
+  const u = { F: { nat: {}, cls: {}, cat: {}, pay: {} }, I: { nat: {}, cls: {}, cat: {}, pay: {} } };
+  const sh = getSheet_();
+  if (sh.getLastRow() < 2) return u;
+  const bump = (o, v) => { const k = normKey_(v); if (k) o[k] = (o[k] || 0) + 1; };
+  sh.getRange(2, 1, sh.getLastRow() - 1, NCOL).getValues().forEach(r => {
+    if (r[7] === '' || r[7] == null) return;                       // linha sem ID = vazia
+    const t = u[String(r[10]) === 'I' ? 'I' : 'F'];
+    bump(t.nat, String(r[11] || '') || (String(r[6] || '') ? 'Receita' : 'Despesa'));
+    bump(t.cls, r[3] || r[6]);                                      // Tipo Despesa ou Tipo Receita
+    bump(t.cat, r[9]);
+    bump(t.pay, r[5]);
+  });
+  return u;
+}
+
 // Só encontra a linha se ela pertencer ao usuário logado.
 function findRow_(sh, id, email) {
   if (sh.getLastRow() < 2) return -1;
@@ -353,9 +373,21 @@ function doPost(e) {
       case 'cfg_set': {
         if (!body.cfg || typeof body.cfg !== 'object') return err_('Cadastros inválidos');
         if (JSON.stringify(body.cfg).length > CFG_MAX) return err_('Cadastros grandes demais. Remova itens que não usa.');
+        // Remoções: o servidor confere de novo (planilha inteira) e recusa se houver lançamento vinculado.
+        if (Array.isArray(body.removed) && body.removed.length) {
+          const u = usageMap_(), blocked = [];
+          body.removed.forEach(x => {
+            const m = x && x.m === 'I' ? 'I' : 'F', k = x && x.k, map = u[m] && Object.prototype.hasOwnProperty.call(u[m], k) ? u[m][k] : null;
+            const n = map ? (map[normKey_(x.n)] || 0) : 0;
+            if (n > 0) blocked.push(String(x.n).slice(0, 60) + ' (' + n + ')');
+          });
+          if (blocked.length) return err_('Há lançamentos vinculados a: ' + blocked.join(', ') + '. Nada foi removido.', 'IN_USE');
+        }
         cfgSet_(me, body.cfg);
         return json_({ ok: true });
       }
+      case 'cfg_usage':
+        return json_({ ok: true, usage: usageMap_() });
       case 'create': {
         const rows = (body.rows || []).map(o => toRow_(o, me));
         if (!rows.length) return err_('Nada a inserir');
