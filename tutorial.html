@@ -187,18 +187,20 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
   <h3>Indicadores</h3>
   <div class="tw"><table>
     <tr><th>Painel</th><th>Indicadores</th></tr>
-    <tr><td>Fluxo de caixa</td><td><b>Saldo inicial</b>, <b>Receitas</b>, <b>Despesas</b> (somente as quitadas), <b>A pagar</b> (despesas em aberto, fora do saldo), <b>Saldo do período</b>, <b>Saldo projetado</b> (só aparece havendo despesa em aberto), <b>Saldo final</b> e <b>Lançamentos</b>.</td></tr>
+    <tr><td>Fluxo de caixa</td><td><b>Saldo inicial</b>, <b>Receitas</b>, <b>Despesas</b> (somente as quitadas), <b>A pagar</b> (despesas em aberto, fora do saldo), <b>Saldo do período</b>, <b>Saldo projetado</b> e <b>Saldo final projetado</b> (só aparecem havendo despesa em aberto), <b>Saldo final</b> e <b>Lançamentos</b>.</td></tr>
     <tr><td>Investimentos</td><td><b>Patrimônio inicial</b>, <b>Aportes</b>, <b>Rendimentos</b>, <b>Resgates e taxas</b>, <b>Patrimônio final</b>, <b>Rentabilidade</b> e <b>Lançamentos</b>.</td></tr>
   </table></div>
   <p>O saldo inicial é tudo o que aconteceu antes da data <b>De</b>. Sem data inicial, o painel parte de zero.</p>
-  <h3>Saldo do período × Saldo projetado <span class="badge-new">novo</span></h3>
+  <h3>Saldos reais × saldos projetados <span class="badge-new">novo</span></h3>
   <div class="tw"><table>
     <tr><th>Card</th><th>Cálculo</th><th>O que responde</th></tr>
     <tr><td>Saldo do período</td><td>Receitas − despesas <b>quitadas</b></td><td>Quanto você tem de fato: o que já entrou menos o que já saiu.</td></tr>
-    <tr><td>Saldo projetado</td><td>Receitas − despesas quitadas − despesas <b>em aberto</b></td><td>Quanto sobra se você pagar tudo o que está em aberto no filtro.</td></tr>
+    <tr><td>Saldo projetado</td><td>Receitas − despesas quitadas − despesas <b>em aberto</b></td><td>Quanto sobra do período se você pagar tudo o que está em aberto no filtro.</td></tr>
+    <tr><td>Saldo final</td><td>Saldo inicial + Saldo do período</td><td>Quanto você tem de fato ao fim do período.</td></tr>
+    <tr><td>Saldo final projetado</td><td>Saldo final − despesas <b>em aberto</b></td><td>Quanto você terá ao fim do período depois de pagar tudo o que está em aberto.</td></tr>
   </table></div>
-  <p>O <b>Saldo projetado</b> acompanha os filtros: muda com o período, o Período por, a Situação e os demais. Ele só aparece quando há despesa em aberto no filtro (sem nada a pagar, seria igual ao Saldo do período). A dica do card mostra também o saldo final projetado, que soma o saldo inicial. O <b>Saldo final</b> e a Conciliação continuam mostrando o dinheiro real.</p>
-  <div class="note"><b>Exemplo</b>Receitas de R$ 10.000, despesas quitadas de R$ 100 e R$ 1.400 em aberto. Saldo do período = R$ 9.900. Saldo projetado = R$ 8.500.</div>
+  <p>Os dois saldos projetados acompanham os filtros: mudam com o período, o Período por, a Situação e os demais. Só aparecem quando há despesa em aberto no filtro (sem nada a pagar, seriam iguais aos saldos reais). O <b>Saldo final</b> e a Conciliação continuam mostrando o dinheiro real.</p>
+  <div class="note"><b>Exemplo</b>Receitas de R$ 10.000, despesas quitadas de R$ 100 e R$ 1.400 em aberto. Saldo do período = R$ 9.900 e Saldo projetado = R$ 8.500. Com saldo inicial de R$ 2.000, o Saldo final é R$ 11.900 e o Saldo final projetado, R$ 10.500.</div>
   <h3>Atalhos de período</h3>
   <p><span class="chip on">Tudo</span><span class="chip">Este mês</span><span class="chip">Mês anterior</span><span class="chip">Últimos 90 dias</span><span class="chip">Este ano</span><span class="chip">Futuros (parcelas)</span><span class="chip">A pagar</span></p>
   <p><b>A pagar</b> (só no Fluxo de caixa) é um atalho: limpa as datas e ajusta o filtro <b>Situação</b> para <i>Em aberto</i>. Os demais atalhos mudam só as datas e mantêm a Situação escolhida.</p>
@@ -391,7 +393,7 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
 
 <section id="faq">
   <h2><span class="n">12</span>Dúvidas frequentes</h2>
-  <details><summary>Qual a diferença entre Saldo do período e Saldo projetado?</summary><p>O Saldo do período é o dinheiro real: receitas menos despesas quitadas. O Saldo projetado também desconta as despesas em aberto, mostrando o que sobraria depois de pagá-las. Ele só aparece quando há despesa em aberto no filtro.</p></details>
+  <details><summary>Qual a diferença entre os saldos reais e os projetados?</summary><p>Os saldos reais (Saldo do período e Saldo final) consideram só o que já foi pago. Os projetados (Saldo projetado e Saldo final projetado) descontam também as despesas em aberto, mostrando o que sobraria depois de pagá-las. Só aparecem quando há despesa em aberto no filtro.</p></details>
   <details><summary>Marquei uma despesa como quitada, mas o saldo não mudou.</summary><p>Confira se a coluna Situação mostra ✔ Quitado e se a linha está dentro do período filtrado. O saldo do período só soma o que passa pelos filtros ativos.</p></details>
   <details><summary>Por que uma parcela futura não aparece nas Despesas?</summary><p>Despesas conta só as quitadas. Parcelas futuras estão em aberto e aparecem em <b>A pagar</b>.</p></details>
   <details><summary>Quero ver tudo o que acontece ou vence em um mês. Qual filtro uso?</summary><p>Em <b>Período por</b>, marque <b>Todos os eventos</b>, defina De/Até para o mês e, se quiser, ajuste a <b>Situação</b>. Aparecem os lançamentos que ocorreram ou vencem no mês.</p></details>
