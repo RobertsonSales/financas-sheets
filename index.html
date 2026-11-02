@@ -279,6 +279,16 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
 .st:hover{filter:brightness(.95);border-color:currentColor}
 .st:focus-visible{outline:3px solid color-mix(in oklab,var(--primary) 45%,transparent)}
 .pill{white-space:nowrap}
+
+/* ===== Seletor de parcelas (− n ＋) em destaque, nos dois temas ===== */
+.stepper{display:flex;align-items:stretch;gap:8px}
+.stepper input{flex:1;min-width:0;text-align:center;font-size:1.25rem;font-weight:800;font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.stepper button{flex:0 0 52px;min-height:48px;border:2px solid var(--accent);border-radius:12px;background:var(--accent);color:#1b1405;font-size:1.7rem;font-weight:900;line-height:1;cursor:pointer;font-family:inherit;box-shadow:0 2px 0 color-mix(in oklab,var(--accent) 55%,#000);transition:transform .08s,filter .15s}
+.stepper button:hover:not(:disabled){filter:brightness(1.08)}
+.stepper button:active:not(:disabled){transform:translateY(2px);box-shadow:none}
+.stepper button:focus-visible{outline:3px solid color-mix(in oklab,var(--primary) 55%,transparent);outline-offset:2px}
+.stepper button:disabled{opacity:.35;cursor:not-allowed;box-shadow:none;background:var(--border);border-color:var(--border);color:var(--muted)}
 </style>
 </head>
 <body>
@@ -383,7 +393,7 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
       <div class="field full"><label>Valor (R$)</label><input id="iValor" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" required></div>
       <div class="field full"><label>Descrição</label><input id="iDesc" maxlength="120" required></div>
       <div class="field"><label>Classificação</label><div class="fld-row"><select id="iCls" required></select><button type="button" class="btn" data-add="cls" title="Cadastrar nova classificação" aria-label="Cadastrar nova classificação">＋</button></div></div>
-      <div class="field hidden" id="parcWrap"><label id="parcLbl">Qt Parcelas</label><input type="number" id="iParc" min="1" max="120" value="1"><div class="hint" id="parcHint"></div></div>
+      <div class="field hidden" id="parcWrap"><label id="parcLbl">Qt Parcelas</label><div class="stepper" role="group" aria-label="Quantidade de parcelas"><button type="button" id="parcMinus" aria-label="Diminuir a quantidade de parcelas" title="Diminuir">−</button><input type="number" id="iParc" min="1" max="120" value="1" inputmode="numeric"><button type="button" id="parcPlus" aria-label="Aumentar a quantidade de parcelas" title="Aumentar">＋</button></div><div class="hint" id="parcHint"></div></div>
       <div class="field hidden" id="diaWrap"><label>Dia do vencimento</label><input type="number" id="iDia" min="1" max="31" inputmode="numeric"><div class="hint" id="diaHint"></div></div>
       <div class="field"><label>Categoria</label><div class="fld-row"><select id="iCat" required></select><button type="button" class="btn" data-add="cat" title="Cadastrar nova categoria" aria-label="Cadastrar nova categoria">＋</button></div></div>
       <div class="field"><label id="lblIPay">Forma de pagto./receb.</label><div class="fld-row"><select id="iPay" required></select><button type="button" class="btn" data-add="pay" title="Cadastrar nova forma de pagamento/recebimento" aria-label="Cadastrar nova forma de pagamento ou recebimento">＋</button></div></div>
@@ -1293,11 +1303,14 @@ function paintQuit(){
     + (par ? ' O status vale para a 1ª parcela; as demais com vencimento futuro nascem em aberto.' : editSeq ? ' Vale só para esta parcela; as demais têm status próprio.' : '');
 }
 $('#iQuit').addEventListener('change', () => { quitTouched = true; paintQuit(); });
+function stepParc(d){ const el = $('#iParc'); if (el.disabled) return; const v = Math.min(120, Math.max(1, (parseInt(el.value,10) || 1) + d)); el.value = v; el.dispatchEvent(new Event('input', { bubbles:true })); }
+$('#parcMinus').onclick = () => stepParc(-1); $('#parcPlus').onclick = () => stepParc(1);
+function paintStepper(){ const el = $('#iParc'), v = parseInt(el.value,10) || 1; $('#parcMinus').disabled = el.disabled || v <= 1; $('#parcPlus').disabled = el.disabled || v >= 120; }
 function updParc(){
   const ok = canParc(); $('#parcWrap').classList.toggle('hidden', !ok); $('#parcLbl').textContent = MODCFG[MOD].parc;
   const n = +$('#iParc').value||1, v = getValor();
   $('#parcHint').textContent = editing ? (editSeq ? `Alterações nesta 1ª parcela são projetadas nas demais. Aumente ou reduza a quantidade para criar ou remover parcelas no final da série (hoje: ${editGroup.length}).` : 'Edição altera apenas esta linha.') : (ok && n>1 ? `Serão geradas ${n} linhas mensais de ${brl(v)} (total ${brl(v*n)}).` : '');
-  syncSeq(); paintQuit();
+  syncSeq(); paintQuit(); paintStepper();
 }
 $('#iValor').addEventListener('input',()=>{ maskBRL($('#iValor')); updParc(); });
 ['#iCls','#iParc'].forEach(s=>$(s).addEventListener('input',updParc));
