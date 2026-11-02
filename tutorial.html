@@ -139,6 +139,7 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
     <div class="card"><h4>⚙️ Cadastros em lista</h4><p>Os tipos ficam em listas expansíveis, com lixeira só para itens sem nenhum lançamento vinculado. <a href="#cadastros">Ver regras</a></p></div>
     <div class="card"><h4>🔢 Parcelas ajustáveis</h4><p>Na 1ª parcela você aumenta ou reduz a quantidade com os botões <b>−</b> e <b>＋</b>, e o app cria ou remove as parcelas finais. <a href="#parcelas">Detalhes</a></p></div>
     <div class="card"><h4>📅 Previsão manda no vencimento</h4><p>A data escolhida na Previsão é respeitada e vira o dia de vencimento da série; só é ajustada para dia útil ao confirmar.</p></div>
+    <div class="card"><h4>🔎 Filtros por data e situação</h4><p><b>Período por</b> agora é uma lista de marcação: escolha Ocorrência, Previsão ou todos os eventos. E o novo filtro <b>Situação</b> separa despesas quitadas, em aberto e vencidas. <a href="#filtros-data">Ver como usar</a></p></div>
     <div class="card"><h4>📄 PDF mais limpo</h4><p>O resumo do relatório aparece só no fim da tabela, e há uma coluna Situação nos relatórios e no Excel.</p></div>
   </div>
 </section>
@@ -192,14 +193,35 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
   <p>O saldo inicial é tudo o que aconteceu antes da data <b>De</b>. Sem data inicial, o painel parte de zero.</p>
   <h3>Atalhos de período</h3>
   <p><span class="chip on">Tudo</span><span class="chip">Este mês</span><span class="chip">Mês anterior</span><span class="chip">Últimos 90 dias</span><span class="chip">Este ano</span><span class="chip">Futuros (parcelas)</span><span class="chip">A pagar</span></p>
-  <p><b>A pagar</b> (só no Fluxo de caixa) lista as despesas ainda não quitadas, de qualquer data.</p>
-  <h3>Filtros</h3>
+  <p><b>A pagar</b> (só no Fluxo de caixa) é um atalho: limpa as datas e ajusta o filtro <b>Situação</b> para <i>Em aberto</i>. Os demais atalhos mudam só as datas e mantêm a Situação escolhida.</p>
+  <h3 id="filtros-data">Filtros</h3>
   <ul>
-    <li><b>Buscar:</b> procura na descrição e na forma de pagamento.</li>
-    <li><b>Período por:</b> escolha se as datas De/Até valem para a <b>Ocorrência</b> (quando o fato aconteceu) ou para a <b>Previsão</b> (quando vence ou é esperado).</li>
+    <li><b>Buscar:</b> procura na descrição, na forma de pagamento e também na situação (digite “vencido”, por exemplo).</li>
+    <li><b>Período por:</b> lista de marcação que define <u>quais datas</u> o intervalo De/Até considera. <span class="badge-new">novo</span></li>
+    <li><b>Situação:</b> filtra as despesas por <i>Todas</i>, <i>Quitadas</i>, <i>Em aberto</i> ou <i>Vencidas</i>. <span class="badge-new">novo</span></li>
+    <li><b>De / Até:</b> o intervalo de datas.</li>
     <li><b>Natureza, Classificação, Categoria e Forma de pagamento:</b> aceitam várias opções e têm busca interna.</li>
-    <li><b>Limpar filtros</b> volta tudo ao padrão.</li>
+    <li><b>Limpar filtros</b> volta tudo ao padrão (o Período por é mantido, porque é uma preferência de leitura).</li>
   </ul>
+  <h3>Período por: Ocorrência, Previsão ou todos os eventos</h3>
+  <p>Abra a lista e marque uma ou mais opções. <b>Todos os eventos</b> marca as duas de uma vez. Um lançamento aparece quando <u>qualquer</u> das datas marcadas cai dentro do intervalo De/Até.</p>
+  <div class="tw"><table>
+    <tr><th>Marcado</th><th>Entra no período se…</th><th>Útil para</th></tr>
+    <tr><td>Ocorrência</td><td>o fato gerador (compra, recebimento) caiu no intervalo.</td><td>Ver o que você gastou e recebeu no mês.</td></tr>
+    <tr><td>Previsão</td><td>o vencimento caiu no intervalo.</td><td>Ver o que vence no mês, como a fatura de uma compra feita antes.</td></tr>
+    <tr><td>Todos os eventos</td><td>a ocorrência <u>ou</u> o vencimento caiu no intervalo.</td><td>Não perder nada do período: o que aconteceu e o que vence nele.</td></tr>
+  </table></div>
+  <div class="note"><b>Exemplo</b>Filtro de 01/11 a 30/11. Uma compra feita em 22/10 com fatura em 11/11 só aparece se <b>Previsão</b> ou <b>Todos os eventos</b> estiver marcado. Ela nunca é contada duas vezes: o saldo inicial só reúne o que tem <u>todas</u> as datas marcadas antes de 01/11.</div>
+  <p>Com as duas datas marcadas, o gráfico mensal e a data de “Posição em” do saldo final usam a data que colocou o lançamento no período. Deixe ao menos uma opção marcada: ao desmarcar a última, o app volta para Ocorrência.</p>
+  <h3>Situação: quitadas, em aberto e vencidas</h3>
+  <p>O filtro combina com o período escolhido. Cada linha da tabela mostra seu selo: <span class="st ok">✔ Quitado</span> <span class="st open">⏳ Em aberto</span> <span class="st bad">⚠ Vencido</span>.</p>
+  <ul>
+    <li><b>Todas:</b> sem filtro de situação.</li>
+    <li><b>Quitadas:</b> despesas que você marcou como pagas.</li>
+    <li><b>Em aberto:</b> despesas não quitadas, inclusive as vencidas.</li>
+    <li><b>Vencidas:</b> não quitadas e com Previsão anterior a hoje.</li>
+  </ul>
+  <div class="note warn"><b>Só despesas</b>A situação existe apenas em despesas do Fluxo de caixa. Ao escolher Quitadas, Em aberto ou Vencidas, as receitas saem da lista. No painel Investimentos o filtro não aparece. O relatório em PDF informa a situação e as datas usadas no filtro.</div>
   <h3>Gráficos e tabela</h3>
   <p>Fluxo de caixa mostra o <i>Fluxo mensal</i> (só o que foi pago) e <i>Despesas por forma de pagamento</i>. Investimentos mostra a <i>Evolução do patrimônio</i> e o <i>Patrimônio por categoria</i>. Na tabela, clique no cabeçalho para ordenar; use ✏️ para editar e 🗑 para excluir.</p>
 </section>
@@ -363,6 +385,8 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
   <h2><span class="n">12</span>Dúvidas frequentes</h2>
   <details><summary>Marquei uma despesa como quitada, mas o saldo não mudou.</summary><p>Confira se a coluna Situação mostra ✔ Quitado e se a linha está dentro do período filtrado. O saldo do período só soma o que passa pelos filtros ativos.</p></details>
   <details><summary>Por que uma parcela futura não aparece nas Despesas?</summary><p>Despesas conta só as quitadas. Parcelas futuras estão em aberto e aparecem em <b>A pagar</b>.</p></details>
+  <details><summary>Quero ver tudo o que acontece ou vence em um mês. Qual filtro uso?</summary><p>Em <b>Período por</b>, marque <b>Todos os eventos</b>, defina De/Até para o mês e, se quiser, ajuste a <b>Situação</b>. Aparecem os lançamentos que ocorreram ou vencem no mês.</p></details>
+  <details><summary>Como vejo só o que ainda preciso pagar neste mês?</summary><p>Marque <b>Previsão</b> em Período por, escolha o atalho <b>Este mês</b> e, em <b>Situação</b>, <b>Em aberto</b>. Para ver só o que já passou do vencimento, use <b>Vencidas</b>.</p></details>
   <details><summary>Qual data uso quando a fatura do cartão vence depois da compra?</summary><p>Ocorrência = data da compra; Previsão = vencimento da fatura. Deixe em aberto até pagar e marque como quitada em seguida.</p></details>
   <details><summary>Não consigo alterar uma parcela do meio da série.</summary><p>É proposital: só a 1ª parcela é editável, e as demais acompanham. O que você pode fazer em cada parcela é alternar a situação (Quitado/Em aberto) pelo selo. Para mudar valor, datas ou quantidade, edite a 1ª.</p></details>
   <details><summary>A lixeira de um item está desativada, mas eu não uso mais esse item.</summary><p>Algum lançamento (seu ou de outro usuário) ainda está vinculado a ele. Altere ou exclua esses lançamentos e tente de novo.</p></details>
