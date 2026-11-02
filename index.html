@@ -1172,8 +1172,9 @@ function metrics(list){
     { l:'Despesas', v:t.exp, cls:'exp', bar:true, hint:'Somente quitadas' },
     { l:'A pagar', v:t.open, cls:'exp', bar:true, hint:'Despesas em aberto (fora do saldo)' },
     { l:'Saldo do período', v:t.bal, sg:true, hint: t.inc ? `Comprometimento: ${(t.exp/t.inc*100).toFixed(1)}% da receita` : '' },
-    ...(t.open > 0.004 ? [{ l:'Saldo projetado', v:t.bal - t.open, sg:true, hint:`Após pagar ${brl(t.open)} em aberto · saldo final projetado ${brl(b.close - t.open)}` }] : []),   // projeção: só aparece havendo despesa em aberto no filtro
+    ...(t.open > 0.004 ? [{ l:'Saldo projetado', v:t.bal - t.open, sg:true, hint:`Período após pagar ${brl(t.open)} em aberto` }] : []),   // projeção: só aparece havendo despesa em aberto no filtro
     { l:'Saldo final', v:b.close, sg:true, hint:closeHint },
+    ...(t.open > 0.004 ? [{ l:'Saldo final projetado', v:b.close - t.open, sg:true, hint:`Saldo final após pagar ${brl(t.open)} em aberto` }] : []),
     cnt ] };
 }
 const fmtK = i => i.count ? String(i.v) : i.pct ? fmtPct(i.v) : brl(i.v);
@@ -1502,13 +1503,14 @@ function buildPDF(){
   doc.setTextColor(255); doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.text(MODCFG[MOD].pdf,14,15);
   doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.text(`Filtros: ${filterDesc()}`,14,23); doc.text(`Emitido em ${new Date().toLocaleString('pt-BR')}`,W-14,23,{align:'right'});
   const cards = mt.items.map(i => [i.l.toUpperCase(), fmtK(i), i.sg ? (i.v>=0?pos:neg) : i.cls==='inc' ? pos : i.cls==='exp' ? neg : brand]);
-  const cw = (W-28-(cards.length-1)*5)/cards.length, fs = cards.length>6 ? 10 : 11.5;
-  cards.forEach(([l,v,c],i)=>{ const x=14+i*(cw+5); doc.setFillColor(245,243,238); doc.roundedRect(x,38,cw,20,3,3,'F'); doc.setFillColor(...c); doc.rect(x,38,1.5,20,'F');
-    doc.setTextColor(95,107,105); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(l,x+6,45); doc.setTextColor(...c); doc.setFontSize(fs); doc.text(v,x+6,53); });
+  const perRow = cards.length > 6 ? Math.ceil(cards.length / 2) : cards.length, nRows = Math.ceil(cards.length / perRow);   // muitos cards: duas linhas equilibradas
+  const cw = (W-28-(perRow-1)*5)/perRow, fs = cards.length>6 ? 11 : 11.5, cEnd = 38 + nRows*24 - 4;
+  cards.forEach(([l,v,c],i)=>{ const x=14+(i%perRow)*(cw+5), y0=38+Math.floor(i/perRow)*24; doc.setFillColor(245,243,238); doc.roundedRect(x,y0,cw,20,3,3,'F'); doc.setFillColor(...c); doc.rect(x,y0,1.5,20,'F');
+    doc.setTextColor(95,107,105); doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.text(l,x+6,y0+7); doc.setTextColor(...c); doc.setFontSize(fs); doc.text(v,x+6,y0+15); });
   doc.setTextColor(95,107,105); doc.setFont('helvetica','normal'); doc.setFontSize(8);
-  doc.text(`${MOD==='I'?'Patrimônio':'Saldo'} inicial: ${b.fromISO?'acumulado antes de '+isoToBR(b.fromISO):'sem data inicial (parte de zero)'}  ·  ${MOD==='I'?'Patrimônio':'Saldo'} final: ${b.last?'posição em '+toBR(b.last):'sem lançamentos no período'}`,14,62);
+  doc.text(`${MOD==='I'?'Patrimônio':'Saldo'} inicial: ${b.fromISO?'acumulado antes de '+isoToBR(b.fromISO):'sem data inicial (parte de zero)'}  ·  ${MOD==='I'?'Patrimônio':'Saldo'} final: ${b.last?'posição em '+toBR(b.last):'sem lançamentos no período'}`,14,cEnd+4);
   const sum = mt.items.filter(i=>!i.count && !i.pct);
-  doc.autoTable({ startY:68, head:[['Ocorrência','Previsão','Descrição','Natureza','Valor','Situação','Classificação','Qt Parc.',payLbl(),'Categoria']],
+  doc.autoTable({ startY:cEnd+10, head:[['Ocorrência','Previsão','Descrição','Natureza','Valor','Situação','Classificação','Qt Parc.',payLbl(),'Categoria']],
     body:list.map(r=>[r.data,prevOf(r),r.descricao,natName(r),brl(+r.valor),stTxt(r),clsOf(r),r.parcelas,r.formaPagto,r.categoria||'']),
     foot:sum.map(i=>['','',i.l.toUpperCase(),'',brl(i.v),'','','','','']),
     theme:'grid', showFoot:'lastPage', styles:{fontSize:8,cellPadding:2.2,lineColor:[226,221,210],lineWidth:.1},
