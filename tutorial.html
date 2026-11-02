@@ -1,573 +1,401 @@
-<!DOCTYPE html>
-<html lang="pt-BR" data-theme="light" data-mod="F">
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0f5c56" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tutorial · Finanças Plus</title>
-<meta name="description" content="Aprenda a usar o Finanças Plus: fluxo de caixa, investimentos, cadastros, filtros e relatórios, com simuladores interativos." />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet" />
+<meta name="theme-color" content="#0f5c56">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
 <style>
 :root{
-  --bg:#f5f3ee;--surface:#fff;--surface-2:#f0ede6;--text:#14201f;--muted:#5f6b69;--border:#e2ddd2;
-  --primary:#0f5c56;--primary-2:#14857b;--on-primary:#fff;--accent:#e8a33d;--income:#1f9d6b;--expense:#d6493f;
-  --shadow:0 10px 30px -12px rgba(15,60,55,.25);--radius:16px;--grad:linear-gradient(135deg,var(--primary),var(--primary-2));
-  --tip:#14857b;--warn:#c9831c;
+  --bg:#f5f3ee;--surface:#ffffff;--surface-2:#efece5;--text:#14201f;--muted:#5f6b69;--border:#e2ddd2;
+  --primary:#0f5c56;--primary-2:#14857b;--accent:#e8a33d;--income:#1f9d6b;--expense:#d6493f;--info:#2d4a9a;
+  --shadow:0 10px 30px rgba(15,40,38,.08);
+  --serif:'Fraunces',Georgia,'Times New Roman',serif;--sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
 }
-[data-theme="dark"]{--bg:#0c1413;--surface:#131e1d;--surface-2:#1a2928;--text:#e9f0ee;--muted:#93a5a2;--border:#243634;--primary:#2bb3a3;--primary-2:#5fd4c4;--on-primary:#06201d;--accent:#f2b955;--income:#3ccf91;--expense:#ff6b5f;--shadow:0 10px 30px -12px rgba(0,0,0,.6);--tip:#5fd4c4;--warn:#f2b955}
-html[data-mod="I"]{--bg:#f1f3f9;--surface-2:#e8ecf6;--border:#dce1ef;--primary:#2d4a9a;--primary-2:#4b72d6;--tip:#4b72d6;--shadow:0 10px 30px -12px rgba(30,50,115,.28)}
-html[data-theme="dark"][data-mod="I"]{--bg:#0b1020;--surface:#121a30;--surface-2:#1a2442;--border:#26324f;--primary:#7c97ff;--primary-2:#a8bcff;--on-primary:#0b1433;--tip:#a8bcff;--shadow:0 10px 30px -12px rgba(0,0,0,.65)}
-*{box-sizing:border-box;margin:0;padding:0}
-html{background:var(--bg);scroll-behavior:smooth}
-body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;transition:background .3s,color .3s;overflow-x:hidden}
-h1,h2,h3,.brand{font-family:'Fraunces',Georgia,serif}
-button,input,select{font:inherit;color:inherit}
+[data-theme=dark]{
+  --bg:#0c1413;--surface:#131e1d;--surface-2:#1a2827;--text:#e9f1ef;--muted:#9bb0ac;--border:#26393a;
+  --primary:#3fc1b2;--primary-2:#5fd4c6;--accent:#f4b95a;--income:#43c98f;--expense:#ff6f62;--info:#8fa8ff;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-text-size-adjust:100%}
 a{color:var(--primary)}
-:focus-visible{outline:3px solid color-mix(in oklab,var(--primary) 50%,transparent);outline-offset:2px;border-radius:8px}
-.btn{border:1px solid var(--border);background:var(--surface);padding:9px 15px;border-radius:12px;cursor:pointer;font-weight:600;display:inline-flex;gap:8px;align-items:center;text-decoration:none;color:var(--text);transition:transform .15s,box-shadow .2s}
-.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
-.btn-primary{background:var(--grad);color:var(--on-primary);border:none}
-.btn[disabled]{opacity:.45;pointer-events:none}
-/* topo */
-.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) clamp(12px,3vw,32px) 10px;background:color-mix(in oklab,var(--bg) 82%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
-.brand{font-size:1.2rem;font-weight:800;display:flex;gap:10px;align-items:center;white-space:nowrap}
-.brand i{width:32px;height:32px;border-radius:10px;background:var(--grad);display:grid;place-items:center;color:var(--on-primary);font:700 .85rem 'Plus Jakarta Sans'}
-.brand small{font:600 .8rem 'Plus Jakarta Sans';color:var(--muted)}
-.search{flex:1;max-width:420px;margin-left:auto;position:relative}
-.search input{width:100%;padding:9px 38px 9px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);outline:none}
-.search input:focus{border-color:var(--primary)}
-.search kbd{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:.72rem;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:0 6px;background:var(--surface-2)}
-.pswitch{display:flex;background:var(--surface-2);border-radius:12px;padding:3px}
-.pswitch button{border:none;background:none;padding:7px 12px;border-radius:9px;cursor:pointer;font-weight:700;font-size:.85rem;white-space:nowrap}
-.pswitch button[aria-pressed="true"]{background:var(--grad);color:var(--on-primary)}
-.ring{--p:0;width:38px;height:38px;border-radius:50%;background:conic-gradient(var(--primary) calc(var(--p)*1%),var(--surface-2) 0);display:grid;place-items:center;flex:0 0 auto}
-.ring span{width:28px;height:28px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:.68rem;font-weight:800}
-/* layout */
-.layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:clamp(16px,3vw,40px);max-width:1180px;margin:0 auto;padding:24px clamp(12px,3vw,32px) 80px}
-.rail{position:sticky;top:78px;align-self:start;display:flex;flex-direction:column;gap:4px;max-height:calc(100vh - 100px);overflow:auto}
-.rail button{display:flex;gap:10px;align-items:center;text-align:left;border:1px solid transparent;background:none;padding:9px 10px;border-radius:12px;cursor:pointer;font-weight:600;font-size:.9rem;color:var(--muted)}
-.rail button:hover{background:var(--surface-2);color:var(--text)}
-.rail button[aria-current="step"]{background:var(--surface);border-color:var(--border);color:var(--text);box-shadow:var(--shadow)}
-.rail .n{flex:0 0 26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:.76rem;font-weight:800;background:var(--surface-2);color:var(--muted)}
-.rail button[aria-current="step"] .n{background:var(--grad);color:var(--on-primary)}
-.rail .done .n{background:var(--income);color:#fff}
-.rail .done .n::before{content:"✓"}
-.rail .done .n b{display:none}
-/* conteúdo */
-.lesson{min-width:0;animation:in .35s ease both}
-@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.eyebrow{font-size:.85rem;font-weight:700;color:var(--primary)}
-.lesson h1{font-size:clamp(1.8rem,4.2vw,2.7rem);line-height:1.1;margin:4px 0 10px}
-.lead{font-size:1.08rem;color:var(--muted);max-width:62ch;margin-bottom:22px}
-.lesson h2{font-size:1.25rem;margin:28px 0 8px}
-.lesson p{margin:8px 0;max-width:68ch}
-.lesson ul,.lesson ol{margin:8px 0 8px 1.2em;max-width:68ch}.lesson li{margin:4px 0}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin:16px 0}
-.callout{border-left:4px solid var(--tip);background:color-mix(in oklab,var(--tip) 9%,var(--surface));padding:12px 16px;border-radius:0 12px 12px 0;margin:16px 0;max-width:68ch}
-.callout.warn{border-color:var(--warn);background:color-mix(in oklab,var(--warn) 11%,var(--surface))}
-.callout b:first-child{display:block;margin-bottom:2px}
-.kbd,.ui{display:inline-block;padding:0 8px;border-radius:7px;border:1px solid var(--border);background:var(--surface-2);font-size:.86em;font-weight:700;white-space:nowrap}
-.pill{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
-.pill.inc{background:color-mix(in oklab,var(--income) 15%,transparent);color:var(--income)}
-.pill.exp{background:color-mix(in oklab,var(--expense) 15%,transparent);color:var(--expense)}
-.goals{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:18px 0}
-.goal{text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:border-color .2s,transform .15s}
-.goal:hover{border-color:var(--primary);transform:translateY(-2px)}
-.goal b{font-size:.98rem}.goal span{font-size:.82rem;color:var(--muted)}
-.next-up{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--grad);color:var(--on-primary);border-radius:var(--radius);padding:16px 20px;margin:0 0 20px}
-.next-up .btn{background:rgba(255,255,255,.18);color:inherit;border-color:rgba(255,255,255,.35)}
-/* formulários dos simuladores */
-.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
-.field label{display:block;font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:5px}
-.field input,.field select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);outline:none}
-.field input:focus,.field select:focus{border-color:var(--primary)}
-.field.full{grid-column:1/-1}
-.seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface-2);border-radius:12px;padding:4px}
-.seg button{flex:1 1 auto;min-width:92px;border:none;background:none;padding:9px;border-radius:9px;cursor:pointer;font-weight:700}
-.seg button.on.inc{background:var(--income);color:#fff}.seg button.on.exp{background:var(--expense);color:#fff}
-.lnk{border:none;background:none;color:var(--primary);font-weight:700;cursor:pointer;padding:0;text-decoration:underline;font-size:inherit}
-.flash{animation:flash 1.4s ease}
-@keyframes flash{0%{box-shadow:0 0 0 0 color-mix(in oklab,var(--accent) 80%,transparent)}30%{box-shadow:0 0 0 6px color-mix(in oklab,var(--accent) 45%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
-.out{margin-top:14px;border-top:1px dashed var(--border);padding-top:12px}
-.out h3{font-size:1rem;margin-bottom:8px}
-.tbl{width:100%;border-collapse:collapse;font-size:.88rem}
-.tbl th{text-align:left;font-size:.74rem;color:var(--muted);padding:6px 8px;border-bottom:2px solid var(--border)}
-.tbl td{padding:7px 8px;border-bottom:1px solid var(--border)}
-.tbl .num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
-.tbl-wrap{overflow-x:auto}
-.effects{list-style:none;margin:10px 0 0!important;display:grid;gap:6px}
-.effects li{position:relative;padding-left:1.5em;font-size:.9rem;margin:0}
-.effects li::before{content:"→";position:absolute;left:0;color:var(--primary);font-weight:800}
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
-.kpi{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface-2)}
-.kpi span{font-size:.72rem;color:var(--muted);font-weight:700}.kpi b{display:block;font-family:'Fraunces',serif;font-size:1.25rem}
-.ms{display:flex;flex-direction:column;gap:2px;border:1px solid var(--border);border-radius:12px;padding:8px;background:var(--surface-2);min-width:200px}
-.ms .head{font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:4px}
-.ms label{display:flex;gap:8px;align-items:center;padding:6px 6px;border-radius:8px;cursor:pointer;font-size:.9rem}
-.ms label:hover{background:var(--surface)}
-.ms input{width:17px;height:17px;accent-color:var(--primary)}
-.ms .all{font-weight:700;border-bottom:1px solid var(--border);margin-bottom:3px;border-radius:8px 8px 0 0}
-.ms .val{margin-top:6px;font-size:.82rem;font-weight:700;color:var(--primary)}
-.row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
-.chip{padding:7px 13px;border-radius:999px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:.84rem;font-weight:600}
-.chip[aria-pressed="true"]{background:var(--grad);color:var(--on-primary);border-color:transparent}
-.answer{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
-.answer div{background:var(--surface-2);border-radius:10px;padding:8px 10px}
-.answer small{display:block;font-size:.72rem;color:var(--muted);font-weight:700}
-details{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:0 14px;margin:8px 0;max-width:72ch}
-summary{cursor:pointer;font-weight:700;padding:12px 0;list-style:none;display:flex;justify-content:space-between;gap:10px}
-summary::after{content:"＋";color:var(--primary)}details[open] summary::after{content:"−"}
-details p{padding-bottom:12px}
-.mock{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
-.mock .tab{flex:1 1 200px;border:1px solid var(--border);border-radius:14px;padding:11px 14px;background:var(--surface);border-bottom:4px solid var(--c)}
-.mock .tab b{font-family:'Fraunces',serif}.mock .tab small{display:block;color:var(--muted)}
-.pager{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:34px;padding-top:16px;border-top:1px solid var(--border)}
-.check{display:flex;gap:8px;align-items:center;font-weight:600;cursor:pointer}
-.check input{width:19px;height:19px;accent-color:var(--income)}
-.results .hit{display:block;width:100%;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:12px 16px;margin:8px 0;cursor:pointer}
-.results .hit:hover{border-color:var(--primary)}
-.results .hit span{display:block;color:var(--muted);font-size:.86rem;margin-top:2px}
-mark{background:color-mix(in oklab,var(--accent) 45%,transparent);color:inherit;border-radius:4px;padding:0 2px}
-@media (max-width:860px){
-  .layout{grid-template-columns:minmax(0,1fr);padding-top:14px}
-  .rail{min-width:0;position:static;flex-direction:row;overflow-x:auto;max-height:none;padding-bottom:6px;margin:0 -4px}
-  .rail button{flex:0 0 auto;white-space:nowrap}
-  .top{flex-wrap:wrap}.brand small{display:none}.search{order:5;flex:1 1 100%;max-width:none;margin:0}
-  .pswitch{margin-left:auto}
+.top{position:sticky;top:0;z-index:20;background:color-mix(in oklab,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.top-in{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:12px}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--primary);color:#fff;display:grid;place-items:center;font:800 .95rem var(--serif)}
+[data-theme=dark] .logo{color:#06201d}
+.top h1{font:700 1.05rem var(--serif);margin:0}
+.top .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:10px;padding:8px 12px;font:600 .88rem var(--sans);cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--primary)}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 80px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:34px}
+nav.toc{position:sticky;top:76px;align-self:start;max-height:calc(100vh - 96px);overflow:auto;padding-right:6px}
+nav.toc h2{font:800 .72rem var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+nav.toc a{display:block;padding:6px 10px;border-radius:8px;color:var(--text);text-decoration:none;font-size:.9rem;border-left:3px solid transparent}
+nav.toc a:hover{background:var(--surface-2)}
+nav.toc a.on{background:var(--surface-2);border-left-color:var(--accent);font-weight:700}
+nav.toc .new{font-size:.62rem;font-weight:800;background:var(--accent);color:#1b1405;border-radius:999px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+main{min-width:0}
+.hero{background:linear-gradient(135deg,var(--primary),var(--info));color:#fff;border-radius:22px;padding:32px 30px;box-shadow:var(--shadow)}
+[data-theme=dark] .hero{background:linear-gradient(135deg,#0f4d48,#1f3470)}
+.hero h2{font:700 2rem/1.15 var(--serif);margin:0 0 8px}
+.hero p{margin:0;opacity:.92;max-width:62ch}
+.hero .ctx{margin-top:16px;display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:6px 14px;font-size:.88rem;font-weight:600}
+.hero .ctx a{color:#fff}
+section{margin-top:44px;scroll-margin-top:84px}
+section>h2{font:700 1.55rem var(--serif);margin:0 0 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+section>h2 .n{width:34px;height:34px;border-radius:10px;background:var(--accent);color:#1b1405;display:grid;place-items:center;font:800 .95rem var(--sans)}
+.lead{color:var(--muted);margin:2px 0 14px}
+h3{font:700 1.05rem var(--sans);margin:22px 0 6px}
+p{margin:8px 0}
+.badge-new{font:800 .66rem var(--sans);letter-spacing:.05em;text-transform:uppercase;background:var(--accent);color:#1b1405;border-radius:999px;padding:3px 9px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);margin:12px 0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.grid2 .card{margin:0}
+.card h4{margin:0 0 6px;font:700 1rem var(--sans)}
+ul,ol{padding-left:22px;margin:8px 0}
+li{margin:5px 0}
+.note{border-left:4px solid var(--primary);background:var(--surface-2);border-radius:0 12px 12px 0;padding:10px 14px;margin:12px 0;font-size:.94rem}
+.note.warn{border-left-color:var(--accent)}
+.note.bad{border-left-color:var(--expense)}
+.note b:first-child{display:block;font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+table{width:100%;border-collapse:collapse;font-size:.9rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:none}
+.tw{overflow-x:auto;margin:10px 0}
+kbd,.k{display:inline-block;border:1px solid var(--border);border-bottom-width:2px;background:var(--surface);border-radius:7px;padding:1px 8px;font:700 .82rem var(--sans);white-space:nowrap}
+/* mini-mockups da interface */
+.st{display:inline-block;border-radius:999px;padding:3px 10px;font-size:.76rem;font-weight:800;white-space:nowrap}
+.st.ok{background:color-mix(in oklab,var(--income) 18%,transparent);color:var(--income)}
+.st.open{background:color-mix(in oklab,var(--accent) 24%,transparent);color:color-mix(in oklab,var(--accent) 65%,var(--text))}
+.st.bad{background:color-mix(in oklab,var(--expense) 18%,transparent);color:var(--expense)}
+.stepper{display:inline-flex;align-items:stretch;gap:8px;vertical-align:middle}
+.stepper b{display:grid;place-items:center;min-width:90px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);font-size:1.2rem}
+.stepper i{font-style:normal;display:grid;place-items:center;width:46px;height:44px;border-radius:12px;background:var(--accent);color:#1b1405;font-weight:900;font-size:1.5rem;box-shadow:0 2px 0 color-mix(in oklab,var(--accent) 55%,#000)}
+.chip{display:inline-block;border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:700;margin:2px 2px 2px 0}
+.chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+[data-theme=dark] .chip.on{color:#06201d}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.74rem;font-weight:800}
+.pill.inc{background:color-mix(in oklab,var(--income) 18%,transparent);color:var(--income)}
+.pill.exp{background:color-mix(in oklab,var(--expense) 18%,transparent);color:var(--expense)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.flow span.s{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-weight:700;font-size:.88rem}
+.flow span.a{color:var(--muted)}
+details{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin:8px 0}
+summary{cursor:pointer;font-weight:700}
+details p{margin:8px 0 2px}
+footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
+@media (max-width:900px){
+  .wrap{grid-template-columns:1fr;gap:10px}
+  nav.toc{position:static;max-height:none;display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+  nav.toc h2{display:none}
+  nav.toc a{white-space:nowrap;border:1px solid var(--border);background:var(--surface);border-left-width:1px}
+  .hero{padding:24px 20px}.hero h2{font-size:1.6rem}
 }
-@media (max-width:480px){.pswitch button{padding:7px 9px;font-size:.78rem}.brand{font-size:1.05rem}.card{padding:14px}}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-@media print{.top,.rail,.pager{display:none}.layout{display:block}}
+@media print{.top,nav.toc{display:none}.wrap{display:block}.card,details{box-shadow:none;break-inside:avoid}}
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="brand"><i>R$</i> Finanças Plus <small>· Tutorial</small></div>
-  <div class="search"><input id="q" type="search" placeholder="Buscar: parcela, senha, PDF..." autocomplete="off" aria-label="Buscar no tutorial"><kbd>/</kbd></div>
-  <div class="pswitch" role="group" aria-label="Painel de exemplo">
-    <button type="button" data-p="F" aria-pressed="true">Fluxo de caixa</button>
-    <button type="button" data-p="I" aria-pressed="false">Investimentos</button>
-  </div>
-  <div class="ring" id="ring" title="Seu progresso"><span id="ringTxt">0/9</span></div>
-  <button class="btn" id="themeBtn" aria-label="Alternar tema" title="Alternar tema">🌙</button>
-</header>
-<div class="layout">
-  <nav class="rail" id="rail" aria-label="Etapas do tutorial"></nav>
-  <main id="view" tabindex="-1"></main>
+<header class="top"><div class="top-in">
+  <div class="logo">R$</div><h1>Finanças Plus · Tutorial</h1><div class="sp"></div>
+  <a class="btn" href="/" id="back">← Voltar ao app</a>
+  <button class="btn" id="theme" type="button" aria-label="Alternar tema claro e escuro">🌙</button>
+</div></header>
+
+<div class="wrap">
+<nav class="toc" id="toc" aria-label="Índice">
+  <h2>Neste tutorial</h2>
+  <a href="#novidades">Novidades <span class="new">NOVO</span></a>
+  <a href="#inicio">1 · Primeiros passos</a>
+  <a href="#paineis">2 · Os dois painéis</a>
+  <a href="#lendo">3 · Lendo o painel</a>
+  <a href="#lancar">4 · Novo lançamento</a>
+  <a href="#parcelas">5 · Despesas parceladas <span class="new">NOVO</span></a>
+  <a href="#quitado">6 · Quitado e em aberto <span class="new">NOVO</span></a>
+  <a href="#excluir">7 · Excluir parcelas</a>
+  <a href="#conciliacao">8 · Conciliação <span class="new">NOVO</span></a>
+  <a href="#cadastros">9 · Cadastros <span class="new">NOVO</span></a>
+  <a href="#exportar">10 · PDF e Excel</a>
+  <a href="#invest">11 · Investimentos</a>
+  <a href="#faq">12 · Dúvidas frequentes</a>
+</nav>
+
+<main>
+<div class="hero">
+  <h2>Suas finanças, do lançamento à conciliação.</h2>
+  <p>O Finanças Plus registra receitas, despesas e investimentos na sua planilha do Google e mostra, a qualquer data, o que você tem e o que deve.</p>
+  <div class="ctx" id="ctx" hidden></div>
 </div>
-<noscript><p style="padding:20px">Este tutorial precisa de JavaScript habilitado.</p></noscript>
+
+<section id="novidades">
+  <h2>Novidades <span class="badge-new">atualizado</span></h2>
+  <p class="lead">O que mudou nas versões mais recentes.</p>
+  <div class="grid2">
+    <div class="card"><h4>✔ Quitado / Em aberto</h4><p>Cada despesa agora tem uma situação, que você controla com um clique. O vencimento é a <b>Previsão</b>, e despesa em aberto não reduz o caixa. <a href="#quitado">Ver como funciona</a></p></div>
+    <div class="card"><h4>⚖️ Conciliação patrimonial</h4><p>Botão novo que mostra ativos, passivos, indicadores, projeção e insights em qualquer data, com relatório em PDF. <a href="#conciliacao">Abrir capítulo</a></p></div>
+    <div class="card"><h4>⚙️ Cadastros em lista</h4><p>Os tipos ficam em listas expansíveis, com lixeira só para itens sem nenhum lançamento vinculado. <a href="#cadastros">Ver regras</a></p></div>
+    <div class="card"><h4>🔢 Parcelas ajustáveis</h4><p>Na 1ª parcela você aumenta ou reduz a quantidade com os botões <b>−</b> e <b>＋</b>, e o app cria ou remove as parcelas finais. <a href="#parcelas">Detalhes</a></p></div>
+    <div class="card"><h4>📅 Previsão manda no vencimento</h4><p>A data escolhida na Previsão é respeitada e vira o dia de vencimento da série; só é ajustada para dia útil ao confirmar.</p></div>
+    <div class="card"><h4>📄 PDF mais limpo</h4><p>O resumo do relatório aparece só no fim da tabela, e há uma coluna Situação nos relatórios e no Excel.</p></div>
+  </div>
+</section>
+
+<section id="inicio">
+  <h2><span class="n">1</span>Primeiros passos</h2>
+  <p class="lead">Acesso, instalação e aparência.</p>
+  <h3>Entrar</h3>
+  <ol>
+    <li>Na tela inicial, toque em <span class="k">Carregar dados da planilha →</span>.</li>
+    <li>Entre com seu e-mail e senha. Você vê <b>somente os seus lançamentos</b>, mesmo que a planilha seja compartilhada por mais pessoas.</li>
+    <li>Primeiro acesso: use <span class="k">Criar conta</span>. Enviamos um código de 6 dígitos ao seu e-mail (vale 15 minutos) e você escolhe uma senha de pelo menos 8 caracteres.</li>
+    <li>Esqueceu a senha? Use <span class="k">Esqueci minha senha</span> e siga o código enviado por e-mail. Depois de entrar, também é possível alterar a senha.</li>
+  </ol>
+  <div class="note warn"><b>Modo demonstração</b>Se o app não conseguir falar com a planilha, ele oferece abrir com dados de exemplo guardados só no seu aparelho. Serve para explorar sem risco; nada é enviado à planilha.</div>
+  <h3>Instalar como aplicativo</h3>
+  <p>No navegador do celular, use <b>Adicionar à tela inicial</b> (ou <b>Instalar aplicativo</b> no computador). O app abre em tela cheia, com o ícone do Finanças Plus.</p>
+  <h3>Tema claro e escuro</h3>
+  <p>O botão 🌙 / ☀️ no topo alterna o tema. O app lembra a sua escolha.</p>
+</section>
+
+<section id="paineis">
+  <h2><span class="n">2</span>Os dois painéis</h2>
+  <p class="lead">Alterne pelas abas logo abaixo do título.</p>
+  <div class="grid2">
+    <div class="card"><h4>💳 Fluxo de caixa</h4><p>Receitas e despesas do dia a dia. A aba mostra o <b>Saldo geral</b>. É aqui que existem despesas parceladas e o status Quitado.</p></div>
+    <div class="card"><h4>📈 Investimentos</h4><p>Aportes, rendimentos, resgates e taxas. A aba mostra o <b>Patrimônio</b> investido.</p></div>
+  </div>
+  <div class="note"><b>Painéis independentes</b>Um aporte lançado em Investimentos <u>não</u> baixa o Fluxo de caixa, e um resgate não credita nele. Para o caixa refletir a movimentação, lance também a saída ou a entrada correspondente em Fluxo de caixa. A Conciliação avisa sobre isso.</div>
+  <h3>Botões do topo</h3>
+  <div class="tw"><table>
+    <tr><th>Botão</th><th>Para que serve</th></tr>
+    <tr><td><span class="k">＋ Novo lançamento</span></td><td>Abre o formulário de inclusão.</td></tr>
+    <tr><td><span class="k">⟳ Atualizar</span></td><td>Recarrega os dados da planilha.</td></tr>
+    <tr><td><span class="k">📄 PDF</span> · <span class="k">📗 Excel</span></td><td>Exportam o painel atual, com os filtros aplicados.</td></tr>
+    <tr><td><span class="k">⚖️ Conciliação</span></td><td>Ativos e passivos em uma data. <a href="#conciliacao">Capítulo 8</a></td></tr>
+    <tr><td><span class="k">⚙️ Cadastros</span></td><td>Gerencia naturezas, classificações, categorias e formas de pagamento. <a href="#cadastros">Capítulo 9</a></td></tr>
+    <tr><td><span class="k">❓ Tutorial</span></td><td>Abre esta página.</td></tr>
+  </table></div>
+</section>
+
+<section id="lendo">
+  <h2><span class="n">3</span>Lendo o painel</h2>
+  <p class="lead">Indicadores, filtros e tabela.</p>
+  <h3>Indicadores</h3>
+  <div class="tw"><table>
+    <tr><th>Painel</th><th>Indicadores</th></tr>
+    <tr><td>Fluxo de caixa</td><td><b>Saldo inicial</b>, <b>Receitas</b>, <b>Despesas</b> (somente as quitadas), <b>A pagar</b> (despesas em aberto, fora do saldo), <b>Saldo do período</b>, <b>Saldo final</b> e <b>Lançamentos</b>.</td></tr>
+    <tr><td>Investimentos</td><td><b>Patrimônio inicial</b>, <b>Aportes</b>, <b>Rendimentos</b>, <b>Resgates e taxas</b>, <b>Patrimônio final</b>, <b>Rentabilidade</b> e <b>Lançamentos</b>.</td></tr>
+  </table></div>
+  <p>O saldo inicial é tudo o que aconteceu antes da data <b>De</b>. Sem data inicial, o painel parte de zero.</p>
+  <h3>Atalhos de período</h3>
+  <p><span class="chip on">Tudo</span><span class="chip">Este mês</span><span class="chip">Mês anterior</span><span class="chip">Últimos 90 dias</span><span class="chip">Este ano</span><span class="chip">Futuros (parcelas)</span><span class="chip">A pagar</span></p>
+  <p><b>A pagar</b> (só no Fluxo de caixa) lista as despesas ainda não quitadas, de qualquer data.</p>
+  <h3>Filtros</h3>
+  <ul>
+    <li><b>Buscar:</b> procura na descrição e na forma de pagamento.</li>
+    <li><b>Período por:</b> escolha se as datas De/Até valem para a <b>Ocorrência</b> (quando o fato aconteceu) ou para a <b>Previsão</b> (quando vence ou é esperado).</li>
+    <li><b>Natureza, Classificação, Categoria e Forma de pagamento:</b> aceitam várias opções e têm busca interna.</li>
+    <li><b>Limpar filtros</b> volta tudo ao padrão.</li>
+  </ul>
+  <h3>Gráficos e tabela</h3>
+  <p>Fluxo de caixa mostra o <i>Fluxo mensal</i> (só o que foi pago) e <i>Despesas por forma de pagamento</i>. Investimentos mostra a <i>Evolução do patrimônio</i> e o <i>Patrimônio por categoria</i>. Na tabela, clique no cabeçalho para ordenar; use ✏️ para editar e 🗑 para excluir.</p>
+</section>
+
+<section id="lancar">
+  <h2><span class="n">4</span>Novo lançamento</h2>
+  <p class="lead">Inclusão e edição usam o mesmo formulário.</p>
+  <ol>
+    <li>Escolha a natureza no topo: <span class="pill inc">↑ Receita</span> ou <span class="pill exp">↓ Despesa</span>. Use <b>＋ Nova</b> para criar outra natureza.</li>
+    <li>Preencha <b>Ocorrência</b>, <b>Previsão</b>, <b>Valor</b>, <b>Descrição</b>, <b>Classificação</b>, <b>Categoria</b> e <b>Forma de pagto./receb.</b>. Os botões <b>＋</b> ao lado dos campos cadastram itens novos na hora.</li>
+    <li>Em despesas, marque ou não <b>Quitado</b> (veja o capítulo 6).</li>
+    <li>Toque em <span class="k">Salvar</span>.</li>
+  </ol>
+  <h3>Ocorrência × Previsão</h3>
+  <div class="grid2">
+    <div class="card"><h4>Ocorrência</h4><p>É o <b>fato gerador</b>: a data da compra, da aquisição, do recebimento. Ela não quita nada.</p></div>
+    <div class="card"><h4>Previsão</h4><p>É o <b>vencimento</b>: quando a conta será paga ou o valor, recebido. É a referência para saber se uma despesa está vencida e para o caixa.</p></div>
+  </div>
+  <p>Enquanto você não alterar a Previsão, ela acompanha a Ocorrência. Depois de alterada, use <span class="k">Igualar à ocorrência</span> para voltar a sincronizá-las.</p>
+  <div class="note"><b>Exemplo</b>Você compra um notebook no cartão em 22/10, e a fatura vence em 11/11. Ocorrência = 22/10, Previsão = 11/11. A despesa fica <span class="st open">⏳ Em aberto</span> até você marcar como paga, e só vence em 11/11.</div>
+</section>
+
+<section id="parcelas">
+  <h2><span class="n">5</span>Despesas fixas parceladas <span class="badge-new">atualizado</span></h2>
+  <p class="lead">Parcelamentos são criados na classificação <b>Fixa</b>, quando aparece o campo de parcelas.</p>
+  <h3>Criar um parcelamento</h3>
+  <ol>
+    <li>Escolha <b>Despesa</b> e a classificação <b>Fixa</b>.</li>
+    <li>Defina a quantidade com os botões em destaque: <span class="stepper"><i>−</i><b>6</b><i>＋</i></span> (ou digite o número).</li>
+    <li>Informe o <b>Dia do vencimento</b>. A Previsão de cada parcela cai nesse dia, sempre em dia útil.</li>
+    <li>O app cria uma linha por mês, numeradas como <i>Descrição (1/6)</i>, <i>(2/6)</i> e assim por diante.</li>
+  </ol>
+  <p>A 1ª parcela segue o checkbox <b>Quitado</b>. As demais, com vencimento futuro, nascem em aberto.</p>
+  <h3>Editar uma parcela</h3>
+  <ul>
+    <li>Só a <b>1ª parcela</b> pode ser editada. Nas demais aparece um cadeado 🔒, e ao tocar o app oferece abrir a 1ª.</li>
+    <li>A <b>Classificação</b> da 1ª parcela fica bloqueada.</li>
+    <li>Se você muda o <b>valor</b>, as <b>datas</b> ou a <b>forma de pagamento</b>, as demais parcelas em aberto assumem a mudança.</li>
+    <li>Parcelas <b>já quitadas</b> são preservadas: mantêm valor, datas e forma, e só a numeração acompanha.</li>
+  </ul>
+  <h3>Aumentar ou reduzir a quantidade</h3>
+  <p>Na edição da 1ª parcela, use <span class="stepper"><i>−</i><b>8</b><i>＋</i></span>:</p>
+  <ul>
+    <li><b>Aumentar</b> cria parcelas novas no fim da série, em aberto.</li>
+    <li><b>Reduzir</b> exclui as últimas parcelas. Se alguma já estiver quitada, o aviso de confirmação destaca isso.</li>
+    <li>Antes de salvar, o app mostra quantas parcelas serão criadas e quantas excluídas.</li>
+  </ul>
+  <div class="note warn"><b>Atenção</b>O seletor de quantidade só fica ativo ao criar um parcelamento ou ao editar a sua 1ª parcela. Em lançamentos avulsos ele aparece desativado.</div>
+</section>
+
+<section id="quitado">
+  <h2><span class="n">6</span>Quitado e em aberto <span class="badge-new">novo</span></h2>
+  <p class="lead">Uma despesa prevista pode não ser paga no vencimento. Quem diz se foi paga é você.</p>
+  <h3>As três situações</h3>
+  <div class="tw"><table>
+    <tr><th>Situação</th><th>Quando</th><th>Efeito no caixa</th></tr>
+    <tr><td><span class="st ok">✔ Quitado</span></td><td>Você marcou como paga.</td><td>Reduz o caixa e o saldo.</td></tr>
+    <tr><td><span class="st open">⏳ Em aberto</span></td><td>Não quitada e com Previsão ainda por vir (ou hoje).</td><td>Não reduz o saldo. Conta em <b>A pagar</b> e no passivo.</td></tr>
+    <tr><td><span class="st bad">⚠ Vencido</span></td><td>Não quitada e com Previsão anterior à data de hoje.</td><td>Igual a Em aberto, destacada em vermelho.</td></tr>
+  </table></div>
+  <h3>Como alterar</h3>
+  <ul>
+    <li><b>Na lista:</b> clique no selo da coluna <b>Situação</b>. Um clique alterna entre quitado e em aberto, e vale para aquela linha, inclusive parcelas de qualquer número.</li>
+    <li><b>No formulário:</b> marque ou desmarque <b>Quitado (despesa já paga)</b>. Em lançamentos novos ele vem sugerido: marcado se a Previsão já chegou, desmarcado se for futura. Você decide.</li>
+  </ul>
+  <div class="note"><b>Importante</b>Marcar como quitado <u>não altera</u> a Ocorrência nem a Previsão. O status é só uma informação sua.</div>
+  <h3>Onde isso aparece</h3>
+  <ul>
+    <li><b>Painel:</b> <i>Despesas</i> e o saldo contam só as quitadas, e <i>A pagar</i> mostra as em aberto.</li>
+    <li><b>Conciliação:</b> despesa em aberto fica no passivo e, se a Previsão já passou, entra como vencida.</li>
+    <li><b>PDF e Excel:</b> coluna <i>Situação</i> em cada despesa.</li>
+  </ul>
+  <div class="note warn"><b>Lançamentos antigos</b>Despesas criadas antes desse recurso não têm status. Para elas vale a Previsão: se já chegou, contam como quitadas. Se alguma nunca foi paga, clique no selo para marcá-la como em aberto.</div>
+</section>
+
+<section id="excluir">
+  <h2><span class="n">7</span>Excluir parcelas</h2>
+  <p class="lead">Ao excluir uma parcela de um parcelamento, o app pergunta o que você quer fazer.</p>
+  <div class="grid2">
+    <div class="card"><h4>Todas as parcelas</h4><p>Remove a série inteira.</p></div>
+    <div class="card"><h4>Só esta parcela</h4><p>Remove apenas a escolhida e pergunta se as seguintes devem <b>Reordenar</b> (ocupam o lugar dela, com nova numeração e datas) ou <b>Manter como estão</b>.</p></div>
+  </div>
+</section>
+
+<section id="conciliacao">
+  <h2><span class="n">8</span>Conciliação patrimonial <span class="badge-new">novo</span></h2>
+  <p class="lead">Veja, em qualquer data, os recursos de que você dispõe e o passivo pelo qual responde.</p>
+  <ol>
+    <li>Toque em <span class="k">⚖️ Conciliação</span>.</li>
+    <li>Escolha a <b>data da posição</b> no calendário, ou use os atalhos <span class="chip">Hoje</span><span class="chip">Fim do mês</span><span class="chip">+30 dias</span><span class="chip">+90 dias</span><span class="chip">Fim do ano</span>.</li>
+    <li>Role pelo painel. Tudo se recalcula a cada data escolhida.</li>
+    <li>Toque em <span class="k">📄 Gerar PDF</span> para visualizar o relatório e baixá-lo.</li>
+  </ol>
+  <h3>O que você encontra</h3>
+  <div class="grid2">
+    <div class="card"><h4>Cards e balanço</h4><p>Patrimônio líquido, ativos, passivos, caixa, investimentos e passivo vencido. O balanço detalha o passivo por faixa de vencimento.</p></div>
+    <div class="card"><h4>Indicadores</h4><p>Liquidez em 30 dias, cobertura do passivo, endividamento, renda comprometida, taxa de poupança, autonomia em meses e aderência à previsão.</p></div>
+    <div class="card"><h4>Linha do tempo</h4><p>Projeção mensal do caixa a partir dos pagamentos e recebimentos futuros, com gráfico e tabela, e a lista dos próximos vencimentos.</p></div>
+    <div class="card"><h4>Insights</h4><p>Alertas e leituras automáticas: caixa negativo, contas vencidas, concentração no cartão, mês de maior pressão, parcelamentos que terminam em breve e mais.</p></div>
+  </div>
+  <h3>Como os valores são classificados</h3>
+  <ul>
+    <li><b>Despesas do Fluxo de caixa:</b> a referência é a <b>Previsão</b>. Só reduzem o caixa quando estão <b>Quitadas</b> e o vencimento já chegou na data escolhida. Não quitadas ficam no passivo: <i>vencidas</i> se a Previsão já chegou, <i>a vencer</i> se for posterior.</li>
+    <li><b>Receitas e Investimentos:</b> valem pela <b>Ocorrência</b>. Já ocorrida é realizada; posterior é a receber.</li>
+    <li><b>Caixa negativo</b> é apresentado como passivo (descoberto).</li>
+    <li><b>Aportes programados</b> (Investimentos futuros) aparecem como informação, fora do passivo.</li>
+  </ul>
+  <h3>Conciliação geral</h3>
+  <p>No fim do painel há uma prova de fechamento: realizado + a realizar = total lançado, e ativos − passivos = saldo total dos lançamentos. Quatro verificações indicam se a base está consistente, incluindo parcelas incompletas e possíveis duplicidades.</p>
+  <h3>O relatório em PDF</h3>
+  <p>Traz capa com os cards, resumo executivo, balanço, indicadores, insights, gráfico da linha do tempo, parcelamentos, conciliação geral, três anexos (contas a pagar, recebimentos a realizar e razão completo) e as notas de metodologia.</p>
+</section>
+
+<section id="cadastros">
+  <h2><span class="n">9</span>Cadastros <span class="badge-new">novo</span></h2>
+  <p class="lead">Naturezas, classificações, categorias e formas de pagamento, em listas expansíveis.</p>
+  <ol>
+    <li>Toque em <span class="k">⚙️ Cadastros</span>.</li>
+    <li>Abra um tipo (<b>Naturezas</b>, <b>Classificações</b>, <b>Categorias</b> ou <b>Formas</b>) para ver os itens. Cada tipo mostra quantos itens existem e quantos estão em uso.</li>
+    <li>Use <span class="k">＋ Novo</span> no cabeçalho do tipo para cadastrar um item.</li>
+    <li>Para remover, toque na lixeira 🗑 do item.</li>
+  </ol>
+  <h3>Quando a lixeira funciona</h3>
+  <div class="tw"><table>
+    <tr><th>Situação do item</th><th>O que acontece</th></tr>
+    <tr><td>Sem nenhum lançamento vinculado</td><td>A lixeira fica ativa. Item seu é removido de vez; item padrão é apenas ocultado e pode ser restaurado.</td></tr>
+    <tr><td>Com lançamento vinculado</td><td>A lixeira fica desativada e o item mostra <i>em uso · N</i>. O vínculo vale para a <b>planilha inteira</b>, de qualquer usuário.</td></tr>
+    <tr><td>Essencial do sistema 🔒</td><td>Naturezas padrão e as classificações padrão do Fluxo de caixa não podem ser removidas, porque o sinal de entrada/saída e o parcelamento dependem delas.</td></tr>
+  </table></div>
+  <ul>
+    <li>Ao remover uma natureza sua, seus itens exclusivos também saem, mas só se nenhum deles estiver em uso.</li>
+    <li>Itens padrão ocultados voltam com <span class="k">↺ Restaurar</span>, dentro do próprio tipo.</li>
+    <li>O app confere o uso de novo na hora do clique, e o servidor repete a verificação antes de salvar.</li>
+  </ul>
+  <div class="note warn"><b>Se a lixeira estiver bloqueada em tudo</b>Aparece um aviso no topo da tela. Normalmente significa que a versão mais recente do script da planilha (Apps Script) ainda não foi publicada. Quem administra a planilha deve publicar a nova versão.</div>
+</section>
+
+<section id="exportar">
+  <h2><span class="n">10</span>PDF e Excel</h2>
+  <p class="lead">Levam exatamente o que está filtrado na tela.</p>
+  <ul>
+    <li><span class="k">📄 PDF</span> abre uma pré-visualização com cards, tabela de lançamentos e resumo no final. Baixe pelo botão da pré-visualização.</li>
+    <li><span class="k">📗 Excel</span> gera uma planilha formatada, com filtro nas colunas e resumo mensal.</li>
+    <li>Nos dois, despesas trazem a coluna <b>Situação</b> (Quitado, Em aberto ou Vencido).</li>
+  </ul>
+</section>
+
+<section id="invest">
+  <h2><span class="n">11</span>Investimentos</h2>
+  <p class="lead">Mesma lógica do Fluxo de caixa, com naturezas próprias.</p>
+  <ul>
+    <li><b>Aplicação</b> (aporte) soma ao patrimônio. Pode ser parcelada em aportes mensais programados.</li>
+    <li><b>Rendimento</b> soma ao patrimônio (juros, dividendos, correções).</li>
+    <li><b>Resgate</b> e <b>Taxas e IR</b> subtraem do patrimônio.</li>
+    <li>A <b>Rentabilidade</b> é calculada sobre o patrimônio inicial mais os aportes.</li>
+    <li>Não existe o status Quitado nesse painel: o lançamento vale pela Ocorrência.</li>
+  </ul>
+</section>
+
+<section id="faq">
+  <h2><span class="n">12</span>Dúvidas frequentes</h2>
+  <details><summary>Marquei uma despesa como quitada, mas o saldo não mudou.</summary><p>Confira se a coluna Situação mostra ✔ Quitado e se a linha está dentro do período filtrado. O saldo do período só soma o que passa pelos filtros ativos.</p></details>
+  <details><summary>Por que uma parcela futura não aparece nas Despesas?</summary><p>Despesas conta só as quitadas. Parcelas futuras estão em aberto e aparecem em <b>A pagar</b>.</p></details>
+  <details><summary>Qual data uso quando a fatura do cartão vence depois da compra?</summary><p>Ocorrência = data da compra; Previsão = vencimento da fatura. Deixe em aberto até pagar e marque como quitada em seguida.</p></details>
+  <details><summary>Não consigo alterar uma parcela do meio da série.</summary><p>É proposital: só a 1ª parcela é editável, e as demais acompanham. O que você pode fazer em cada parcela é alternar a situação (Quitado/Em aberto) pelo selo. Para mudar valor, datas ou quantidade, edite a 1ª.</p></details>
+  <details><summary>A lixeira de um item está desativada, mas eu não uso mais esse item.</summary><p>Algum lançamento (seu ou de outro usuário) ainda está vinculado a ele. Altere ou exclua esses lançamentos e tente de novo.</p></details>
+  <details><summary>O saldo da Conciliação difere do saldo do painel.</summary><p>A Conciliação considera todos os lançamentos, sem filtros, e inclui as contas a pagar e a receber. O painel segue o período e os filtros escolhidos.</p></details>
+  <details><summary>Meus dados de Investimentos não aparecem no caixa.</summary><p>Os painéis são independentes. Registre também a saída ou a entrada no Fluxo de caixa quando quiser que o caixa reflita o aporte ou o resgate.</p></details>
+</section>
+
+<footer>Finanças Plus · Tutorial atualizado com Quitado, Conciliação patrimonial, Cadastros em lista e parcelas ajustáveis.</footer>
+</main>
+</div>
 
 <script>
-/* ===================== utilidades ===================== */
-const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-const brl = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-const pad = n => String(n).padStart(2,'0');
-const isoLocal = (d=new Date()) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;   // data local, não UTC
-const toBR = d => `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
-const addMonths = (d,n) => { const r = new Date(d.getFullYear(), d.getMonth()+n, 1); r.setDate(Math.min(d.getDate(), new Date(r.getFullYear(), r.getMonth()+1, 0).getDate())); return r; };
-const maskBRL = el => { const d = el.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,11); el.value = d ? brl(+d/100) : ''; return d ? +d/100 : 0; };
-/* dia útil: seg–sex, exceto feriados nacionais e dias sem expediente bancário (Carnaval, Sexta-feira Santa, Corpus Christi) */
-const _hol = {};
-function easter(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),t=h+l-7*m+114; return new Date(y, Math.floor(t/31)-1, (t%31)+1); }
-const dkey = d => `${d.getMonth()}-${d.getDate()}`;
-function holidays(y){ if (_hol[y]) return _hol[y]; const s = new Set(['0-1','3-21','4-1','8-7','9-12','10-2','10-15','10-20','11-25']), e = easter(y); [-48,-47,-2,60].forEach(n => s.add(dkey(new Date(y, e.getMonth(), e.getDate()+n)))); return _hol[y] = s; }
-const isBiz = d => d.getDay()%6 !== 0 && !holidays(d.getFullYear()).has(dkey(d));
-const nextBiz = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); while (!isBiz(x)) x.setDate(x.getDate()+1); return x; };
-const nomDate = (nom, off, D) => { const t = new Date(nom.y, nom.m + off, 1); return new Date(t.getFullYear(), t.getMonth(), Math.min(D, new Date(t.getFullYear(), t.getMonth()+1, 0).getDate())); };
-const projPrev = (nom, D, off) => nextBiz(nomDate(nom, off, D));
-const WD = ['dom','seg','ter','qua','qui','sex','sáb'];
-const store = { get:(k,d)=>{ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch{ return d; } }, set:(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} } };
+(function(){
+  var q = new URLSearchParams(location.search), root = document.documentElement;
+  var t = q.get('tema'); if (t !== 'dark' && t !== 'light') { try { t = localStorage.getItem('fp-theme'); } catch (e) {} }
+  if (t !== 'dark' && t !== 'light') t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  function setTheme(v){ root.dataset.theme = v; document.getElementById('theme').textContent = v === 'dark' ? '☀️' : '🌙'; try { localStorage.setItem('fp-theme', v); } catch (e) {}
+    var m = document.querySelector('meta[name=theme-color]'); if (m) m.content = v === 'dark' ? '#0c1413' : '#0f5c56'; }
+  setTheme(t);
+  document.getElementById('theme').onclick = function(){ setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'); };
 
-/* ===================== estado: tema e painel vêm do app via ?tema=&painel= ===================== */
-const Q = new URLSearchParams(location.search);
-let panel = Q.get('painel') === 'I' ? 'I' : 'F';
-function setTheme(t){ document.documentElement.dataset.theme = t; store.set('fp-tut-theme', t); $('#themeBtn').textContent = t==='dark'?'☀️':'🌙'; }
-setTheme(Q.get('tema') || store.get('fp-tut-theme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-$('#themeBtn').onclick = () => setTheme(document.documentElement.dataset.theme==='dark' ? 'light' : 'dark');
-function setPanel(p, rerender=true){
-  panel = p; document.documentElement.dataset.mod = p;
-  document.querySelector('meta[name=theme-color]').content = p==='I' ? '#2d4a9a' : '#0f5c56';
-  $$('.pswitch button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p===p)));
-  if (rerender && !searching) show(current, true);
-}
-$$('.pswitch button').forEach(b => b.onclick = () => setPanel(b.dataset.p));
+  // contexto: painel de onde o tutorial foi aberto
+  var p = q.get('painel'), ctx = document.getElementById('ctx');
+  if (p === 'F' || p === 'I') { ctx.hidden = false;
+    ctx.innerHTML = p === 'F' ? 'Aberto a partir do painel <b>Fluxo de caixa</b> · <a href="#quitado">Quitado e em aberto</a> · <a href="#parcelas">Parcelas</a>'
+                              : 'Aberto a partir do painel <b>Investimentos</b> · <a href="#invest">Ver capítulo de Investimentos</a>'; }
 
-/* ===================== dados dos simuladores (espelham os padrões do app) ===================== */
-const SIM = {
-  F:{ payLbl:'Forma de pagto./receb.', parcLbl:'Qt Parcelas',
-    nats:[
-      { n:'Receita', s:'E', cls:['Fixa','Extra'], cat:['Salário','Freelance / Serviços','Aluguéis Recebidos','Restituição de IR'], pay:['Pix','Transferência','Dinheiro'] },
-      { n:'Despesa', s:'S', cls:['Variável','Fixa'], cat:['Moradia','Supermercado','Lazer','Saúde','Investimentos'], pay:['Pix','Boleto','Cartão de Crédito','Cartão de Débito','Débito Automático'] } ],
-    parc:(n,c) => n.s==='S' && c==='Fixa' },
-  I:{ payLbl:'Forma de aporte ou saque', parcLbl:'Qt de aportes mensais',
-    nats:[
-      { n:'Aplicação', s:'E', cls:['Renda Fixa','Renda Variável','Previdência','Reserva de Emergência'], cat:['CDB','Poupança','Tesouro Direto','Previdência Privada (PGBL)','Ações'], pay:['Pix','TED','Débito Automático','Desconto em folha','Boleto'] },
-      { n:'Rendimento', s:'E', cls:['Renda Fixa','Renda Variável','Previdência','Reserva de Emergência'], cat:['CDB','Poupança','Tesouro Direto','Ações'], pay:['Reinvestimento automático','Crédito em conta'] },
-      { n:'Resgate', s:'S', cls:['Renda Fixa','Renda Variável','Previdência','Reserva de Emergência'], cat:['CDB','Poupança','Tesouro Direto','Ações'], pay:['Resgate para conta corrente','Pix','TED','Saque em espécie'] },
-      { n:'Taxas e IR', s:'S', cls:['Renda Fixa','Renda Variável','Previdência'], cat:['CDB','Tesouro Direto','Ações'], pay:['Retenção na fonte','Descontado do resgate'] } ],
-    parc:(n) => n.n==='Aplicação' }
-};
-
-/* ===================== etapas ===================== */
-const L = [];
-const lesson = (id, t, k, lead, body, init) => L.push({ id, t, k, lead, body, init });
-
-lesson('inicio','Comece pelo seu objetivo','início objetivo começar ajuda por onde',
-  'Diga o que você quer fazer e eu levo você direto à etapa certa. Se preferir, siga a ordem do menu: leva uns 10 minutos.',
-  () => `<div id="suggest"></div>
-  <div class="goals">
-    ${[['lancar','Registrar uma despesa ou receita','Passo a passo do formulário'],['investimentos','Acompanhar meus investimentos','Aportes, rendimentos e rentabilidade'],
-       ['parcelas','Parcelar ou repetir um aporte','Como as linhas mensais são geradas'],['cadastros','Criar categoria, natureza ou forma nova','Cadastros próprios'],
-       ['filtros','Achar um lançamento','Filtros de seleção múltipla e busca'],['relatorios','Gerar PDF ou Excel','Relatórios que respeitam os filtros'],
-       ['acesso','Entrar, criar conta ou trocar a senha','Login e sessão'],['ajuda','Algo deu errado','Perguntas frequentes']]
-      .map(([id,t,s]) => `<button class="goal" data-go="${id}"><b>${t}</b><span>${s}</span></button>`).join('')}
-  </div>
-  <div class="callout"><b>Dica</b>O seletor <span class="ui">Fluxo de caixa / Investimentos</span> no topo desta página muda os exemplos para o painel que você quer aprender. Ao abrir o tutorial pelo botão ❓ do app, ele já vem no painel em que você estava.</div>`,
-  () => {
-    const next = L.find(l => l.id!=='inicio' && !done.has(l.id) && (panel==='I' ? true : l.id!=='investimentos')) || null;
-    if (next && done.size) $('#suggest').innerHTML = `<div class="next-up"><div><b>Continue de onde parou</b><br>Próxima etapa: ${esc(next.t)}</div><button class="btn" data-go="${next.id}">Continuar</button></div>`;
-  });
-
-lesson('paineis','Os dois painéis','painel painéis fluxo caixa investimentos abas separados independentes',
-  'O Finanças Plus tem dois painéis independentes. Cada lançamento pertence a um deles e só aparece nele.',
-  () => `<div class="mock">
-    <div class="tab" style="--c:#0f5c56"><b>💳 Fluxo de caixa</b><small>Saldo geral R$ 10.973,30</small></div>
-    <div class="tab" style="--c:#2d4a9a"><b>📈 Investimentos</b><small>Patrimônio R$ 8.581,70</small></div></div>
-  <ul>
-    <li><b>Fluxo de caixa</b>: o dia a dia. Receitas e despesas, saldo inicial, saldo do período e saldo final.</li>
-    <li><b>Investimentos</b>: poupança, CDB, Tesouro, previdência privada, ações e o que mais você tiver. Aportes, rendimentos, resgates e taxas, com patrimônio e rentabilidade.</li>
-  </ul>
-  <p>Trocar de aba muda as cores, os indicadores, os gráficos, os filtros, o relatório e as listas de cadastro. Os filtros são reiniciados a cada troca.</p>
-  <div class="callout warn"><b>Atenção: os painéis não se conversam</b>Aplicar R$ 1.000 em um CDB <u>não</u> baixa o saldo do Fluxo de caixa. Se quiser que a conta corrente reflita o aporte, registre também uma <i>Despesa</i> (categoria <i>Investimentos</i>) no Fluxo de caixa, e um resgate como <i>Receita</i> (por exemplo, <i>Rendimentos de Investimentos</i>).</div>`);
-
-lesson('acesso','Entrar, conta e sessão','login senha conta e-mail codigo código sessão sair bloqueio esqueci',
-  'Cada pessoa entra com e-mail e senha e vê somente os próprios lançamentos.',
-  () => `<ol>
-    <li>Na tela inicial, clique em <span class="ui">Carregar dados da planilha →</span>.</li>
-    <li><b>Primeira vez?</b> Escolha <span class="ui">Criar conta</span>, informe o e-mail e digite o código de 6 dígitos recebido (vale 15 minutos). Depois defina a senha, com no mínimo 8 caracteres.</li>
-    <li><b>Já tem conta?</b> Entre com e-mail e senha. Se esquecer, use <span class="ui">Esqueci minha senha</span>: o mesmo código por e-mail redefine a senha.</li>
-  </ol>
-  <h2>No cabeçalho</h2>
-  <p><span class="ui">🏠</span> volta ao início · <span class="ui">🔑</span> altera a senha · <span class="ui">🔒 Sair</span> encerra a sessão · <span class="ui">⬇️</span> instala o app no celular ou computador · <span class="ui">🌙</span> alterna o tema claro/escuro.</p>
-  <div class="callout"><b>Bom saber</b>A sessão dura até 6 horas. Cinco senhas erradas bloqueiam o login por 15 minutos (a recuperação por e-mail continua disponível). Trocar a senha encerra as sessões abertas em outros aparelhos.</div>
-  <div class="callout"><b>Só quer experimentar?</b>Se a planilha não responder, o app oferece o <i>Modo demonstração</i>, com dados fictícios guardados só no seu navegador.</div>`);
-
-lesson('lancar','Registrar um lançamento','ocorrência previsão data novo lançamento natureza classificação categoria forma pagamento valor descrição formulário despesa receita simulador',
-  'Clique em ＋ Novo lançamento. Experimente o formulário abaixo: ele funciona como o do app e mostra o que será gravado.',
-  () => `<div class="card" id="sim"></div>
-  <h2>O que significa cada campo</h2>
-  <ul>
-    <li><b>Ocorrência</b> e <b>Previsão</b>: quando o fato aconteceu e quando era (ou será) esperado. Começam iguais; a previsão acompanha a ocorrência até você alterá-la (veja a etapa de filtros).</li>
-    <li><b>Natureza</b>: de onde vem o efeito no saldo. <i>Receita</i> e <i>Aplicação</i> somam; <i>Despesa</i>, <i>Resgate</i> e <i>Taxas e IR</i> subtraem.</li>
-    <li><b>Classificação</b>: o tipo dentro da natureza (Fixa, Variável, Renda Fixa...).</li>
-    <li><b>Categoria</b>: para onde foi o dinheiro (Moradia, CDB, Previdência...). É obrigatória.</li>
-    <li><b>Forma</b>: no Fluxo de caixa, de pagamento ou recebimento; em Investimentos, de <b>aporte ou saque</b>. As opções mudam conforme a natureza.</li>
-  </ul>
-  <h2>Qual natureza usar?</h2>
-  <p>Escolha uma situação e veja como lançar.</p>
-  <div class="chips" id="scen"></div><div class="answer" id="scenOut"></div>`,
-  () => { initSim(); initScen(); });
-
-lesson('parcelas','Parcelas e aportes mensais','parcela parcelado repetir mensal aporte fixa cartão cálculo dia 31 vencimento dia útil feriado excluir editar bloqueada primeira projeção',
-  'Despesas Fixas (no Fluxo) e Aplicações (em Investimentos) podem gerar várias linhas mensais de uma só vez. Nas despesas, o vencimento segue regras próprias.',
-  () => `<div class="card">
-    <div class="form-grid">
-      <div class="field"><label>Ocorrência da 1ª linha</label><input type="date" id="pDate"></div>
-      <div class="field"><label>Previsão da 1ª linha</label><input type="date" id="pPrev"></div>
-      <div class="field" id="pDiaF"><label>Dia do vencimento</label><input type="number" id="pDia" min="1" max="31" inputmode="numeric"></div>
-      <div class="field"><label>Valor de cada linha</label><input id="pVal" inputmode="numeric" placeholder="R$ 0,00"></div>
-      <div class="field"><label id="pQtL">Quantidade</label><input type="number" id="pQt" min="1" max="120" value="4"></div>
-    </div>
-    <div class="out"><div id="pOut"></div></div></div>
-  <h2>Despesas parceladas (painel Fluxo de caixa)</h2>
-  <ul>
-    <li><b>Dia do vencimento:</b> ao parcelar (mais de 1 parcela), o app pergunta o dia. Ele vale da 1ª à última parcela, inclusive para a data do campo <i>Previsão</i>, que é ajustada na hora.</li>
-    <li><b>Sempre em dia útil:</b> se o dia cair em sábado, domingo, feriado nacional ou dia sem expediente bancário (Carnaval, Sexta-feira Santa, Corpus Christi), a previsão passa para o <u>próximo dia útil</u>. O dia nominal não se perde: dia 31 continua sendo 31 nos meses seguintes (30 em abril, 28 em fevereiro), cada mês ajustado de novo. Feriados estaduais e municipais não são considerados.</li>
-    <li><b>Só a 1ª parcela edita:</b> as parcelas seguintes ficam com o cadeado 🔒 e não podem ser alteradas diretamente. Ao clicar, o app oferece abrir a 1ª parcela.</li>
-    <li><b>Projeção:</b> ao salvar a 1ª parcela alterada (nome, valor, classificação, categoria, forma, ocorrência, previsão ou dia de vencimento), o app avisa e recalcula todas as seguintes pelas mesmas regras.</li>
-    <li><b>Excluir:</b> a janela oferece <span class="ui">Só esta parcela</span> ou <span class="ui">Todas</span>. Ao excluir só uma, você decide se as demais sobem para os lugares vagos (com prévia) ou se ficam como estão. Se a 1ª parcela for excluída, a primeira restante passa a ser a que edita e projeta.</li>
-  </ul>
-  <h2>Aportes mensais (painel Investimentos)</h2>
-  <p>Seguem o formato simples: uma linha por mês, com ocorrência e previsão avançando um mês cada, sem ajuste de dia útil e sem bloqueio de edição.</p>
-  <ul>
-    <li>Cada linha vira um lançamento com a descrição seguida de <span class="kbd">(1/4)</span>, <span class="kbd">(2/4)</span>...</li>
-    <li>Se o dia não existe no mês (31 em fevereiro), usa-se o último dia daquele mês.</li>
-    <li>Para ver o que ainda vai vencer, use o atalho <span class="ui">Futuros (parcelas)</span>.</li>
-  </ul>`,
-  () => initParc());
-
-lesson('cadastros','Cadastros próprios','cadastro categoria natureza classificação forma pagamento criar novo remover escopo entrada saída herda mais',
-  'Nenhuma lista é fixa. Você cadastra o que faltar, em cada painel, sem sair do formulário.',
-  () => `<h2>Dois caminhos</h2>
-  <ul>
-    <li><b>Pelo formulário</b>: o botão <span class="ui">＋</span> ao lado de Classificação, Categoria e Forma, e <span class="ui">＋ Nova</span> junto às naturezas. O item novo já fica selecionado.</li>
-    <li><b>Pelo painel</b>: <span class="ui">⚙️ Cadastros</span> lista tudo por abas, mostra o que é padrão e o que é seu (com ×) e permite remover.</li>
-  </ul>
-  <h2>Regras que ajudam</h2>
-  <ul>
-    <li><b>Natureza nova</b> pede o <i>efeito no saldo</i>: <b>Entrada</b> soma, <b>Saída</b> subtrai. É isso que a encaixa nos totais e gráficos.</li>
-    <li><b>Disponível para</b>: categorias, classificações e (em Investimentos) formas de aporte/saque valem para uma natureza ou para todas. Uma natureza nova sem itens próprios herda os de mesmo sinal, então já nasce utilizável.</li>
-    <li>Nomes repetidos são bloqueados, sem diferenciar maiúsculas e acentos.</li>
-    <li><b>Remover</b> um cadastro não apaga lançamentos: eles mantêm o valor, só deixa de ser oferecido em novos lançamentos. Remover uma natureza remove também seus itens exclusivos.</li>
-  </ul>
-  <div class="callout"><b>Onde ficam salvos?</b>Na aba <i>Config</i> da sua planilha, separados por usuário e por painel, e também em cópia no navegador. Se aparecer o aviso “cadastro salvo só neste aparelho”, a planilha ainda está com o script antigo (veja <a href="#/ajuda" data-go="ajuda">Dúvidas</a>).</div>
-  <div class="card"><h3>Exemplo: criar “Dividendos” em Investimentos</h3>
-    <ol><li>Abra <span class="ui">⚙️ Cadastros</span> › <span class="ui">Naturezas</span> › <span class="ui">＋ Novo</span>.</li>
-    <li>Nome: <i>Dividendos</i>. Efeito no saldo: <b>Entrada</b>. Cadastrar.</li>
-    <li>Ao lançar, escolha <i>Dividendos</i>; ele soma ao patrimônio e entra em “Aportes” (só <i>Rendimento</i> alimenta a rentabilidade).</li></ol></div>`);
-
-lesson('filtros','Filtros e busca','ocorrência previsão período por filtro filtros busca seleção múltipla natureza classificação categoria saldo inicial todas limpar',
-  'Natureza, Classificação, Categoria e Forma aceitam várias opções ao mesmo tempo. Teste a lógica na demonstração.',
-  () => `<div class="card"><div class="row" id="fdemo"></div><div class="out"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Descrição</th><th>Natureza</th><th>Classificação</th><th class="num">Valor</th></tr></thead><tbody id="fOut"></tbody></table></div></div></div>
-  <ul>
-    <li><b>Todas</b> marcado = sem restrição. Desmarcar <i>Todas</i> limpa tudo para você marcar só o que quer. Marcar item por item até completar volta para <i>Todas</i>.</li>
-    <li>Nenhum item marcado = tabela vazia (é proposital: nada foi escolhido).</li>
-    <li>Os filtros se combinam (E): <i>Receita</i> + <i>Extra</i> mostra só receitas extras.</li>
-  </ul>
-  <h2>Ocorrência ou previsão?</h2>
-  <p><b>Ocorrência</b> é quando o lançamento aconteceu; <b>Previsão</b> é quando ele era esperado. Ao criar, as duas são iguais e a previsão acompanha a ocorrência até você mexer nela (o botão <span class="ui">Igualar à ocorrência</span> volta a vincular). Use a previsão para planejar: lance a conta de dezembro com previsão de dezembro e ocorrência quando efetivamente pagar.</p>
-  <p>No filtro, o seletor <span class="ui">Período por: Ocorrência | Previsão</span> define qual data comanda <i>De/Até</i> e os atalhos de período. Ele influencia <b>tudo</b>: indicadores, saldo (ou patrimônio) inicial e final, gráficos mensais, ordenação padrão e os relatórios em PDF e Excel, que trazem as duas datas e informam o critério usado. A tabela sempre mostra as duas colunas; quando diferem, a previsão aparece em destaque.</p>
-  <div class="callout"><b>Exemplo</b>Um combustível ocorrido em 3/out e previsto para 28/set cai em <i>outubro</i> por ocorrência e em <i>setembro</i> por previsão. Compare os dois modos para medir o quanto o realizado fugiu do planejado.</div>
-  <h2>Período e atalhos</h2>
-  <p>Use <span class="ui">De</span>/<span class="ui">Até</span> ou os atalhos <span class="ui">Este mês</span>, <span class="ui">Mês anterior</span>, <span class="ui">Últimos 90 dias</span>, <span class="ui">Este ano</span> e <span class="ui">Futuros</span>. O campo <span class="ui">Buscar</span> procura em descrição, categoria, forma, natureza, classificação e valor.</p>
-  <div class="callout"><b>Saldo inicial</b>Ao preencher <i>De</i>, o saldo (ou patrimônio) inicial passa a ser tudo o que foi acumulado <u>antes</u> dessa data (pelo critério escolhido em <i>Período por</i>), respeitando os outros filtros. Sem <i>De</i>, ele parte de R$ 0,00. A lista abre em ordem cronológica crescente (pela data do critério <i>Período por</i>): as parcelas aparecem da primeira à última, com as demais despesas intercaladas pela data. Clique nos títulos das colunas para reordenar; clicar de novo inverte.</div>`,
-  () => initFiltros());
-
-lesson('investimentos','Lendo o painel de investimentos','investimentos patrimônio rentabilidade aporte rendimento resgate taxas ir poupança previdência cdb tesouro cálculo',
-  'Os indicadores partem do que você lança. Mude os números e veja como cada um é calculado.',
-  () => `<div class="card"><div class="form-grid">
-      <div class="field"><label>Patrimônio inicial</label><input data-k="open" inputmode="numeric" value="R$ 10.000,00"></div>
-      <div class="field"><label>Aportes</label><input data-k="ap" inputmode="numeric" value="R$ 2.000,00"></div>
-      <div class="field"><label>Rendimentos</label><input data-k="rd" inputmode="numeric" value="R$ 150,00"></div>
-      <div class="field"><label>Resgates e taxas</label><input data-k="sa" inputmode="numeric" value="R$ 500,00"></div></div>
-    <div class="kpi-row" id="iOut"></div></div>
-  <ul>
-    <li><b>Aportes</b>: toda entrada que não seja <i>Rendimento</i> (Aplicação e naturezas suas de entrada).</li>
-    <li><b>Rendimentos</b>: só a natureza <i>Rendimento</i>: juros, correção, dividendos que você lançar.</li>
-    <li><b>Resgates e taxas</b>: toda saída (Resgate, Taxas e IR e naturezas suas de saída).</li>
-    <li><b>Patrimônio final</b> = inicial + aportes + rendimentos − resgates e taxas.</li>
-    <li><b>Rentabilidade</b> = rendimentos ÷ (inicial + aportes). É um indicador do período filtrado, não uma taxa anualizada.</li>
-  </ul>
-  <div class="callout warn"><b>Não é cotação de mercado</b>O app não consulta preços. O patrimônio é o resultado dos seus lançamentos: para refletir ganhos, lance os rendimentos (do extrato ou do informe). Um bom ritmo é lançar o <i>Rendimento</i> uma vez por mês, junto com o <i>IR</i> retido, quando houver.</div>
-  <p>O gráfico <i>Evolução do patrimônio</i> mostra barras mensais de aportes, rendimentos e resgates, com a linha do patrimônio acumulado. O gráfico de rosca mostra o patrimônio por categoria (Poupança, CDB, Previdência...).</p>`,
-  () => initInvest());
-
-lesson('relatorios','PDF e Excel','pdf excel relatório exportar baixar planilha imprimir',
-  'Os relatórios saem exatamente com o que está na tela: mesmo painel, mesmos filtros.',
-  () => `<ol>
-    <li>Escolha <i>Período por</i> (ocorrência ou previsão), ajuste período e filtros.</li>
-    <li><span class="ui">📄 PDF</span> abre uma pré-visualização; depois, <span class="ui">⬇ Baixar PDF</span>. Traz os indicadores, o resumo dos filtros e a tabela com totais.</li>
-    <li><span class="ui">📗 Excel</span> baixa um arquivo com duas abas: os lançamentos (com saídas em negativo e totais) e um <i>Resumo Mensal</i>.</li>
-  </ol>
-  <p>Os dois relatórios trazem as colunas <i>Ocorrência</i> e <i>Previsão</i> e informam no cabeçalho o critério de período. No painel de Investimentos, os relatórios usam os termos do painel (aportes, rendimentos, resgates, patrimônio) e a coluna <i>Aporte/Saque</i>.</p>
-  <div class="callout"><b>Dica</b>Para um relatório de um ano só, use <span class="ui">Este ano</span>; para um único produto, filtre a <i>Categoria</i> (por exemplo, só “Previdência Privada (PGBL)”).</div>`);
-
-lesson('ajuda','Dúvidas e solução de problemas','ajuda erro problema faq dúvida sessão expirada offline instalar demo senha bloqueada salvo só neste aparelho misturados modulo',
-  'As situações mais comuns e o que fazer.',
-  () => {
-    const faq = [
-      ['Os investimentos aparecem misturados ao fluxo de caixa, ou a previsão não é salva','A planilha ainda usa o script antigo, sem as colunas <i>Modulo</i> e <i>Previsao</i>. No Apps Script, cole o <i>Code.js</i> novo e publique uma <b>nova versão</b> da implantação. Lançamentos antigos continuam como fluxo de caixa.'],
-      ['Aparece “cadastro salvo só neste aparelho”','Mesma causa: o script antigo não conhece a gravação de cadastros. Depois de publicar o novo, abra o app e faça um novo cadastro; ele passa a ser salvo na aba <i>Config</i>.'],
-      ['“Sessão expirada”','A sessão dura até 6 horas. Entre de novo; seus dados não se perdem.'],
-      ['Login bloqueado','Cinco senhas erradas bloqueiam por 15 minutos. Use <i>Esqueci minha senha</i> para redefinir com o código enviado ao e-mail.'],
-      ['O código por e-mail não chega','Confira a caixa de spam. Há intervalo de 1 minuto entre pedidos e limite de 5 por hora. Se a mensagem de erro mencionar permissão, o administrador precisa executar a função <i>autorizarEmail</i> no Apps Script.'],
-      ['Por que não consigo editar uma parcela?','Em despesas parceladas, só a <b>1ª parcela</b> pode ser alterada; as seguintes (🔒) acompanham a 1ª. Ao clicar no cadeado, o app oferece abrir a 1ª parcela. Ao salvá-la, todas as demais são recalculadas pelo dia de vencimento e em dia útil.'],
-      ['Qual dia útil o app usa?','Segunda a sexta, exceto feriados nacionais (1/1, 21/4, 1/5, 7/9, 12/10, 2/11, 15/11, 20/11, 25/12) e os dias sem expediente bancário: Carnaval (segunda e terça), Sexta-feira Santa e Corpus Christi. Se o vencimento cair em dia não útil, passa para o próximo. Feriados estaduais e municipais não entram.'],
-      ['Qual a diferença entre ocorrência e previsão?','Ocorrência é a data em que o lançamento aconteceu; previsão é a data em que era esperado. Começam iguais. O seletor <i>Período por</i> escolhe qual delas vale nos filtros, indicadores, gráficos e relatórios. Lançamentos antigos, sem previsão, assumem a própria ocorrência.'],
-      ['Saldo inicial aparece R$ 0,00','Ele só é calculado quando o campo <i>De</i> está preenchido. Sem data inicial o app parte de zero.'],
-      ['Meu lançamento sumiu da lista','Veja os filtros: a lista só mostra o painel atual e o que combina com todos os filtros. <span class="ui">Limpar filtros</span> volta ao total.'],
-      ['Excluí uma parcela e a numeração ficou com um “buraco”','Foi a opção “Manter como estão”. Edite a descrição e as datas da parcela quando quiser, ou exclua a próxima parcela e escolha <i>Reordenar</i>, que renumera tudo de 1 ao total restante.'],
-      ['Posso apagar uma categoria já usada?','Pode. Os lançamentos continuam com o nome; ele só deixa de ser sugerido para novos.'],
-      ['Funciona sem internet?','O app instalado abre offline, mas os dados vêm da planilha e exigem conexão para carregar e salvar.'],
-      ['Como instalo no celular?','Quando o navegador permitir, aparece o botão ⬇️ no cabeçalho. Também é possível usar “Adicionar à tela inicial” do navegador.']
-    ];
-    return faq.map(([q,a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join('') +
-      `<div class="callout"><b>Não achou?</b>Use a busca no topo desta página: ela procura em todas as etapas.</div>`;
-  });
-
-/* ===================== progresso ===================== */
-const done = new Set(store.get('fp-tut-done', []));
-const saveDone = () => store.set('fp-tut-done', [...done]);
-const steps = () => L.filter(l => l.id!=='inicio');
-function paintProgress(){
-  const n = steps().filter(l => done.has(l.id)).length, tot = steps().length;
-  $('#ring').style.setProperty('--p', Math.round(n/tot*100)); $('#ringTxt').textContent = `${n}/${tot}`;
-  $('#rail').innerHTML = L.map((l,i) => `<button type="button" data-go="${l.id}" class="${done.has(l.id)?'done':''}" ${l.id===current&&!searching?'aria-current="step"':''}><span class="n"><b>${i||'•'}</b></span>${esc(l.t)}</button>`).join('');
-}
-
-/* ===================== navegação ===================== */
-let current = 'inicio', searching = false;
-function show(id, keep){
-  const i = Math.max(0, L.findIndex(l => l.id===id)), l = L[i]; current = l.id; searching = false;
-  if (!keep) { history.replaceState(null,'',`#/${l.id}`); }
-  const prev = L[i-1], next = L[i+1];
-  $('#view').innerHTML = `<article class="lesson">
-    <div class="eyebrow">${i ? `Etapa ${i} de ${L.length-1}` : 'Bem-vindo'}</div>
-    <h1>${esc(l.t)}</h1><p class="lead">${esc(l.lead)}</p>${l.body()}
-    <div class="pager">
-      <button class="btn" data-go="${prev?prev.id:''}" ${prev?'':'disabled'}>← ${prev?esc(prev.t):'Anterior'}</button>
-      ${i ? `<label class="check"><input type="checkbox" id="doneCb" ${done.has(l.id)?'checked':''}> Concluí esta etapa</label>` : ''}
-      <button class="btn btn-primary" data-go="${next?next.id:''}" data-mark="1" ${next?'':'disabled'}>${next?esc(next.t):'Próxima'} →</button>
-    </div></article>`;
-  l.init?.(); $('#doneCb')?.addEventListener('change', e => { e.target.checked ? done.add(l.id) : done.delete(l.id); saveDone(); paintProgress(); });
-  paintProgress(); if (!keep) { scrollTo({top:0}); $('#view').focus({preventScroll:true}); }
-  $('#q').value = '';
-}
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-go]'); if (!b || !b.dataset.go) return;
-  e.preventDefault();
-  if (b.dataset.mark && current!=='inicio') { done.add(current); saveDone(); }
-  show(b.dataset.go);
-});
-addEventListener('hashchange', () => { const id = location.hash.replace(/^#\/?/,''); if (L.some(l=>l.id===id) && id!==current) show(id, true); });
-document.addEventListener('keydown', e => {
-  const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
-  if (e.key==='/' && !typing) { e.preventDefault(); $('#q').focus(); }
-  if (typing || searching || e.altKey || e.ctrlKey || e.metaKey) return;
-  const i = L.findIndex(l => l.id===current);
-  if (e.key==='ArrowRight' && L[i+1]) show(L[i+1].id); if (e.key==='ArrowLeft' && L[i-1]) show(L[i-1].id);
-});
-
-/* ===================== busca ===================== */
-const plain = new Map();
-const plainOf = l => { if (!plain.has(l.id)) { const d = document.createElement('div'); d.innerHTML = l.lead + ' ' + l.body(); plain.set(l.id, d.textContent.replace(/\s+/g,' ')); } return plain.get(l.id); };
-$('#q').addEventListener('input', e => {
-  const q = norm(e.target.value).trim(); if (!q) { if (searching) show(current, true); return; }
-  searching = true; const toks = q.split(/\s+/);
-  const hits = L.map(l => { const txt = plainOf(l), hay = norm(l.t+' '+l.k+' '+txt); return toks.every(t => hay.includes(t)) ? { l, txt, score: toks.reduce((s,t)=>s+(norm(l.t).includes(t)?3:0)+(norm(l.k).includes(t)?2:0),0) } : null; }).filter(Boolean).sort((a,b)=>b.score-a.score);
-  const snip = (txt) => { const nt = norm(txt), p = Math.max(0, nt.indexOf(toks[0])); const s = txt.slice(Math.max(0,p-50), p+110); return esc(s).replace(new RegExp('('+toks.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')','gi'),'<mark>$1</mark>'); };
-  $('#view').innerHTML = `<div class="results"><h1 style="font-size:1.6rem;margin-bottom:6px">${hits.length ? hits.length+' resultado(s)' : 'Nada encontrado'}</h1>
-    ${hits.length ? hits.map(h => `<button class="hit" data-go="${h.l.id}"><b>${esc(h.l.t)}</b><span>…${snip(h.txt)}…</span></button>`).join('') : '<p class="lead">Tente outra palavra, como “parcela”, “senha” ou “PDF”.</p>'}</div>`;
-  paintProgress();
-});
-$('#q').addEventListener('keydown', e => { if (e.key==='Enter') $('#view .hit')?.click(); if (e.key==='Escape') { e.target.value=''; e.target.blur(); if (searching) show(current,true); } });
-
-/* ===================== simulador do formulário ===================== */
-function initSim(){
-  const P = SIM[panel], st = { nat:P.nats[panel==='I'?0:1], cls:'', cat:'', pay:'', val:0, desc:'', n:1, date:isoLocal(), prev:isoLocal(), linked:true };
-  const root = $('#sim'), opts = a => a.map(x=>`<option>${esc(x)}</option>`).join('');
-  function build(keep){
-    st.cls = st.nat.cls.includes(keep?.cls) ? keep.cls : st.nat.cls[0];
-    st.cat = st.nat.cat.includes(keep?.cat) ? keep.cat : st.nat.cat[0];
-    st.pay = st.nat.pay.includes(keep?.pay) ? keep.pay : st.nat.pay[0];
-    root.innerHTML = `<div class="form-grid">
-      <div class="field full"><label>Natureza</label><div class="seg">${P.nats.map(n=>`<button type="button" data-n="${esc(n.n)}" class="${n.s==='E'?'inc':'exp'}${n===st.nat?' on':''}">${n.s==='E'?'↑':'↓'} ${esc(n.n)}</button>`).join('')}</div></div>
-      <div class="field"><label>Ocorrência</label><input type="date" id="sDate" value="${st.date}"></div>
-      <div class="field"><label>Previsão</label><input type="date" id="sPrev" value="${st.prev}"><div class="hint" id="sPrevHint" style="font-size:.75rem;color:var(--muted);margin-top:4px"></div></div>
-      <div class="field full"><label>Valor (R$)</label><input id="sVal" inputmode="numeric" placeholder="R$ 0,00" value="${st.val?brl(st.val):''}"></div>
-      <div class="field full"><label>Descrição</label><input id="sDesc" maxlength="60" placeholder="${panel==='I'?'Ex.: Aporte CDB 110% CDI':'Ex.: Notebook'}" value="${esc(st.desc)}"></div>
-      <div class="field" id="fCls"><label>Classificação</label><select id="sCls">${opts(st.nat.cls)}</select></div>
-      <div class="field" id="fParc"><label>${P.parcLbl}</label><input type="number" id="sN" min="1" max="120" value="${st.n}"></div>
-      <div class="field" id="fDia"><label>Dia do vencimento</label><input type="number" id="sDia" min="1" max="31" inputmode="numeric" value="${st.dia||''}" placeholder="dia da previsão"></div>
-      <div class="field"><label>Categoria</label><select id="sCat">${opts(st.nat.cat)}</select></div>
-      <div class="field" id="fPay"><label>${P.payLbl}</label><select id="sPay">${opts(st.nat.pay)}</select></div></div>
-      <div class="out" id="sOut"></div>`;
-    $('#sCls').value = st.cls; $('#sCat').value = st.cat; $('#sPay').value = st.pay; hint();
-    $('#fParc').style.display = P.parc(st.nat,st.cls) ? '' : 'none'; $('#fDia').style.display = diaOn() ? '' : 'none';
-    out();
-  }
-  const diaOn = () => panel==='F' && P.parc(st.nat,st.cls) && (st.n||1) > 1;
-  const hint = () => { const h = $('#sPrevHint'); if (h) h.innerHTML = st.linked ? 'Acompanha a ocorrência até você alterá-la.' : 'Definida manualmente. <button type="button" class="lnk" id="sSync">Igualar à ocorrência</button>'; };
-  function out(){
-    const par = P.parc(st.nat, st.cls), n = par ? Math.max(1, Math.min(120, st.n||1)) : 1, d0 = new Date(st.date+'T12:00'), v = st.val, e = st.nat.s==='E';
-    const p0 = new Date(st.prev+'T12:00'), rule = diaOn(), D = Math.min(31, Math.max(1, st.dia || p0.getDate())), nom = { y:p0.getFullYear(), m:p0.getMonth() };
-    const lines = Array.from({length:n}, (_,i) => ({ d:toBR(n>1?addMonths(d0,i):d0), p:rule ? `${WD[projPrev(nom,D,i).getDay()]} ${toBR(projPrev(nom,D,i))}` : toBR(n>1?addMonths(p0,i):p0), t:`${st.desc||'Descrição'}${n>1?` (${i+1}/${n})`:''}` }));
-    const eff = panel==='I'
-      ? { 'Aplicação':['Soma ao <b>Patrimônio</b>','Conta em <b>Aportes</b>'], 'Rendimento':['Soma ao <b>Patrimônio</b>','Conta em <b>Rendimentos</b> e eleva a <b>Rentabilidade</b>'], 'Resgate':['Subtrai do <b>Patrimônio</b>','Conta em <b>Resgates e taxas</b>'], 'Taxas e IR':['Subtrai do <b>Patrimônio</b>','Conta em <b>Resgates e taxas</b>'] }[st.nat.n]
-      : (e ? ['Soma ao <b>Saldo</b>','Conta em <b>Receitas</b>'] : ['Subtrai do <b>Saldo</b>','Conta em <b>Despesas</b> (e no gráfico por forma de pagamento)']);
-    $('#sOut').innerHTML = `<h3>O app vai gravar ${n} linha${n>1?'s':''} no painel ${panel==='I'?'Investimentos':'Fluxo de caixa'}</h3>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ocorrência</th><th>Previsão</th><th>Descrição</th><th>Natureza</th><th>Classificação · Categoria</th><th class="num">Valor</th></tr></thead><tbody>
-      ${lines.slice(0,6).map(l=>`<tr><td>${l.d}</td><td>${l.p}</td><td>${esc(l.t)}</td><td><span class="pill ${e?'inc':'exp'}">${esc(st.nat.n)}</span></td><td>${esc(st.cls)} · ${esc(st.cat)}</td><td class="num" style="color:var(--${e?'income':'expense'})">${e?'':'− '}${brl(v)}</td></tr>`).join('')}
-      ${n>6?`<tr><td colspan="6" style="color:var(--muted)">… e mais ${n-6} linha(s)</td></tr>`:''}</tbody></table></div>
-      <ul class="effects">${eff.map(x=>`<li>${x}</li>`).join('')}${n>1?`<li>Total das ${n} linhas: <b>${brl(v*n)}</b></li>`:''}${rule?`<li>Previsões sempre em <b>dia útil</b>, no dia ${D}; as parcelas seguintes só mudam pela 1ª parcela (🔒).</li>`:''}
-      ${par?`<li>O campo <b>${P.parcLbl}</b> apareceu porque ${panel==='I'?'a natureza é <i>Aplicação</i>':'a despesa é <i>Fixa</i>'}.</li>`:''}</ul>`;
-  }
-  root.addEventListener('click', e => { if (e.target.id==='sSync') { st.linked = true; st.prev = st.date; $('#sPrev').value = st.prev; hint(); out(); return; } const b = e.target.closest('[data-n]'); if (!b) return; st.nat = P.nats.find(n=>n.n===b.dataset.n); build({cls:st.cls,cat:st.cat,pay:st.pay}); root.querySelector('#fPay').classList.add('flash'); });
-  root.addEventListener('input', e => {
-    const t = e.target.id;
-    if (t==='sVal') st.val = maskBRL(e.target); else if (t==='sDesc') st.desc = e.target.value; else if (t==='sDate') { st.date = e.target.value || st.date; if (st.linked) { st.prev = st.date; $('#sPrev').value = st.prev; } }
-    else if (t==='sPrev') { st.prev = e.target.value || st.prev; st.linked = false; hint(); }
-    else if (t==='sN') { st.n = +e.target.value; $('#fDia').style.display = diaOn() ? '' : 'none'; } else if (t==='sDia') st.dia = +e.target.value || 0; else if (t==='sCls') { st.cls = e.target.value; $('#fParc').style.display = P.parc(st.nat,st.cls) ? '' : 'none'; if (P.parc(st.nat,st.cls)) $('#fParc').classList.add('flash'); }
-    else if (t==='sCat') st.cat = e.target.value; else if (t==='sPay') st.pay = e.target.value;
-    out();
-  });
-  build();
-}
-function initScen(){
-  const S = {
-    F:[['Recebi meu salário',['Fluxo de caixa','Receita','Fixa','Salário','Pix ou Transferência'],'Repita todo mês, ou use a data de cada recebimento.'],
-       ['Paguei o aluguel',['Fluxo de caixa','Despesa','Fixa','Moradia','Boleto'],'Em “Qt Parcelas” informe 12 para gerar o ano todo.'],
-       ['Compras no mercado',['Fluxo de caixa','Despesa','Variável','Supermercado','Cartão de Débito'],'Variável não gera parcelas.'],
-       ['Compra parcelada em 6x',['Fluxo de caixa','Despesa','Fixa · Qt Parcelas 6','Categoria do item','Cartão de Crédito'],'Gera 6 linhas mensais com o valor da parcela.'],
-       ['Trabalho extra (freela)',['Fluxo de caixa','Receita','Extra','Freelance / Serviços','Pix'],'Extra separa o que não é recorrente.'],
-       ['Mandei dinheiro para investir',['Fluxo de caixa','Despesa','Variável','Investimentos','Pix ou TED'],'Para acompanhar o investimento em si, registre também no painel Investimentos (como Aplicação).']],
-    I:[['Apliquei em um CDB',['Investimentos','Aplicação','Renda Fixa','CDB','Pix ou TED'],'Se o dinheiro saiu da conta corrente, registre também uma Despesa (categoria Investimentos) no Fluxo de caixa.'],
-       ['O CDB rendeu no mês',['Investimentos','Rendimento','Renda Fixa','CDB','Reinvestimento automático'],'Só Rendimento alimenta a rentabilidade.'],
-       ['Retirei parte do valor',['Investimentos','Resgate','Renda Fixa','CDB','Resgate para conta corrente'],'Para refletir na conta, registre uma Receita no Fluxo de caixa.'],
-       ['Foi descontado IR',['Investimentos','Taxas e IR','Renda Fixa','CDB','Descontado do resgate'],'Entra em “Resgates e taxas”.'],
-       ['Contribuição mensal de previdência',['Investimentos','Aplicação · Qt de aportes 12','Previdência','Previdência Privada (PGBL)','Débito Automático ou Desconto em folha'],'Gera uma linha por mês.'],
-       ['Recebi dividendos',['Investimentos','Rendimento (ou natureza sua “Dividendos”)','Renda Variável','Ações','Crédito em conta'],'Se preferir separar, cadastre a natureza Dividendos como Entrada.']]
-  }[panel], lbl = ['Painel','Natureza','Classificação','Categoria', panel==='I'?'Aporte/saque':'Forma'];
-  $('#scen').innerHTML = S.map((s,i)=>`<button class="chip" data-i="${i}" aria-pressed="false">${esc(s[0])}</button>`).join('');
-  const show1 = i => { $$('#scen .chip').forEach(c=>c.setAttribute('aria-pressed',String(+c.dataset.i===i)));
-    $('#scenOut').innerHTML = S[i][1].map((v,k)=>`<div><small>${lbl[k]}</small>${esc(v)}</div>`).join('') + `<div style="grid-column:1/-1"><small>Observação</small>${esc(S[i][2])}</div>`; };
-  $('#scen').onclick = e => { const c = e.target.closest('.chip'); if (c) show1(+c.dataset.i); }; show1(0);
-}
-function initParc(){
-  const P = SIM[panel], isF = panel==='F', y = new Date().getFullYear(); let diaTouched = false;
-  $('#pDate').value = `${y}-10-31`; $('#pPrev').value = `${y}-10-31`; $('#pVal').value = brl(isF?450:400); $('#pQtL').textContent = P.parcLbl;
-  $('#pDiaF').style.display = isF ? '' : 'none'; $('#pDia').value = 31;
-  const upd = () => {
-    const v = (+($('#pVal').value.replace(/\D/g,''))||0)/100, n = Math.max(1, Math.min(120, +$('#pQt').value||1)), d0 = new Date($('#pDate').value+'T12:00'), p0 = new Date($('#pPrev').value+'T12:00');
-    if (isNaN(d0) || isNaN(p0)) return;
-    const D = Math.min(31, Math.max(1, +$('#pDia').value || p0.getDate())), nom = { y:p0.getFullYear(), m:p0.getMonth() }, rule = isF && n>1;
-    const rowsH = Array.from({length:Math.min(n,12)}, (_,i) => {
-      const x = addMonths(d0,i), pv = rule ? projPrev(nom,D,i) : addMonths(p0,i), nm = nomDate(nom,i,D);
-      const note = rule && pv.getTime()!==nm.getTime() ? `dia ${pad(nm.getDate())}/${pad(nm.getMonth()+1)} (${WD[nm.getDay()]}) não é útil` : '';
-      return `<tr><td>${i+1}/${n}${rule&&i?' 🔒':''}</td><td>${toBR(x)}</td><td>${WD[pv.getDay()]} ${toBR(pv)}</td><td class="num">${brl(v)}</td><td style="color:var(--warn);font-size:.8rem">${note}</td></tr>`; }).join('');
-    $('#pOut').innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Linha</th><th>Ocorrência</th><th>Previsão</th><th class="num">Valor</th><th>Ajuste</th></tr></thead><tbody>${rowsH}${n>12?`<tr><td colspan="5" style="color:var(--muted)">… e mais ${n-12} linha(s)</td></tr>`:''}</tbody></table></div><p style="margin-top:8px"><b>Total:</b> ${brl(v*n)} em ${n} linha(s)${rule?' · 🔒 = só muda pela 1ª parcela':''}</p>`;
-  };
-  $('#pDate').addEventListener('input', e => { $('#pPrev').value = e.target.value; if (!diaTouched) $('#pDia').value = new Date(e.target.value+'T12:00').getDate(); upd(); });
-  $('#pPrev').addEventListener('input', e => { if (!diaTouched) $('#pDia').value = new Date(e.target.value+'T12:00').getDate(); upd(); });
-  $('#pDia').addEventListener('input', () => { diaTouched = true; upd(); });
-  $('#pVal').addEventListener('input', e => { maskBRL(e.target); upd(); }); $('#pQt').addEventListener('input', upd); upd();
-}
-function initFiltros(){
-  const D = panel==='I'
-    ? [['Aporte CDB','Aplicação','Renda Fixa',5000],['Aporte previdência','Aplicação','Previdência',400],['Rendimento CDB','Rendimento','Renda Fixa',62.4],['Resgate parcial','Resgate','Renda Fixa',-1000],['IR sobre resgate','Taxas e IR','Renda Fixa',-31.5],['Rendimento previdência','Rendimento','Previdência',18.2]]
-    : [['Salário','Receita','Fixa',6500],['Freelance site','Receita','Extra',1800],['Aluguel','Despesa','Fixa',-1900],['Supermercado','Despesa','Variável',-688.9],['Combustível','Despesa','Variável',-310],['Internet','Despesa','Fixa',-120]];
-  const mk = (title, idx) => {
-    const items = [...new Set(D.map(r=>r[idx]))], st = { all:true, sel:new Set() };
-    const el = document.createElement('div'); el.className = 'ms';
-    const lab = () => st.all ? 'Todas' : st.sel.size===0 ? 'Nenhuma' : st.sel.size===1 ? [...st.sel][0] : `${st.sel.size} selecionadas`;
-    const draw = () => { el.innerHTML = `<div class="head">${title}</div><label class="all"><input type="checkbox" data-all ${st.all?'checked':''}> Todas</label>${items.map(i=>`<label><input type="checkbox" value="${esc(i)}" ${st.all||st.sel.has(i)?'checked':''}> ${esc(i)}</label>`).join('')}<div class="val">Mostrando: ${esc(lab())}</div>`;
-      el.querySelector('[data-all]').indeterminate = !st.all && st.sel.size>0; };
-    el.addEventListener('change', e => {
-      if (e.target.matches('[data-all]')) { st.all = e.target.checked; st.sel.clear(); }
-      else { if (st.all) { st.all = false; st.sel = new Set(items); } e.target.checked ? st.sel.add(e.target.value) : st.sel.delete(e.target.value); if (st.sel.size===items.length) { st.all = true; st.sel.clear(); } }
-      draw(); upd(); });
-    draw(); st.el = el; st.pass = v => st.all || st.sel.has(v); return st;
-  };
-  const N = mk('Natureza',1), C = mk('Classificação',2); $('#fdemo').append(N.el, C.el);
-  function upd(){ const rows = D.filter(r => N.pass(r[1]) && C.pass(r[2]));
-    $('#fOut').innerHTML = rows.length ? rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td class="num" style="color:var(--${r[3]>0?'income':'expense'})">${brl(r[3])}</td></tr>`).join('') : '<tr><td colspan="4" style="color:var(--muted)">Nenhum item marcado: a tabela fica vazia.</td></tr>'; }
-  upd();
-}
-function initInvest(){
-  const get = k => (+($(`[data-k=${k}]`).value.replace(/\D/g,''))||0)/100;
-  const upd = () => { const o = get('open'), a = get('ap'), r = get('rd'), s = get('sa'), f = o+a+r-s, base = o+a, rent = base>0 ? r/base*100 : 0;
-    $('#iOut').innerHTML = `<div class="kpi"><span>Patrimônio final</span><b style="color:var(--${f>=0?'income':'expense'})">${brl(f)}</b></div><div class="kpi"><span>Rentabilidade</span><b style="color:var(--${rent>=0?'income':'expense'})">${rent.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</b></div><div class="kpi"><span>Base de cálculo</span><b>${brl(base)}</b></div>`; };
-  $$('[data-k]').forEach(i => i.addEventListener('input', e => { maskBRL(e.target); upd(); })); upd();
-}
-
-/* ===================== início ===================== */
-setPanel(panel, false);
-const first = (location.hash.replace(/^#\/?/,'') || Q.get('topico') || 'inicio');
-show(L.some(l=>l.id===first) ? first : 'inicio', true);
+  // destaque do capítulo visível no índice
+  var links = [].slice.call(document.querySelectorAll('#toc a')), secs = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function spy(){ var y = window.scrollY + 120, cur = 0; secs.forEach(function(s, i){ if (s && s.offsetTop <= y) cur = i; });
+    links.forEach(function(a, i){ a.classList.toggle('on', i === cur); }); }
+  addEventListener('scroll', spy, { passive:true }); spy();
+})();
 </script>
 </body>
 </html>
