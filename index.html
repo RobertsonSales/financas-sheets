@@ -352,7 +352,8 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
   </div>
   <div class="card filters">
     <div class="field"><label>Buscar</label><input id="fText" placeholder="Descrição, forma..."></div>
-    <div class="field"><label>Período por</label><div class="dmode" id="dmode" role="group" aria-label="Período por ocorrência ou previsão"><button type="button" data-dm="data" aria-pressed="true">Ocorrência</button><button type="button" data-dm="previsao" aria-pressed="false">Previsão</button></div></div>
+    <div class="field"><label>Período por</label><div class="ms" id="fDm"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false" title="Datas consideradas pelo filtro De/Até"><span class="ms-lbl">Ocorrência</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" style="display:none" tabindex="-1" aria-hidden="true"><label class="ms-opt ms-all"><input type="checkbox"> <span>Todos os eventos</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
+    <div class="field" id="stField"><label for="fSt">Situação</label><select id="fSt" title="Vale para as despesas do Fluxo de caixa"><option value="all">Todas</option><option value="quit">Quitadas</option><option value="open">Em aberto</option><option value="over">Vencidas</option></select></div>
     <div class="field"><label>De</label><input type="date" id="fFrom"></div>
     <div class="field"><label>Até</label><input type="date" id="fTo"></div>
     <div class="field"><label>Natureza</label><div class="ms" id="fNat"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
@@ -816,6 +817,7 @@ function initMulti(rootSel, allLabel, onChange){
       draw();
     },
     clear(){ st.all = true; st.sel.clear(); sync(); },   // usado por "Limpar filtros"
+    setSel(vals){ const v = vals.filter(x => st.items.some(i => i.v === x)); if (v.length && v.length === st.items.length) { st.all = true; st.sel.clear(); } else { st.all = false; st.sel = new Set(v); } sync(); },
     pass(v){ return st.all || st.sel.has(v); },
     labels(){ return [...st.sel].map(textOf); }
   });
@@ -835,17 +837,35 @@ const MODCFG = {
 const data = () => rows.filter(r => r.modulo === MOD);
 // Ocorrência = quando aconteceu (coluna Data). Previsão = quando se espera/espera-se que aconteça. O seletor "Período por" escolhe qual das duas
 // comanda filtros de período, saldo inicial, gráficos, ordenação padrão e relatórios.
-let DM = localStorage.getItem('fp-dm') === 'previsao' ? 'previsao' : 'data';
-let prevLinked = true; sortKey = DM;
+/* "Período por" aceita uma ou mais datas: o filtro De/Até vale quando QUALQUER das datas marcadas cai no intervalo.
+   DMF = datas marcadas · DM = data de referência (ocorrência, salvo quando só a previsão está marcada), usada para ordenar, agrupar por mês e acumular. */
+let DM = 'data', DMF = ['data'], RNG = { fd:null, td:null };
+let prevLinked = true;
 const prevOf = r => r.previsao || r.data;
-const dateOf = r => parseBR(DM === 'previsao' ? prevOf(r) : r.data);
-const dmName = () => DM === 'previsao' ? 'previsão' : 'ocorrência';
-function paintDM(){
-  document.querySelectorAll('#dmode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dm===DM)));
-  $('#chT1').textContent = MODCFG[MOD].c1 + (DM==='previsao' ? ' (por previsão)' : '');
+const dmDate = (r, f) => parseBR(f === 'previsao' ? prevOf(r) : r.data);
+const dateOf = r => dmDate(r, DM);
+const dmName = () => DMF.length === 2 ? 'ocorrência e previsão' : DM === 'previsao' ? 'previsão' : 'ocorrência';
+const dmBy = () => DMF.length === 2 ? ' (ocorrência ou previsão)' : DM === 'previsao' ? ' (previsão)' : '';
+const chSfx = () => DMF.length === 2 ? ' (ocorrência/previsão)' : DM === 'previsao' ? ' (por previsão)' : '';
+function setDM(arr){ DMF = ['data','previsao'].filter(f => arr.includes(f)); if (!DMF.length) DMF = ['data']; DM = DMF.includes('data') ? 'data' : 'previsao'; }
+function refDate(r){   // com as duas datas marcadas e um intervalo definido, usa a data que de fato o coloca no período
+  if (DMF.length < 2 || (!RNG.fd && !RNG.td)) return dateOf(r);
+  for (const f of DMF) { const d = dmDate(r, f); if ((!RNG.fd || d >= RNG.fd) && (!RNG.td || d <= RNG.td)) return d; }
+  return dateOf(r);
 }
-$('#dmode').onclick = e => { const b = e.target.closest('[data-dm]'); if (!b || b.dataset.dm===DM) return;
-  DM = b.dataset.dm; localStorage.setItem('fp-dm', DM); if (sortKey==='data' || sortKey==='previsao') sortKey = DM; page = 1; paintDM(); render(); };
+const DM_ITEMS = [{ v:'data', t:'Ocorrência' }, { v:'previsao', t:'Previsão' }];
+MS.fDm = initMulti('#fDm', 'Todos', () => onDmChange());
+MS.fDm.setItems(DM_ITEMS);
+(() => { let sel = ['data']; try { const v = localStorage.getItem('fp-dm'); if (v === 'previsao' || v === 'data') sel = [v]; else { const a = JSON.parse(v); if (Array.isArray(a) && a.some(x => x==='data' || x==='previsao')) sel = a; } } catch {} setDM(sel); MS.fDm.setSel(DMF); })();
+sortKey = DM;
+function paintDM(){ $('#chT1').textContent = MODCFG[MOD].c1 + chSfx(); }
+function onDmChange(){
+  const sel = MS.fDm.all ? ['data','previsao'] : [...MS.fDm.sel];
+  if (!sel.length) { MS.fDm.setSel(['data']); sel.push('data'); }   // ao menos uma data precisa valer
+  setDM(sel); try { localStorage.setItem('fp-dm', JSON.stringify(DMF)); } catch {}
+  if (sortKey === 'data' || sortKey === 'previsao') sortKey = DM;
+  page = 1; paintDM(); render();
+}
 const natName = r => r.natureza || (r.tipoReceita ? 'Receita' : 'Despesa');
 // Em investimentos: R = aporte (entrada), Y = rendimento (entrada), D = resgate/taxa (saída). No fluxo de caixa só R e D.
 const bucket = r => natOf(r)==='D' ? 'D' : (MOD==='I' && natName(r)==='Rendimento' ? 'Y' : 'R');
@@ -855,8 +875,8 @@ function paintMod(){
   const c = MODCFG[MOD];
   document.documentElement.dataset.mod = MOD;
   document.querySelector('meta[name="theme-color"]').content = c.theme;
-  $('#dTitle').textContent = c.title; $('#chT1').textContent = c.c1 + (DM==='previsao' ? ' (por previsão)' : ''); $('#chT2').textContent = c.c2;
-  paintDM(); $('#quick [data-q=open]').classList.toggle('hidden', MOD==='I'); $('#thSt').classList.toggle('hidden', MOD==='I');
+  $('#dTitle').textContent = c.title; $('#chT1').textContent = c.c1 + chSfx(); $('#chT2').textContent = c.c2;
+  paintDM(); $('#quick [data-q=open]').classList.toggle('hidden', MOD==='I'); $('#thSt').classList.toggle('hidden', MOD==='I'); $('#stField').classList.toggle('hidden', MOD==='I'); if (MOD==='I') $('#fSt').value = 'all';
   $('#lblFPay').textContent = MOD==='I' ? 'Aporte / saque' : 'Forma pagto'; $('#thPay').textContent = payLbl() + ' ↕';
   $('#lblIPay').textContent = MOD==='I' ? 'Forma de aporte ou saque' : 'Forma de pagto./receb.';
   document.querySelectorAll('.modtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.m===MOD)));
@@ -867,7 +887,7 @@ function tabStats(){
     const el = document.querySelector(`.modtab[data-m="${m}"] small`); if (el) el.textContent = `${m==='F'?'Saldo geral':'Patrimônio'} ${brl(v)}`;
   });
 }
-function resetFilters(){ ['#fText','#fFrom','#fTo'].forEach(s=>$(s).value=''); MS.fNat.clear(); MS.fCls.clear(); MS.fPay.clear(); MS.fCat.clear(); openOnly = false; setChip('all'); page=1; }
+function resetFilters(){ ['#fText','#fFrom','#fTo'].forEach(s=>$(s).value=''); MS.fNat.clear(); MS.fCls.clear(); MS.fPay.clear(); MS.fCat.clear(); $('#fSt').value = 'all'; setChip('all'); page=1; }
 function setMod(m, force){
   if (m===MOD && !force) return;
   MOD = m; localStorage.setItem('fp-mod', m); resetFilters(); paintMod(); fillLists(); render();
@@ -1083,34 +1103,38 @@ $('#cadBody').onclick = async e => {
 };
 
 /* ===================== FILTROS ===================== */
-let openOnly = false;
+const stMatch = r => isDesp(r) && ($('#fSt').value==='quit' ? isPaid(r) : $('#fSt').value==='open' ? !isPaid(r) : stTxt(r)==='Vencido');
 function filtered(mode){   // mode='before' => lançamentos anteriores à data inicial (para o saldo inicial)
   const q = $('#fText').value.trim().toLowerCase(), from = $('#fFrom').value, to = $('#fTo').value;
   const nSel = MS.fNat, cSel = MS.fCls, pSel = MS.fPay, kSel = MS.fCat;
   const fd = from ? new Date(from+'T00:00') : null, td = to ? new Date(to+'T23:59') : null;
+  RNG = { fd, td };
+  const stOn = MOD==='F' && $('#fSt').value !== 'all';
   return data().filter(r => {
-    const d = dateOf(r);
-    if (mode==='before'){ if (!fd || d >= fd) return false; } else { if (fd && d < fd) return false; if (td && d > td) return false; }
-    if (openOnly && mode!=='before' && !(isDesp(r) && !isPaid(r))) return false;
+    const ds = DMF.map(f => dmDate(r, f));
+    if (mode==='before'){ if (!fd || Math.max(...ds) >= fd) return false; }   // todas as datas marcadas antes de "De"
+    else if (!ds.some(d => (!fd || d >= fd) && (!td || d <= td))) return false;   // qualquer data marcada dentro de De/Até
+    if (stOn && mode!=='before' && !stMatch(r)) return false;
     if (!nSel.pass(natName(r))) return false; if (!cSel.pass(clsOf(r))) return false;
     if (!pSel.pass(r.formaPagto)) return false;
     if (!kSel.pass(r.categoria || NO_CAT)) return false;
-    if (q && !`${r.descricao} ${r.categoria||''} ${r.formaPagto} ${natName(r)} ${clsOf(r)} ${r.valor}`.toLowerCase().includes(q)) return false;
+    if (q && !`${r.descricao} ${r.categoria||''} ${r.formaPagto} ${natName(r)} ${clsOf(r)} ${r.valor} ${stTxt(r)}`.toLowerCase().includes(q)) return false;
     return true;
   });
 }
 ['#fText','#fFrom','#fTo'].forEach(s=>$(s).addEventListener('input',()=>{ page=1; render(); }));
 $('#clearBtn').onclick = () => { resetFilters(); render(); };
+$('#fSt').addEventListener('change', () => { page = 1; render(); });
 function setChip(q){ document.querySelectorAll('#quick .chip').forEach(c=>c.classList.toggle('on',c.dataset.q===q)); }
 $('#quick').onclick = e => {
-  const q = e.target.dataset.q; if (!q) return; setChip(q); openOnly = q==='open';
+  const q = e.target.dataset.q; if (!q) return; setChip(q);
   const t = new Date(), y=t.getFullYear(), m=t.getMonth(); let a='', b='';
   if (q==='month'){ a=new Date(y,m,1); b=new Date(y,m+1,0); }
   if (q==='prev'){ a=new Date(y,m-1,1); b=new Date(y,m,0); }
   if (q==='90'){ a=new Date(t-90*864e5); b=t; }
   if (q==='year'){ a=new Date(y,0,1); b=new Date(y,11,31); }
   if (q==='future'){ a=new Date(t.getTime()+864e5); b=''; }
-  if (q==='open'){ a=''; b=''; }
+  if (q==='open'){ a=''; b=''; $('#fSt').value = 'open'; }   // atalho: todas as despesas em aberto, sem limite de datas
   const f = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : '';
   $('#fFrom').value=f(a); $('#fTo').value=f(b); page=1; render();
 };
@@ -1120,14 +1144,14 @@ function totals(list){ const sm = a => a.reduce((s,r)=>s+ +r.valor,0), D = list.
 function balances(list, t){
   // Saldo inicial = acumulado antes da data "De" (mesmos demais filtros); sem "De", parte de zero. Final = inicial + período.
   const fromISO = $('#fFrom').value, open = fromISO ? totals(filtered('before')).bal : 0;
-  const last = list.reduce((m,r)=>{ const d=dateOf(r); return !m||d>m?d:m; }, null);
+  const last = list.reduce((m,r)=>{ const d=refDate(r); return !m||d>m?d:m; }, null);
   return { fromISO, open, close: open + t.bal, last };
 }
 const fmtPct = v => v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '%';
 // Indicadores de cada painel. sg = colore pelo sinal; cls = inc/exp; bar = barra proporcional.
 function metrics(list){
   const t = totals(list), b = balances(list, t);
-  const by = DM==='previsao' ? ' (previsão)' : '';
+  const by = dmBy();
   const openHint = b.fromISO ? `Acumulado antes de ${isoToBR(b.fromISO)}${by}` : 'Sem data inicial: parte de zero';
   const closeHint = b.last ? `Posição em ${toBR(b.last)}${by}` : 'Sem lançamentos no período';
   const cnt = { l:'Lançamentos', v:list.length, count:true, hint:`de ${data().length} no total` };
@@ -1187,7 +1211,7 @@ $('#pgPrev').onclick=()=>{page--;render();}; $('#pgNext').onclick=()=>{page++;re
 
 function monthAgg(list){
   const mo = {};
-  list.forEach(r=>{ if (!isPaid(r)) return; const d=dateOf(r), k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; (mo[k] ??= {R:0,Y:0,D:0})[bucket(r)] += +r.valor; });
+  list.forEach(r=>{ if (!isPaid(r)) return; const d=refDate(r), k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; (mo[k] ??= {R:0,Y:0,D:0})[bucket(r)] += +r.valor; });
   return mo;
 }
 const PALETTE = ['#0f5c56','#e8a33d','#d6493f','#2bb3a3','#6b7fd7','#8c6d4f','#c45ab3','#7aa33a','#3d8bd9','#b5651d','#5e548e','#2a9d8f'];
@@ -1466,7 +1490,7 @@ $('#tbody').onclick = e => {
 };
 
 /* ===================== EXPORT PDF ===================== */
-function filterDesc(){ const p=['Período por '+dmName()]; if($('#fFrom').value)p.push('De '+isoToBR($('#fFrom').value)); if($('#fTo').value)p.push('Até '+isoToBR($('#fTo').value));
+function filterDesc(){ const p=['Período por '+dmName()]; if(MOD==='F' && $('#fSt').value!=='all') p.push('Situação: '+{quit:'Quitadas',open:'Em aberto',over:'Vencidas'}[$('#fSt').value]); if($('#fFrom').value)p.push('De '+isoToBR($('#fFrom').value)); if($('#fTo').value)p.push('Até '+isoToBR($('#fTo').value));
   if(!MS.fNat.all)p.push('Natureza: '+(MS.fNat.labels().join(', ')||'nenhuma')); if(!MS.fCls.all)p.push('Classificação: '+(MS.fCls.labels().join(', ')||'nenhuma')); if(!MS.fCat.all)p.push('Categoria: '+(MS.fCat.labels().join(', ')||'nenhuma')); if(!MS.fPay.all)p.push(payLbl()+': '+(MS.fPay.labels().join(', ')||'nenhuma')); if($('#fText').value)p.push(`"${$('#fText').value}"`);
   return p.length?p.join(' · '):'Todos os lançamentos'; }
 function buildPDF(){
