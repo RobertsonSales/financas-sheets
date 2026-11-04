@@ -431,6 +431,23 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
   </div>
 </div>
 
+<!-- TRANSFERIR RECEITA PARA INVESTIMENTOS -->
+<div class="modal hidden" id="xferModal">
+  <form class="card" id="xferForm" style="width:min(600px,100%)">
+    <h3 id="xTitle">Transferir para Investimentos</h3>
+    <p id="xInfo" style="line-height:1.5"></p>
+    <div class="form-grid" style="margin-top:12px">
+      <div class="full" id="xNatWrap"><label style="display:block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Natureza em Investimentos</label><div class="seg" id="xNat" role="group" aria-label="Natureza em Investimentos"></div></div>
+      <div class="field"><label for="xCls">Classificação</label><select id="xCls" required></select></div>
+      <div class="field"><label for="xCat">Categoria</label><select id="xCat" required></select></div>
+      <div class="field full"><label for="xPay">Forma de aporte</label><select id="xPay" required></select></div>
+      <div class="field full hidden" id="xScope"><label for="xAll" style="display:flex;gap:10px;align-items:center;cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;font-size:.92rem"><input type="checkbox" id="xAll" style="width:20px;height:20px;accent-color:var(--primary)"><span id="xAllTxt"></span></label></div>
+    </div>
+    <div class="hint" id="xEffect" style="margin-top:10px;line-height:1.5"></div>
+    <div class="modal-foot"><button type="button" class="btn" data-close>Cancelar</button><button class="btn btn-primary" type="submit">Transferir</button></div>
+  </form>
+</div>
+
 <!-- EXCLUIR PARCELA -->
 <div class="modal hidden" id="delModal">
   <div class="card" style="width:min(680px,100%)">
@@ -1203,7 +1220,7 @@ function render(){
     <td>${esc(r.data)}</td><td class="${prevOf(r)!==r.data?'diff':''}"${prevOf(r)!==r.data?' title="Previsão diferente da ocorrência"':''}>${esc(prevOf(r))}</td><td>${esc(r.descricao)}</td><td>${esc(r.categoria||'—')}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${esc(natName(r))}</span></td>
     <td class="num" style="color:var(--${n==='R'?'income':'expense'})">${n==='R'?'':'− '}${brl(+r.valor)}</td>
     <td>${esc(clsOf(r))}</td><td>${esc(r.parcelas)}</td><td>${esc(r.formaPagto)}</td>${MOD==='F' ? `<td>${stCell(r)}</td>` : ''}
-    <td style="white-space:nowrap">${isLocked(r) ? `<button class="btn btn-sm lockbtn" data-e="${esc(r.id)}" title="Parcela seguinte: só muda pela 1ª parcela">🔒</button>` : `<button class="btn btn-sm" data-e="${esc(r.id)}" title="Editar">✏️</button>`} <button class="btn btn-sm btn-danger" data-d="${esc(r.id)}" title="Excluir">🗑</button></td></tr>`; }).join('')
+    <td style="white-space:nowrap">${xferBtn(r)}${isLocked(r) ? `<button class="btn btn-sm lockbtn" data-e="${esc(r.id)}" title="Parcela seguinte: só muda pela 1ª parcela">🔒</button>` : `<button class="btn btn-sm" data-e="${esc(r.id)}" title="Editar">✏️</button>`} <button class="btn btn-sm btn-danger" data-d="${esc(r.id)}" title="Excluir">🗑</button></td></tr>`; }).join('')
     : `<tr><td colspan="${MOD==='F' ? 11 : 10}" class="empty">Nenhum lançamento encontrado para os filtros atuais.</td></tr>`;
   $('#pgInfo').textContent = `Página ${page} de ${pages} · ${list.length} registros`;
   $('#pgPrev').disabled = page<=1; $('#pgNext').disabled = page>=pages;
@@ -1430,8 +1447,8 @@ function planReorder(g, delId){
     return { old:x, row, changed: row.data!==x.data || row.previsao!==prevOf(x) || row.descricao!==x.descricao }; });
 }
 async function updateMany(list){
-  try { await api('POST', { action:'update_many', rows:list }); }
-  catch (e) { if (!/desconhecida/i.test(e.message)) throw e; for (const row of list) await api('POST', { action:'update', row }); }   // backend antigo
+  try { const j = await api('POST', { action:'update_many', rows:list }); return j && typeof j.updated === 'number' ? j.updated : list.length; }
+  catch (e) { if (!/desconhecida/i.test(e.message)) throw e; for (const row of list) await api('POST', { action:'update', row }); return list.length; }   // backend antigo
 }
 async function runDelete(ids, updates, msg){
   $('#delModal').classList.add('hidden'); loading(true); let warn = '';
@@ -1445,6 +1462,75 @@ async function toggleQuit(r){
   try { await api('POST', { action:'update', row:{ ...r, quitado:novo } }); loading(false); toast(novo==='Sim' ? `“${r.descricao}” marcada como quitada.` : `“${r.descricao}” marcada como em aberto.`); await load(); }
   catch (err) { loading(false); toast('Erro: ' + err.message); }
 }
+/* ---- Transferência entre painéis (ida e volta) ----
+   IDA   (Fluxo de caixa → Investimentos): receita vira Aplicação ou Rendimento (entradas); sai do caixa e entra no patrimônio investido.
+   VOLTA (Investimentos → Fluxo de caixa): Aplicação ou Rendimento vira Receita; sai do patrimônio investido e entra no caixa.
+   O lançamento mantém o mesmo ID, a data, a previsão, o valor e a descrição; muda de módulo e ganha natureza, classificação, categoria e forma
+   do painel de destino. Em ambos os sentidos o patrimônio líquido total não muda. Resgate e Taxas e IR (saídas) não são transferíveis. */
+const isReceitaF = r => r.modulo==='F' && natOf(r)==='R';
+const isEntradaI = r => r.modulo==='I' && natOf(r)==='R';   // Aplicação e Rendimento
+const xferBtn = r => isReceitaF(r) ? `<button class="btn btn-sm" data-xf="${esc(r.id)}" title="Transferir para Investimentos" aria-label="Transferir ${esc(r.descricao)} para Investimentos">⇄</button> `
+  : isEntradaI(r) ? `<button class="btn btn-sm" data-xf="${esc(r.id)}" title="Transferir para Fluxo de caixa (como receita)" aria-label="Transferir ${esc(r.descricao)} para o Fluxo de caixa">⇄</button> ` : '';
+const X_NATS = ['Aplicação', 'Rendimento'], X_YIELD = /rendiment|dividend|juros|cupom|provent|jcp/i;
+let xRow = null, xList = [], xNat = 'Aplicação', xDir = 'toI';
+function xSeg(){ $('#xNat').innerHTML = X_NATS.map(n => `<button type="button" class="inc${n===xNat?' on':''}" data-xn="${n}" aria-pressed="${n===xNat}">${n}</button>`).join(''); }
+function xFill(fresh){
+  const keep = fresh ? {} : { cls:$('#xCls').value, cat:$('#xCat').value }, ok = (l, v) => v && l.includes(v) ? v : '';
+  if (xDir === 'toI') {
+    const cl = classesFor('I', xNat), ct = catsFor('I', xNat), py = paysFor('I', xNat);
+    fillSel('#xCls', cl, ok(cl, keep.cls), 'Selecione...', true);
+    fillSel('#xCat', ct, ok(ct, keep.cat || (fresh ? xRow.categoria : '')), 'Selecione...', true);
+    fillSel('#xPay', py, ok(py, xRow.formaPagto) || py[0] || '', 'Selecione...', !py.length);
+    $('label[for=xPay]').textContent = xNat==='Rendimento' ? 'Forma de recebimento do rendimento' : 'Forma de aporte';
+  } else {
+    const cl = classesFor('F', 'Receita'), ct = catsFor('F', 'Receita'), py = paysFor('F', 'Receita'), y = natName(xRow)==='Rendimento';
+    fillSel('#xCls', cl, ok(cl, keep.cls) || (fresh && y ? ok(cl, 'Extra') : ''), 'Selecione...', true);
+    fillSel('#xCat', ct, ok(ct, keep.cat) || (fresh && y ? ok(ct, 'Rendimentos de Investimentos') : ''), 'Selecione...', true);
+    fillSel('#xPay', py, ok(py, xRow.formaPagto) || py[0] || '', 'Selecione...', !py.length);
+    $('label[for=xPay]').textContent = 'Forma de recebimento';
+  }
+}
+function xEffect(){
+  const t = $('#xAll').checked ? xList : [xRow], tot = t.reduce((s,r) => s + +r.valor, 0), pl = t.length > 1, v = pl ? 'm' : '';
+  const qt = pl ? `${t.length} lançamentos, somando <b>${brl(tot)}</b>,` : `o lançamento de <b>${brl(tot)}</b>`;
+  const fut = t.filter(r => parseBR(r.data) > todayD()).length, nl = fut ? '' : ' O patrimônio líquido total não muda.';
+  $('#xEffect').innerHTML = (xDir === 'toI'
+    ? `Efeito: ${qt} deixa${v} de compor o caixa do Fluxo de caixa (Receitas e Saldo diminuem) e passa${v} a compor o patrimônio investido como <b>${xNat}</b>.${nl}`
+    : `Efeito: ${qt} deixa${v} de compor o patrimônio investido e passa${v} a compor o caixa do Fluxo de caixa como <b>Receita</b> (Receitas e Saldo aumentam).${nl}`)
+    + (fut ? `<br><b>Atenção:</b> ${fut > 1 ? `${fut} lançamentos têm` : '1 lançamento tem'} ocorrência futura. Em Investimentos, valores futuros são aportes programados (ficam fora do patrimônio atual); no Fluxo de caixa, são valores a receber (entram nos ativos). Por isso o patrimônio líquido da Conciliação pode variar até a data chegar.` : '');
+  const serie = t.some(r => parcelaInfo(r));
+  $('#xEffect').innerHTML += serie ? '<br><b>Atenção:</b> há parcela(s) de uma série de aportes; só os lançamentos escolhidos são transferidos, e o restante da série permanece em Investimentos.' : '';
+}
+function openXfer(r){
+  const dir = isReceitaF(r || {}) ? 'toI' : isEntradaI(r || {}) ? 'toF' : ''; if (!dir) return;
+  xRow = r; xDir = dir; const ok = dir === 'toI' ? isReceitaF : isEntradaI, dest = dir === 'toI' ? 'Investimentos' : 'Fluxo de caixa';
+  xList = sorted(filtered()).filter(ok); if (!xList.some(x => x.id === r.id)) xList.unshift(r);
+  const others = xList.length - 1;
+  xNat = dir === 'toI' ? (X_YIELD.test(`${r.categoria || ''} ${r.descricao || ''}`) ? 'Rendimento' : 'Aplicação') : natName(r);   // sugestão; o operador decide
+  $('#xTitle').textContent = `Transferir para ${dest}`;
+  $('#xNatWrap').classList.toggle('hidden', dir === 'toF');
+  $('#xInfo').innerHTML = `<b>${esc(r.descricao)}</b><br>${brl(+r.valor)} · ocorrência ${esc(r.data)} · ${dir === 'toF' ? esc(natName(r)) + ' · ' : ''}${esc(r.categoria || 'sem categoria')}`;
+  $('#xAll').checked = false; $('#xScope').classList.toggle('hidden', !others);
+  const nm = xList.filter(x => x.id !== r.id).slice(0,3).map(x => x.descricao).join(', ') + (others > 3 ? '…' : '');
+  $('#xAllTxt').textContent = `Transferir também ${others === 1 ? 'o outro lançamento' : `os outros ${others} lançamentos`} da lista filtrada (${nm}), com a mesma classificação`;
+  xSeg(); xFill(true); xEffect(); $('#xferModal').classList.remove('hidden');
+}
+$('#xNat').onclick = e => { const b = e.target.closest('[data-xn]'); if (!b) return; xNat = b.dataset.xn; xSeg(); xFill(false); xEffect(); };
+$('#xAll').addEventListener('change', xEffect);
+$('#xferForm').onsubmit = async e => {
+  e.preventDefault(); const cls = $('#xCls').value, cat = $('#xCat').value, pay = $('#xPay').value, toI = xDir === 'toI', dest = toI ? 'Investimentos' : 'Fluxo de caixa';
+  if (!cls || !cat || !pay) return toast('Escolha a classificação, a categoria e a forma.');
+  const alvo = $('#xAll').checked ? xList : [xRow], nat = toI ? xNat : 'Receita';
+  if (alvo.length > 1 && !confirm(`Transferir ${alvo.length} lançamentos, somando ${brl(alvo.reduce((t,r) => t + +r.valor, 0))}, para ${dest} como ${nat}?\n\nConfira a lista: todos passam a ter a mesma classificação, categoria e forma.`)) return;
+  const upd = alvo.map(r => ({ ...r, modulo: toI ? 'I' : 'F', natureza:nat, tipoReceita:cls, tipoDespesa:'', categoria:cat, formaPagto:pay, quitado:'', parcelas:'', diaVenc:'' }));
+  loading(true);
+  try {
+    const n = await updateMany(upd); $('#xferModal').classList.add('hidden'); loading(false);
+    toast(n < upd.length ? `Atenção: ${n} de ${upd.length} lançamentos foram transferidos. Atualize e confira.` : `${n} lançamento(s) transferido(s) para ${dest} (${nat}).`);
+    await load();
+  } catch (err) { loading(false); toast('Erro: ' + err.message); }
+};
+
 let delCtx = null;
 const dlFoot = html => { $('#dlFoot').innerHTML = html; };
 function openDel(r){
@@ -1487,6 +1573,7 @@ $('#delModal').addEventListener('click', e => {
 $('#tbody').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.tg) return toggleQuit(rows.find(r=>r.id===b.dataset.tg));
+  if (b.dataset.xf) return openXfer(rows.find(r=>r.id===b.dataset.xf));
   if (b.dataset.e) return tryEdit(rows.find(r=>r.id===b.dataset.e));
   const r = rows.find(x=>x.id===b.dataset.d); if (r) openDel(r);
 };
