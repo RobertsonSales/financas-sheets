@@ -139,6 +139,7 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
     <div class="card"><h4>⚙️ Cadastros em lista</h4><p>Os tipos ficam em listas expansíveis, com lixeira só para itens sem nenhum lançamento vinculado. <a href="#cadastros">Ver regras</a></p></div>
     <div class="card"><h4>🔢 Parcelas ajustáveis</h4><p>Na 1ª parcela você aumenta ou reduz a quantidade com os botões <b>−</b> e <b>＋</b>, e o app cria ou remove as parcelas finais. <a href="#parcelas">Detalhes</a></p></div>
     <div class="card"><h4>📅 Previsão manda no vencimento</h4><p>A data escolhida na Previsão é respeitada e vira o dia de vencimento da série; só é ajustada para dia útil ao confirmar.</p></div>
+    <div class="card"><h4>⇄ Transferir entre painéis</h4><p>Uma receita pode virar Aplicação ou Rendimento em Investimentos, e uma Aplicação ou Rendimento pode voltar a ser receita no Fluxo de caixa. <a href="#transferir">Ver como fazer</a></p></div>
     <div class="card"><h4>🔎 Filtros por data e situação</h4><p><b>Período por</b> agora é uma lista de marcação: escolha Ocorrência, Previsão ou todos os eventos. E o novo filtro <b>Situação</b> separa despesas quitadas, em aberto e vencidas. <a href="#filtros-data">Ver como usar</a></p></div>
     <div class="card"><h4>📄 PDF mais limpo</h4><p>O resumo do relatório aparece só no fim da tabela, e há uma coluna Situação nos relatórios e no Excel.</p></div>
   </div>
@@ -389,6 +390,32 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
     <li>A <b>Rentabilidade</b> é calculada sobre o patrimônio inicial mais os aportes.</li>
     <li>Não existe o status Quitado nesse painel: o lançamento vale pela Ocorrência.</li>
   </ul>
+  <h3 id="transferir">Transferir entre Fluxo de caixa e Investimentos <span class="badge-new">novo</span></h3>
+  <p>O botão <span class="k">⇄</span> move um lançamento de um painel para o outro, e ele passa a ser tratado conforme o painel de destino. Serve para corrigir um lançamento no painel errado, nos dois sentidos.</p>
+  <h3>Receita → Investimentos</h3>
+  <p>Quando um valor foi lançado como receita comum, mas na verdade é um investimento (um dividendo, um juro, um valor aplicado direto).</p>
+  <ol>
+    <li>No painel <b>Fluxo de caixa</b>, localize a receita e toque no botão <span class="k">⇄</span> da linha. O botão só existe em receitas.</li>
+    <li>Escolha a natureza em Investimentos: <b>Aplicação</b> (valor aplicado) ou <b>Rendimento</b> (juros, dividendos). O app sugere Rendimento quando a categoria ou a descrição lembra rendimentos, mas a escolha é sua.</li>
+    <li>Informe a <b>classificação</b> (Renda Fixa, Renda Variável…), a <b>categoria</b> do investimento e a <b>forma</b>. A classificação e a categoria precisam ser escolhidas, porque as listas de Investimentos são diferentes das de receitas.</li>
+    <li>Toque em <span class="k">Transferir</span>. O lançamento sai do Fluxo de caixa e aparece no painel Investimentos.</li>
+  </ol>
+  <h3>Investimentos → Fluxo de caixa (volta)</h3>
+  <p>Quando uma Aplicação ou um Rendimento foi lançado em Investimentos por engano, ou o valor foi retirado e ficou disponível em caixa.</p>
+  <ol>
+    <li>No painel <b>Investimentos</b>, toque no botão <span class="k">⇄</span> da linha. Ele só aparece em <b>Aplicação</b> e <b>Rendimento</b>; Resgate e Taxas e IR não são transferíveis.</li>
+    <li>Escolha a classificação (<i>Fixa</i> ou <i>Extra</i>), a categoria da receita e a forma de recebimento. Em rendimentos, o app sugere <i>Extra</i> e <i>Rendimentos de Investimentos</i>.</li>
+    <li>Toque em <span class="k">Transferir</span>. O lançamento sai de Investimentos e entra no Fluxo de caixa como <b>Receita</b>, somando ao caixa.</li>
+  </ol>
+  <p>Se o lançamento for uma parcela de uma série de aportes mensais, o app avisa: só o lançamento escolhido é transferido, e o resto da série continua em Investimentos.</p>
+  <div class="tw"><table>
+    <tr><th>O que muda</th><th>O que permanece</th></tr>
+    <tr><td>Painel de destino, natureza, classificação, categoria e forma.</td><td>Valor, descrição, data de ocorrência e previsão.</td></tr>
+  </table></div>
+  <div class="note"><b>Efeito nos saldos</b>Na ida, a receita deixa de compor o caixa (Receitas e Saldo diminuem) e passa a compor o patrimônio investido; na volta, acontece o contrário. O <b>patrimônio líquido total não muda</b>, e a Conciliação mostra a mudança de lugar.</div>
+  <div class="note warn"><b>Datas futuras</b>Um valor com ocorrência futura é, em Investimentos, um aporte programado (fora do patrimônio atual) e, no Fluxo de caixa, um valor a receber (conta como ativo). Ao transferir itens futuros, o patrimônio líquido da Conciliação pode variar até a data chegar, e o modal avisa.</div>
+  <p><b>Várias de uma vez:</b> filtre a lista (por categoria, por exemplo), abra o <span class="k">⇄</span> de uma delas e marque <i>Transferir também as outras receitas da lista filtrada</i>. Todas recebem a mesma natureza, classificação, categoria e forma, e o app pede uma confirmação antes.</p>
+  <div class="note warn"><b>O que pode ser transferido</b>Receitas do Fluxo de caixa e, em Investimentos, Aplicação e Rendimento. Despesas, Resgates e Taxas e IR não têm o botão. Se transferir por engano, use o botão <span class="k">⇄</span> do destino para desfazer.</div>
 </section>
 
 <section id="faq">
@@ -402,6 +429,8 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
   <details><summary>Não consigo alterar uma parcela do meio da série.</summary><p>É proposital: só a 1ª parcela é editável, e as demais acompanham. O que você pode fazer em cada parcela é alternar a situação (Quitado/Em aberto) pelo selo. Para mudar valor, datas ou quantidade, edite a 1ª.</p></details>
   <details><summary>A lixeira de um item está desativada, mas eu não uso mais esse item.</summary><p>Algum lançamento (seu ou de outro usuário) ainda está vinculado a ele. Altere ou exclua esses lançamentos e tente de novo.</p></details>
   <details><summary>O saldo da Conciliação difere do saldo do painel.</summary><p>A Conciliação considera todos os lançamentos, sem filtros, e inclui as contas a pagar e a receber. O painel segue o período e os filtros escolhidos.</p></details>
+  <details><summary>Transferi uma receita para Investimentos e o saldo do caixa caiu. Está certo?</summary><p>Sim. O valor deixou de ser dinheiro disponível e virou patrimônio investido. O patrimônio líquido total, na Conciliação, continua o mesmo (exceto para valores com data futura, que o modal avisa).</p></details>
+  <details><summary>Transferi por engano. Como desfaço?</summary><p>Vá ao painel de destino, localize o lançamento e toque em <span class="k">⇄</span> para devolvê-lo. Será preciso escolher de novo a classificação e a categoria do painel de origem.</p></details>
   <details><summary>Meus dados de Investimentos não aparecem no caixa.</summary><p>Os painéis são independentes. Registre também a saída ou a entrada no Fluxo de caixa quando quiser que o caixa reflita o aporte ou o resgate.</p></details>
 </section>
 
