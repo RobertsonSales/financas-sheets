@@ -431,6 +431,20 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
   </div>
 </div>
 
+<!-- CONTINUAR INCLUINDO? -->
+<div class="modal hidden" id="moreModal" role="dialog" aria-modal="true" aria-labelledby="moreTitle">
+  <div class="card" style="width:min(520px,100%);text-align:center">
+    <div style="font-size:2.2rem;line-height:1">✅</div>
+    <h3 id="moreTitle" style="margin:6px 0 4px">Lançamento salvo</h3>
+    <p id="moreMsg" style="color:var(--muted);margin:0 0 6px"></p>
+    <p style="margin:0 0 14px;font-weight:700">Deseja continuar incluindo?</p>
+    <div class="modal-foot" style="justify-content:center;flex-wrap:wrap">
+      <button type="button" class="btn" id="moreNo">Não, voltar ao painel</button>
+      <button type="button" class="btn btn-primary" id="moreYes">Sim, incluir outro</button>
+    </div>
+  </div>
+</div>
+
 <!-- TRANSFERIR RECEITA PARA INVESTIMENTOS -->
 <div class="modal hidden" id="xferModal">
   <form class="card" id="xferForm" style="width:min(600px,100%)">
@@ -1384,6 +1398,24 @@ document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.m
 document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.add('hidden'); }));
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal').forEach(m=>m.classList.add('hidden')); });
 
+/* Após gravar uma inclusão, pergunta se o operador quer continuar incluindo. Sim = mantém o formulário aberto para o próximo lançamento
+   (natureza, classificação, categoria, forma e datas são mantidas; valor e descrição são limpos). Não, Esc ou clique fora = fecha e volta ao painel. */
+function askMore(n){
+  return new Promise(res => {
+    const m = $('#moreModal'); let done = false, obs = null;
+    const fin = v => { if (done) return; done = true; obs && obs.disconnect(); m.classList.add('hidden'); res(v); };
+    $('#moreMsg').textContent = n > 1 ? `${n} parcelas registradas.` : 'O lançamento foi registrado.';
+    $('#moreYes').onclick = () => fin(true); $('#moreNo').onclick = () => fin(false);
+    obs = new MutationObserver(() => { if (m.classList.contains('hidden')) fin(false); }); obs.observe(m, { attributes:true, attributeFilter:['class'] });
+    m.classList.remove('hidden'); $('#moreYes').focus();
+  });
+}
+function nextEntry(){
+  $('#iValor').value = ''; $('#iDesc').value = ''; $('#iParc').value = 1; $('#iDia').value = '';
+  diaTouched = false; prevNom = null; seqPainted = ''; quitTouched = false;
+  $('#iQuit').checked = !!$('#iPrev').value && $('#iPrev').value <= isoDate(new Date());
+  updParc(); $('#iDesc').focus();
+}
 $('#form').onsubmit = async e => {
   e.preventDefault();
   const valor = getValor(), desc = $('#iDesc').value.trim(), pay = $('#iPay').value, cat = $('#iCat').value, cls = $('#iCls').value;
@@ -1415,6 +1447,7 @@ $('#form').onsubmit = async e => {
       if (!first && isPaid(x)) return { ...x, quitado:'Sim', descricao:`${desc} (${j}/${N})`, parcelas:N };   // já quitada: preserva valor, datas e forma
       return { ...x, ...base, descricao:`${desc} (${j}/${N})`, parcelas:N, ...proj(j), diaVenc:D, quitado: first ? qv : 'Não' }; });
   }
+  let created = 0;   // quantos registros novos foram gravados (só inclusão pergunta se continua)
   loading(true);
   try {
     if (seqUps) {
@@ -1427,9 +1460,10 @@ $('#form').onsubmit = async e => {
     else {
       const d0 = new Date($('#iData').value+'T12:00'), p0 = new Date($('#iPrev').value+'T12:00');
       const list = par && n>1 ? Array.from({length:n},(_,i)=>({ ...base, quitado: !isD ? '' : i===0 ? qv : ((seq ? projPrev(prevNom, D, i) : addMonths(p0,i)) <= todayD() ? qv : 'Não'), data:toBR(addMonths(d0,i)), previsao:toBR(seq ? projPrev(prevNom, D, i) : addMonths(p0,i)), descricao:`${desc} (${i+1}/${n})` })) : [{ ...base, quitado:qv, data:toBR(d0), previsao:toBR(p0) }];
-      await api('POST', { action:'create', rows:list }); toast(list.length>1?`${list.length} parcelas registradas.`:'Lançamento registrado.');
+      await api('POST', { action:'create', rows:list }); created = list.length; toast(list.length>1?`${list.length} parcelas registradas.`:'Lançamento registrado.');
     }
-    $('#formModal').classList.add('hidden'); loading(false); await load();
+    loading(false); await load();
+    if (created && await askMore(created)) nextEntry(); else $('#formModal').classList.add('hidden');   // continua incluindo ou volta ao painel
   } catch (err) { loading(false); toast('Erro: '+err.message); }
 };
 /* ---- Exclusão (com opção de excluir só uma parcela e reordenar as demais) ---- */
