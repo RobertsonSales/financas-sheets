@@ -289,6 +289,7 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
 .stepper button:active:not(:disabled){transform:translateY(2px);box-shadow:none}
 .stepper button:focus-visible{outline:3px solid color-mix(in oklab,var(--primary) 55%,transparent);outline-offset:2px}
 .stepper button:disabled{opacity:.35;cursor:not-allowed;box-shadow:none;background:var(--border);border-color:var(--border);color:var(--muted)}
+#quickModal{z-index:70}   /* o cadastro rápido abre por cima do modal de transferência */
 </style>
 </head>
 <body>
@@ -457,10 +458,11 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
       <div class="field xpart hidden" id="xAmtWrap"><label for="xAmt">Valor a transferir (R$)</label><input id="xAmt" inputmode="numeric" placeholder="R$ 0,00" autocomplete="off"><div class="hint" id="xLeft"></div></div>
       <div class="field xpart hidden" id="xDtWrap"><label for="xDt">Data da transferência</label><input type="date" id="xDt"></div>
       <div class="field full xpart hidden" id="xDescWrap"><label for="xDesc">Descrição do novo lançamento</label><input id="xDesc" maxlength="120" autocomplete="off"></div>
-      <div class="field"><label for="xCls">Classificação</label><select id="xCls" required></select></div>
-      <div class="field"><label for="xCat">Categoria</label><select id="xCat" required></select></div>
-      <div class="field full"><label for="xPay">Forma de aporte</label><select id="xPay" required></select></div>
-      <div class="field full xpart hidden" id="xPay2Wrap"><label for="xPay2">Forma do resgate (saída de Investimentos)</label><select id="xPay2"></select></div>
+      <div class="field"><label for="xCls">Classificação</label><div class="fld-row"><select id="xCls" required></select><button type="button" class="btn" data-xadd="cls" title="Cadastrar nova classificação no painel de destino" aria-label="Cadastrar nova classificação">＋</button></div></div>
+      <div class="field"><label for="xCat">Categoria</label><div class="fld-row"><select id="xCat" required></select><button type="button" class="btn" data-xadd="cat" title="Cadastrar nova categoria no painel de destino" aria-label="Cadastrar nova categoria">＋</button></div></div>
+      <div class="field full"><label for="xPay">Forma de aporte</label><div class="fld-row"><select id="xPay" required></select><button type="button" class="btn" data-xadd="pay" title="Cadastrar nova forma no painel de destino" aria-label="Cadastrar nova forma">＋</button></div></div>
+      <div class="field full xpart hidden" id="xPay2Wrap"><label for="xPay2">Forma do resgate (saída de Investimentos)</label><div class="fld-row"><select id="xPay2"></select><button type="button" class="btn" data-xadd="pay2" title="Cadastrar nova forma de resgate em Investimentos" aria-label="Cadastrar nova forma de resgate">＋</button></div></div>
+      <div class="hint full" id="xAddHint" style="margin-top:-4px">Os itens novos (＋) ficam no cadastro do painel de destino.</div>
       <div class="field full hidden" id="xScope"><label for="xAll" style="display:flex;gap:10px;align-items:center;cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;font-size:.92rem"><input type="checkbox" id="xAll" style="width:20px;height:20px;accent-color:var(--primary)"><span id="xAllTxt"></span></label></div>
     </div>
     <div class="hint" id="xEffect" style="margin-top:10px;line-height:1.5"></div>
@@ -1040,27 +1042,29 @@ function fillLists(){   // filtros do painel (natureza, classificação, categor
 }
 
 /* ---- Cadastro rápido (botão ＋ no formulário e botão "Novo" em Cadastros) ---- */
-function openQuick(kind, from){
-  quickCtx = { kind, from };
-  $('#qTitle').textContent = `Nova ${kindLbl(kind).toLowerCase()} · ${MODCFG[MOD].tab}`;
+function openQuick(kind, from, mod, sel){   // mod: painel que receberá o item (padrão: o painel ativo); sel: select a atualizar depois
+  const m = mod || MOD; quickCtx = { kind, from, mod:m, sel };
+  $('#qTitle').textContent = `Nova ${kindLbl(kind).toLowerCase()} · ${MODCFG[m].tab}`;
   $('#qName').value = ''; $('#qErr').textContent = ''; $('#qSign').value = 'E';
   $('#qSignF').classList.toggle('hidden', kind!=='nat');
-  const sc = isScoped(MOD, kind);
+  const sc = isScoped(m, kind);
   $('#qScopeF').classList.toggle('hidden', !sc);
   if (sc) {
-    const nats = natsOf(MOD).map(x=>x.n);
+    const nats = natsOf(m).map(x=>x.n);
     $('#qScope').innerHTML = nats.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('') + '<option value="*">Todas as naturezas</option>';
-    $('#qScope').value = kind==='pay' ? (from==='form' && nats.includes(natSel) ? natSel : '*') : MOD==='I' ? '*' : (from==='form' && nats.includes(natSel) ? natSel : nats.includes(MODCFG[MOD].defNat) ? MODCFG[MOD].defNat : nats[0]);
+    $('#qScope').value = from==='xfer' ? (kind==='pay' || m==='I' ? '*' : nats.includes('Receita') ? 'Receita' : nats[0])
+      : kind==='pay' ? (from==='form' && nats.includes(natSel) ? natSel : '*') : m==='I' ? '*' : (from==='form' && nats.includes(natSel) ? natSel : nats.includes(MODCFG[m].defNat) ? MODCFG[m].defNat : nats[0]);
   }
   $('#quickModal').classList.remove('hidden'); setTimeout(()=>$('#qName').focus(), 30);
 }
 $('#quickForm').onsubmit = e => {
-  e.preventDefault(); const { kind, from } = quickCtx;
+  e.preventDefault(); const { kind, from, mod, sel } = quickCtx, m = mod || MOD;
   const o = { n:$('#qName').value, s:$('#qSign').value, nat:$('#qScope').value };
-  const err = addItem(MOD, kind, o);
+  const err = addItem(m, kind, o);
   if (err) { $('#qErr').textContent = err; return; }
   $('#quickModal').classList.add('hidden'); saveCfg(); fillLists();
-  if (from==='cad') renderCad();
+  if (from==='xfer') { xFill(false); const el = $(sel); if (el && [...el.options].some(op => op.value === o.n.trim())) el.value = o.n.trim(); else if (el) { const op = [...el.options].find(x => norm(x.value) === norm(o.n)); if (op) el.value = op.value; } xRender(); }
+  else if (from==='cad') renderCad();
   else if (kind==='nat') setNat(o.n);
   else setNat(natSel, { cls: kind==='cls' ? o.n : $('#iCls').value, cat: kind==='cat' ? o.n : $('#iCat').value, pay: kind==='pay' ? o.n : $('#iPay').value });
   toast(`${kindLbl(kind)} “${o.n}” cadastrada.`);
@@ -1551,19 +1555,19 @@ let xRow = null, xList = [], xNat = 'Aplicação', xDir = 'toI', xMode = 'all', 
 const xAmt = () => { const d = $('#xAmt').value.replace(/\D/g, ''); return d ? +d / 100 : 0; };
 function xSeg(){ $('#xNat').innerHTML = X_NATS.map(n => `<button type="button" class="inc${n===xNat?' on':''}" data-xn="${n}" aria-pressed="${n===xNat}">${n}</button>`).join(''); }
 function xFill(fresh){
-  const keep = fresh ? {} : { cls:$('#xCls').value, cat:$('#xCat').value }, ok = (l, v) => v && l.includes(v) ? v : '';
+  const keep = fresh ? {} : { cls:$('#xCls').value, cat:$('#xCat').value, pay:$('#xPay').value, pay2:$('#xPay2').value }, ok = (l, v) => v && l.includes(v) ? v : '';
   if (xDir === 'toI') {
     const cl = classesFor('I', xNat), ct = catsFor('I', xNat), py = paysFor('I', xNat);
     fillSel('#xCls', cl, ok(cl, keep.cls), 'Selecione...', true);
     fillSel('#xCat', ct, ok(ct, keep.cat || (fresh ? xRow.categoria : '')), 'Selecione...', true);
-    fillSel('#xPay', py, ok(py, xRow.formaPagto) || py[0] || '', 'Selecione...', !py.length);
+    fillSel('#xPay', py, ok(py, keep.pay) || ok(py, xRow.formaPagto) || py[0] || '', 'Selecione...', !py.length);
     $('label[for=xPay]').textContent = xNat==='Rendimento' ? 'Forma de recebimento do rendimento' : 'Forma de aporte';
   } else {
     const cl = classesFor('F', 'Receita'), ct = catsFor('F', 'Receita'), py = paysFor('F', 'Receita'), y = natName(xRow)==='Rendimento', py2 = paysFor('I', 'Resgate');
     fillSel('#xCls', cl, ok(cl, keep.cls) || (fresh && y ? ok(cl, 'Extra') : ''), 'Selecione...', true);
     fillSel('#xCat', ct, ok(ct, keep.cat) || (fresh && y ? ok(ct, 'Rendimentos de Investimentos') : ''), 'Selecione...', true);
-    fillSel('#xPay', py, ok(py, xRow.formaPagto) || py[0] || '', 'Selecione...', !py.length);
-    fillSel('#xPay2', py2, fresh ? (py2[0] || '') : $('#xPay2').value, 'Selecione...', !py2.length);
+    fillSel('#xPay', py, ok(py, keep.pay) || ok(py, xRow.formaPagto) || py[0] || '', 'Selecione...', !py.length);
+    fillSel('#xPay2', py2, ok(py2, keep.pay2) || py2[0] || '', 'Selecione...', !py2.length);
     $('label[for=xPay]').textContent = 'Forma de recebimento no Fluxo de caixa';
   }
 }
@@ -1618,6 +1622,11 @@ function openXfer(r){
 }
 $('#xNat').onclick = e => { const b = e.target.closest('[data-xn]'); if (!b) return; xNat = b.dataset.xn; xSeg(); xFill(false); xEffect(); };
 $('#xMode').onclick = e => { const b = e.target.closest('[data-xm]'); if (!b || b.disabled) return; xMode = b.dataset.xm; xRender(); if (xMode === 'part') $('#xAmt').focus(); };
+$('#xferForm').addEventListener('click', e => {
+  const b = e.target.closest('[data-xadd]'); if (!b) return; const w = b.dataset.xadd;
+  const kind = w === 'pay2' ? 'pay' : w, mod = w === 'pay2' ? 'I' : (xDir === 'toI' ? 'I' : 'F');   // o item novo vai para o painel de destino (a forma do resgate, para Investimentos)
+  openQuick(kind, 'xfer', mod, { cls:'#xCls', cat:'#xCat', pay:'#xPay', pay2:'#xPay2' }[w]);
+});
 $('#xAll').addEventListener('change', xEffect);
 $('#xAmt').addEventListener('input', () => { maskBRL($('#xAmt')); xRender(); });
 $('#xDt').addEventListener('input', xEffect);
