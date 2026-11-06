@@ -445,16 +445,22 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
   </div>
 </div>
 
-<!-- TRANSFERIR RECEITA PARA INVESTIMENTOS -->
+<!-- TRANSFERÊNCIA ENTRE PAINÉIS (total ou parcial) -->
 <div class="modal hidden" id="xferModal">
-  <form class="card" id="xferForm" style="width:min(600px,100%)">
+  <form class="card" id="xferForm" style="width:min(660px,100%);max-height:94vh;overflow:auto">
     <h3 id="xTitle">Transferir para Investimentos</h3>
     <p id="xInfo" style="line-height:1.5"></p>
+    <div class="seg" id="xMode" role="group" aria-label="Quanto transferir" style="margin-top:12px"><button type="button" class="inc on" data-xm="all" aria-pressed="true">Todo o valor</button><button type="button" class="inc" data-xm="part" aria-pressed="false">Parte do valor</button></div>
+    <div class="hint" id="xModeHint" style="margin-top:6px;line-height:1.45"></div>
     <div class="form-grid" style="margin-top:12px">
       <div class="full" id="xNatWrap"><label style="display:block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Natureza em Investimentos</label><div class="seg" id="xNat" role="group" aria-label="Natureza em Investimentos"></div></div>
+      <div class="field xpart hidden" id="xAmtWrap"><label for="xAmt">Valor a transferir (R$)</label><input id="xAmt" inputmode="numeric" placeholder="R$ 0,00" autocomplete="off"><div class="hint" id="xLeft"></div></div>
+      <div class="field xpart hidden" id="xDtWrap"><label for="xDt">Data da transferência</label><input type="date" id="xDt"></div>
+      <div class="field full xpart hidden" id="xDescWrap"><label for="xDesc">Descrição do novo lançamento</label><input id="xDesc" maxlength="120" autocomplete="off"></div>
       <div class="field"><label for="xCls">Classificação</label><select id="xCls" required></select></div>
       <div class="field"><label for="xCat">Categoria</label><select id="xCat" required></select></div>
       <div class="field full"><label for="xPay">Forma de aporte</label><select id="xPay" required></select></div>
+      <div class="field full xpart hidden" id="xPay2Wrap"><label for="xPay2">Forma do resgate (saída de Investimentos)</label><select id="xPay2"></select></div>
       <div class="field full hidden" id="xScope"><label for="xAll" style="display:flex;gap:10px;align-items:center;cursor:pointer;font-weight:700;text-transform:none;letter-spacing:0;font-size:.92rem"><input type="checkbox" id="xAll" style="width:20px;height:20px;accent-color:var(--primary)"><span id="xAllTxt"></span></label></div>
     </div>
     <div class="hint" id="xEffect" style="margin-top:10px;line-height:1.5"></div>
@@ -648,6 +654,15 @@ function demoApi(method, b){
     if (b.action==='create') d.push(...b.rows.map(r=>({...r,id:uid()})));
     if (b.action==='update') d = d.map(r=>r.id===b.row.id?b.row:r);
     if (b.action==='update_many') d = d.map(r=>b.rows.find(x=>x.id===r.id)||r);
+    if (b.action==='transfer') {   // espelha a ação 'transfer' do Code.js
+      const i = d.findIndex(r => r.id === b.id); if (i < 0) throw new Error('Lançamento de origem não encontrado.');
+      const src = d[i], amt = round2(b.amount), baixas = d.filter(x => x.origem===b.id && x.modulo==='I' && x.natureza==='Resgate').reduce((t,x) => t + +x.valor, 0);
+      const avail = b.mode==='baixa' ? round2(src.valor - baixas) : round2(src.valor);
+      if (!(amt > 0) || amt > avail + 0.004) throw new Error('Saldo insuficiente: disponível ' + avail.toFixed(2).replace('.', ',') + '.');
+      if (b.mode!=='baixa' && amt >= avail - 0.004) throw new Error('Para transferir todo o valor, use a transferência total.');
+      d.push(...b.rows.map(r => ({ ...r, id:uid(), origem:b.id, valor:amt })));
+      if (b.mode!=='baixa') d[i] = { ...src, valor: round2(src.valor - amt) };
+    }
     if (b.action==='delete') d = d.filter(r=>!b.ids.includes(r.id));
   }
   localStorage.setItem('fp-demo', JSON.stringify(d));
@@ -660,7 +675,7 @@ function offerDemo(e){
   return false;
 }
 // Lançamentos antigos não têm módulo/natureza: viram "Fluxo de caixa" (F) com Receita/Despesa.
-const normRow = r => { const o = { ...r, previsao: r.previsao || r.data, diaVenc: r.diaVenc || '', modulo: r.modulo==='I' ? 'I' : 'F', natureza: r.natureza || (r.tipoReceita ? 'Receita' : 'Despesa'), categoria: r.categoria || '' };
+const normRow = r => { const o = { ...r, previsao: r.previsao || r.data, diaVenc: r.diaVenc || '', modulo: r.modulo==='I' ? 'I' : 'F', natureza: r.natureza || (r.tipoReceita ? 'Receita' : 'Despesa'), categoria: r.categoria || '', origem: r.origem || '' };
   const q = String(r.quitado || '').trim().toLowerCase(); o.quitado = (o.modulo==='F' && !o.tipoReceita && (q==='sim' || q==='não' || q==='nao')) ? (q==='sim' ? 'Sim' : 'Não') : ''; return o; };
 /* Quitado: só vale para despesas do Fluxo de caixa e é informado pelo usuário (checkbox).
    A Ocorrência é o fato gerador (compra, aquisição); o VENCIMENTO é a Previsão e é ela que define se a despesa está vencida.
@@ -1178,6 +1193,14 @@ function balances(list, t){
   const last = list.reduce((m,r)=>{ const d=refDate(r); return !m||d>m?d:m; }, null);
   return { fromISO, open, close: open + t.bal, last };
 }
+/* Capital médio investido, ponderado pelo tempo (lógica do método Dietz modificado): saldo de abertura mais os fluxos de capital
+   (aportes somam, resgates e taxas subtraem), cada um ponderado pelo tempo em que permaneceu aplicado até o fim do período.
+   Rendimentos não entram: são o ganho medido sobre esse capital. Assim, o dinheiro retirado deixa de pesar a partir da data do resgate. */
+function capMedio(ev, open, start, end){
+  const span = end - start;
+  if (!(span > 0)) return open + ev.reduce((t, e) => t + e.v, 0);
+  return open + ev.reduce((t, e) => t + e.v * Math.min(1, Math.max(0, (end - e.d) / span)), 0);
+}
 const fmtPct = v => v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '%';
 // Indicadores de cada painel. sg = colore pelo sinal; cls = inc/exp; bar = barra proporcional.
 function metrics(list){
@@ -1187,14 +1210,17 @@ function metrics(list){
   const closeHint = b.last ? `Posição em ${toBR(b.last)}${by}` : 'Sem lançamentos no período';
   const cnt = { l:'Lançamentos', v:list.length, count:true, hint:`de ${data().length} no total` };
   if (MOD==='I') {
-    const ap = sumBy(list, r=>bucket(r)==='R'), rd = sumBy(list, r=>bucket(r)==='Y'), base = b.open + ap;
+    const ap = sumBy(list, r=>bucket(r)==='R'), rd = sumBy(list, r=>bucket(r)==='Y');
+    const ev = list.filter(r => bucket(r) !== 'Y').map(r => ({ d: refDate(r), v: (bucket(r)==='R' ? 1 : -1) * +r.valor }));
+    const t0 = RNG.fd || ev.reduce((m,e) => !m || e.d < m ? e.d : m, null), t1 = RNG.td || ev.reduce((m,e) => e.d > m ? e.d : m, todayD());
+    const base = t0 ? capMedio(ev, b.open, t0, t1 < t0 ? t0 : t1) : b.open;   // capital que de fato ficou aplicado no período
     return { t, b, items:[
       { l:'Patrimônio inicial', v:b.open, sg:true, hint:openHint },
       { l:'Aportes', v:ap, cls:'inc', bar:true, hint:'Aplicações no período' },
       { l:'Rendimentos', v:rd, cls:'inc', bar:true, hint:'Juros, dividendos e correções' },
       { l:'Resgates e taxas', v:t.exp, cls:'exp', bar:true, hint:'Saídas do patrimônio' },
       { l:'Patrimônio final', v:b.close, sg:true, hint:closeHint },
-      { l:'Rentabilidade', v: base>0 ? rd/base*100 : 0, pct:true, sg:true, hint:'Rendimentos ÷ (inicial + aportes)' },
+      { l:'Rentabilidade', v: base>0 ? rd/base*100 : 0, pct:true, sg:true, hint: base>0 ? `Rendimentos ÷ capital médio de ${brl(base)} (ponderado pelo tempo)` : 'Sem capital aplicado no período' },
       cnt ] };
   }
   return { t, b, items:[
@@ -1231,7 +1257,7 @@ function render(){
   const pages = Math.max(1, Math.ceil(list.length/PAGE)); page = Math.min(page, pages);
   const slice = list.slice((page-1)*PAGE, page*PAGE);
   $('#tbody').innerHTML = slice.length ? slice.map(r=>{ const n=natOf(r); return `<tr>
-    <td>${esc(r.data)}</td><td class="${prevOf(r)!==r.data?'diff':''}"${prevOf(r)!==r.data?' title="Previsão diferente da ocorrência"':''}>${esc(prevOf(r))}</td><td>${esc(r.descricao)}</td><td>${esc(r.categoria||'—')}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${esc(natName(r))}</span></td>
+    <td>${esc(r.data)}</td><td class="${prevOf(r)!==r.data?'diff':''}"${prevOf(r)!==r.data?' title="Previsão diferente da ocorrência"':''}>${esc(prevOf(r))}</td><td>${esc(r.descricao)}${trNote(r)}</td><td>${esc(r.categoria||'—')}</td><td><span class="pill ${n==='R'?'inc':'exp'}">${esc(natName(r))}</span></td>
     <td class="num" style="color:var(--${n==='R'?'income':'expense'})">${n==='R'?'':'− '}${brl(+r.valor)}</td>
     <td>${esc(clsOf(r))}</td><td>${esc(r.parcelas)}</td><td>${esc(r.formaPagto)}</td>${MOD==='F' ? `<td>${stCell(r)}</td>` : ''}
     <td style="white-space:nowrap">${xferBtn(r)}${isLocked(r) ? `<button class="btn btn-sm lockbtn" data-e="${esc(r.id)}" title="Parcela seguinte: só muda pela 1ª parcela">🔒</button>` : `<button class="btn btn-sm" data-e="${esc(r.id)}" title="Editar">✏️</button>`} <button class="btn btn-sm btn-danger" data-d="${esc(r.id)}" title="Excluir">🗑</button></td></tr>`; }).join('')
@@ -1496,17 +1522,33 @@ async function toggleQuit(r){
   try { await api('POST', { action:'update', row:{ ...r, quitado:novo } }); loading(false); toast(novo==='Sim' ? `“${r.descricao}” marcada como quitada.` : `“${r.descricao}” marcada como em aberto.`); await load(); }
   catch (err) { loading(false); toast('Erro: ' + err.message); }
 }
-/* ---- Transferência entre painéis (ida e volta) ----
-   IDA   (Fluxo de caixa → Investimentos): receita vira Aplicação ou Rendimento (entradas); sai do caixa e entra no patrimônio investido.
-   VOLTA (Investimentos → Fluxo de caixa): Aplicação ou Rendimento vira Receita; sai do patrimônio investido e entra no caixa.
-   O lançamento mantém o mesmo ID, a data, a previsão, o valor e a descrição; muda de módulo e ganha natureza, classificação, categoria e forma
-   do painel de destino. Em ambos os sentidos o patrimônio líquido total não muda. Resgate e Taxas e IR (saídas) não são transferíveis. */
+/* ---- Transferência entre painéis, total ou parcial ----
+   TOTAL (reclassificação): o lançamento muda de painel mantendo ID, datas e valor. Serve para corrigir um lançamento no painel errado.
+   PARCIAL (transferência de recursos): move só uma parte e preserva o saldo da origem até se esgotar, sempre com lançamentos LIGADOS pela coluna Origem.
+     • Investimentos → Fluxo de caixa: o capital (Aplicação/Rendimento) permanece íntegro, e a saída é registrada como um Resgate ligado a ele, na data da
+       transferência; no Fluxo de caixa entra uma Receita. Assim aportes, resgates, rentabilidade e a linha do tempo ficam corretos. Saldo = capital − resgates ligados.
+     • Fluxo de caixa → Investimentos: o valor da receita é reduzido pela parte aplicada e entra uma Aplicação/Rendimento (data padrão = a da receita).
+   Em qualquer caso o patrimônio líquido total não muda (salvo itens com data futura). Resgate e Taxas e IR não são transferíveis. */
+const round2 = n => Math.round((+n || 0) * 100) / 100, sumVal = a => a.reduce((t, x) => t + +x.valor, 0);
 const isReceitaF = r => r.modulo==='F' && natOf(r)==='R';
 const isEntradaI = r => r.modulo==='I' && natOf(r)==='R';   // Aplicação e Rendimento
-const xferBtn = r => isReceitaF(r) ? `<button class="btn btn-sm" data-xf="${esc(r.id)}" title="Transferir para Investimentos" aria-label="Transferir ${esc(r.descricao)} para Investimentos">⇄</button> `
-  : isEntradaI(r) ? `<button class="btn btn-sm" data-xf="${esc(r.id)}" title="Transferir para Fluxo de caixa (como receita)" aria-label="Transferir ${esc(r.descricao)} para o Fluxo de caixa">⇄</button> ` : '';
+const trKids = r => rows.filter(x => x.origem === r.id);
+const isBaixa = x => x.modulo==='I' && natName(x)==='Resgate';
+const capLeft = r => r.modulo==='I' ? round2(r.valor - sumVal(trKids(r).filter(isBaixa))) : round2(r.valor);   // saldo transferível da origem
+const canXfer = r => isReceitaF(r) || (isEntradaI(r) && capLeft(r) > 0.004);
+const xferBtn = r => !canXfer(r) ? '' : isReceitaF(r)
+  ? `<button class="btn btn-sm" data-xf="${esc(r.id)}" title="Transferir para Investimentos (todo o valor ou parte)" aria-label="Transferir ${esc(r.descricao)} para Investimentos">⇄</button> `
+  : `<button class="btn btn-sm" data-xf="${esc(r.id)}" title="Transferir para Fluxo de caixa (todo o valor ou parte)" aria-label="Transferir ${esc(r.descricao)} para o Fluxo de caixa">⇄</button> `;
+function trNote(r){   // linha de apoio na descrição: vínculo e saldo da origem
+  const out = [], o = r.origem && rows.find(x => x.id === r.origem), kids = trKids(r);
+  if (o) out.push(`↳ vinculado a “${esc(o.descricao)}”`);
+  if (r.modulo==='I') { const b = round2(sumVal(kids.filter(isBaixa))); if (b > 0) { const left = round2(r.valor - b); out.push(left <= 0.004 ? `capital esgotado (${brl(+r.valor)} transferidos)` : `capital ${brl(+r.valor)} · transferido ${brl(b)} · <b>saldo ${brl(left)}</b>`); } }
+  else if (r.modulo==='F' && natOf(r)==='R') { const m = round2(sumVal(kids.filter(x => x.modulo==='I'))); if (m > 0) out.push(`original ${brl(+r.valor + m)} · transferido ${brl(m)} · <b>saldo ${brl(+r.valor)}</b>`); }
+  return out.length ? `<div class="hint" style="margin-top:2px">${out.join(' · ')}</div>` : '';
+}
 const X_NATS = ['Aplicação', 'Rendimento'], X_YIELD = /rendiment|dividend|juros|cupom|provent|jcp/i;
-let xRow = null, xList = [], xNat = 'Aplicação', xDir = 'toI';
+let xRow = null, xList = [], xNat = 'Aplicação', xDir = 'toI', xMode = 'all', xCanAll = true;
+const xAmt = () => { const d = $('#xAmt').value.replace(/\D/g, ''); return d ? +d / 100 : 0; };
 function xSeg(){ $('#xNat').innerHTML = X_NATS.map(n => `<button type="button" class="inc${n===xNat?' on':''}" data-xn="${n}" aria-pressed="${n===xNat}">${n}</button>`).join(''); }
 function xFill(fresh){
   const keep = fresh ? {} : { cls:$('#xCls').value, cat:$('#xCat').value }, ok = (l, v) => v && l.includes(v) ? v : '';
@@ -1517,45 +1559,93 @@ function xFill(fresh){
     fillSel('#xPay', py, ok(py, xRow.formaPagto) || py[0] || '', 'Selecione...', !py.length);
     $('label[for=xPay]').textContent = xNat==='Rendimento' ? 'Forma de recebimento do rendimento' : 'Forma de aporte';
   } else {
-    const cl = classesFor('F', 'Receita'), ct = catsFor('F', 'Receita'), py = paysFor('F', 'Receita'), y = natName(xRow)==='Rendimento';
+    const cl = classesFor('F', 'Receita'), ct = catsFor('F', 'Receita'), py = paysFor('F', 'Receita'), y = natName(xRow)==='Rendimento', py2 = paysFor('I', 'Resgate');
     fillSel('#xCls', cl, ok(cl, keep.cls) || (fresh && y ? ok(cl, 'Extra') : ''), 'Selecione...', true);
     fillSel('#xCat', ct, ok(ct, keep.cat) || (fresh && y ? ok(ct, 'Rendimentos de Investimentos') : ''), 'Selecione...', true);
     fillSel('#xPay', py, ok(py, xRow.formaPagto) || py[0] || '', 'Selecione...', !py.length);
-    $('label[for=xPay]').textContent = 'Forma de recebimento';
+    fillSel('#xPay2', py2, fresh ? (py2[0] || '') : $('#xPay2').value, 'Selecione...', !py2.length);
+    $('label[for=xPay]').textContent = 'Forma de recebimento no Fluxo de caixa';
   }
 }
+function xRender(){   // mostra/oculta campos conforme o modo (total × parcial)
+  const part = xMode === 'part', toF = xDir === 'toF', others = xList.length - 1;
+  document.querySelectorAll('#xferForm .xpart').forEach(el => el.classList.toggle('hidden', !part));
+  $('#xPay2Wrap').classList.toggle('hidden', !(part && toF));
+  $('#xNatWrap').classList.toggle('hidden', toF);
+  $('#xScope').classList.toggle('hidden', part || !others);
+  document.querySelectorAll('#xMode [data-xm]').forEach(b => { const on = b.dataset.xm === xMode; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  $('#xMode [data-xm=all]').disabled = !xCanAll; $('#xMode [data-xm=all]').title = xCanAll ? '' : 'Esta origem já teve transferências parciais: use “Parte do valor” até esgotar o saldo.';
+  const left = capLeft(xRow), orig = toF ? +xRow.valor : round2(+xRow.valor + sumVal(trKids(xRow).filter(x => x.modulo==='I')));
+  $('#xModeHint').innerHTML = part
+    ? (toF ? `Registra um <b>Resgate</b> em Investimentos (o capital original permanece) e uma <b>Receita</b> no Fluxo de caixa. Saldo transferível: <b>${brl(left)}</b>.`
+           : `A <b>receita é reduzida</b> pela parte aplicada e entra um novo lançamento em Investimentos. Saldo da receita: <b>${brl(left)}</b>.`)
+    : `Reclassifica o lançamento inteiro: ele muda de painel mantendo valor e datas${toF ? '' : ''}. Use para corrigir um lançamento no painel errado.`;
+  if (part) $('#xLeft').innerHTML = `Disponível ${brl(left)}${xAmt() ? ` · restará <b style="color:${xAmt() > left + 0.004 ? 'var(--expense)' : 'inherit'}">${brl(round2(left - xAmt()))}</b>` : ''}`;
+  $('#xferForm [type=submit]').textContent = part ? 'Transferir parte' : 'Transferir';
+  xEffect();
+}
 function xEffect(){
-  const t = $('#xAll').checked ? xList : [xRow], tot = t.reduce((s,r) => s + +r.valor, 0), pl = t.length > 1, v = pl ? 'm' : '';
-  const qt = pl ? `${t.length} lançamentos, somando <b>${brl(tot)}</b>,` : `o lançamento de <b>${brl(tot)}</b>`;
-  const fut = t.filter(r => parseBR(r.data) > todayD()).length, nl = fut ? '' : ' O patrimônio líquido total não muda.';
-  $('#xEffect').innerHTML = (xDir === 'toI'
-    ? `Efeito: ${qt} deixa${v} de compor o caixa do Fluxo de caixa (Receitas e Saldo diminuem) e passa${v} a compor o patrimônio investido como <b>${xNat}</b>.${nl}`
-    : `Efeito: ${qt} deixa${v} de compor o patrimônio investido e passa${v} a compor o caixa do Fluxo de caixa como <b>Receita</b> (Receitas e Saldo aumentam).${nl}`)
-    + (fut ? `<br><b>Atenção:</b> ${fut > 1 ? `${fut} lançamentos têm` : '1 lançamento tem'} ocorrência futura. Em Investimentos, valores futuros são aportes programados (ficam fora do patrimônio atual); no Fluxo de caixa, são valores a receber (entram nos ativos). Por isso o patrimônio líquido da Conciliação pode variar até a data chegar.` : '');
-  const serie = t.some(r => parcelaInfo(r));
-  $('#xEffect').innerHTML += serie ? '<br><b>Atenção:</b> há parcela(s) de uma série de aportes; só os lançamentos escolhidos são transferidos, e o restante da série permanece em Investimentos.' : '';
+  const part = xMode === 'part', toF = xDir === 'toF', t = part ? [xRow] : ($('#xAll').checked ? xList : [xRow]), pl = !part && t.length > 1, v = pl ? 'm' : '';
+  const tot = part ? xAmt() : sumVal(t), dt = part ? ($('#xDt').value ? parseBR(isoToBR($('#xDt').value)) : null) : null;
+  const fut = part ? (dt && dt > todayD() ? 1 : 0) : t.filter(r => parseBR(r.data) > todayD()).length, nl = fut ? '' : ' O patrimônio líquido total não muda.';
+  let h;
+  if (part) h = toF
+    ? `Efeito: <b>${brl(tot)}</b> saem do capital aplicado (Resgate vinculado; o aporte original permanece e o saldo cai) e entram no caixa como <b>Receita</b>.${nl}`
+    : `Efeito: <b>${brl(tot)}</b> deixam de ser receita (o valor da receita é reduzido) e passam a compor o patrimônio investido como <b>${xNat}</b>.${nl}`;
+  else { const qt = pl ? `${t.length} lançamentos, somando <b>${brl(tot)}</b>,` : `o lançamento de <b>${brl(tot)}</b>`;
+    h = toF ? `Efeito: ${qt} deixa${v} de compor o patrimônio investido e passa${v} a compor o caixa do Fluxo de caixa como <b>Receita</b> (Receitas e Saldo aumentam).${nl}`
+            : `Efeito: ${qt} deixa${v} de compor o caixa do Fluxo de caixa (Receitas e Saldo diminuem) e passa${v} a compor o patrimônio investido como <b>${xNat}</b>.${nl}`; }
+  if (fut) h += `<br><b>Atenção:</b> ${part ? 'a data da transferência é futura' : (fut > 1 ? `${fut} lançamentos têm ocorrência futura` : '1 lançamento tem ocorrência futura')}. Em Investimentos, valores futuros são aportes programados (fora do patrimônio atual); no Fluxo de caixa, são valores a receber. Por isso o patrimônio líquido da Conciliação pode variar até a data chegar.`;
+  if (!part && t.some(r => parcelaInfo(r))) h += '<br><b>Atenção:</b> há parcela(s) de uma série de aportes; só os lançamentos escolhidos são transferidos, e o restante da série permanece em Investimentos.';
+  $('#xEffect').innerHTML = h;
 }
 function openXfer(r){
-  const dir = isReceitaF(r || {}) ? 'toI' : isEntradaI(r || {}) ? 'toF' : ''; if (!dir) return;
-  xRow = r; xDir = dir; const ok = dir === 'toI' ? isReceitaF : isEntradaI, dest = dir === 'toI' ? 'Investimentos' : 'Fluxo de caixa';
+  if (!r || !canXfer(r)) return;
+  const dir = isReceitaF(r) ? 'toI' : 'toF'; xRow = r; xDir = dir;
+  const ok = dir === 'toI' ? isReceitaF : isEntradaI, dest = dir === 'toI' ? 'Investimentos' : 'Fluxo de caixa';
   xList = sorted(filtered()).filter(ok); if (!xList.some(x => x.id === r.id)) xList.unshift(r);
   const others = xList.length - 1;
+  xCanAll = dir === 'toI' || !trKids(r).some(isBaixa);   // capital com resgates ligados só segue em transferência parcial
+  xMode = xCanAll ? 'all' : 'part';
   xNat = dir === 'toI' ? (X_YIELD.test(`${r.categoria || ''} ${r.descricao || ''}`) ? 'Rendimento' : 'Aplicação') : natName(r);   // sugestão; o operador decide
   $('#xTitle').textContent = `Transferir para ${dest}`;
-  $('#xNatWrap').classList.toggle('hidden', dir === 'toF');
-  $('#xInfo').innerHTML = `<b>${esc(r.descricao)}</b><br>${brl(+r.valor)} · ocorrência ${esc(r.data)} · ${dir === 'toF' ? esc(natName(r)) + ' · ' : ''}${esc(r.categoria || 'sem categoria')}`;
-  $('#xAll').checked = false; $('#xScope').classList.toggle('hidden', !others);
+  $('#xInfo').innerHTML = `<b>${esc(r.descricao)}</b><br>${brl(+r.valor)} · ocorrência ${esc(r.data)} · ${dir === 'toF' ? esc(natName(r)) + ' · ' : ''}${esc(r.categoria || 'sem categoria')}${trNote(r)}`;
+  $('#xAll').checked = false; $('#xAmt').value = ''; $('#xDt').value = dir === 'toI' ? brToISO(r.data) : isoDate(new Date());
+  $('#xDesc').value = dir === 'toI' ? `${r.descricao} (parte aplicada)` : `${r.descricao} (resgate parcial)`;
   const nm = xList.filter(x => x.id !== r.id).slice(0,3).map(x => x.descricao).join(', ') + (others > 3 ? '…' : '');
   $('#xAllTxt').textContent = `Transferir também ${others === 1 ? 'o outro lançamento' : `os outros ${others} lançamentos`} da lista filtrada (${nm}), com a mesma classificação`;
-  xSeg(); xFill(true); xEffect(); $('#xferModal').classList.remove('hidden');
+  xSeg(); xFill(true); xRender(); $('#xferModal').classList.remove('hidden');
 }
 $('#xNat').onclick = e => { const b = e.target.closest('[data-xn]'); if (!b) return; xNat = b.dataset.xn; xSeg(); xFill(false); xEffect(); };
+$('#xMode').onclick = e => { const b = e.target.closest('[data-xm]'); if (!b || b.disabled) return; xMode = b.dataset.xm; xRender(); if (xMode === 'part') $('#xAmt').focus(); };
 $('#xAll').addEventListener('change', xEffect);
+$('#xAmt').addEventListener('input', () => { maskBRL($('#xAmt')); xRender(); });
+$('#xDt').addEventListener('input', xEffect);
 $('#xferForm').onsubmit = async e => {
   e.preventDefault(); const cls = $('#xCls').value, cat = $('#xCat').value, pay = $('#xPay').value, toI = xDir === 'toI', dest = toI ? 'Investimentos' : 'Fluxo de caixa';
   if (!cls || !cat || !pay) return toast('Escolha a classificação, a categoria e a forma.');
+  if (xMode === 'part') {
+    const amt = xAmt(), left = capLeft(xRow), dt = $('#xDt').value, desc = $('#xDesc').value.trim(), pay2 = $('#xPay2').value, br = dt ? isoToBR(dt) : '';
+    if (!(amt > 0)) return toast('Informe o valor a transferir.');
+    if (amt > left + 0.004) return toast(`O valor excede o saldo disponível (${brl(left)}).`);
+    if (toI && amt >= left - 0.004) return toast('Para transferir todo o valor da receita, use “Todo o valor”.');
+    if (!dt) return toast('Informe a data da transferência.');
+    if (!desc) return toast('Informe a descrição do novo lançamento.');
+    if (!toI && !pay2) return toast('Escolha a forma do resgate.');
+    const base = { data:br, previsao:br, descricao:desc, quitado:'', parcelas:'' };
+    const dst = toI ? { ...base, modulo:'I', natureza:xNat, tipoReceita:cls, tipoDespesa:'', categoria:cat, formaPagto:pay }
+                    : { ...base, modulo:'F', natureza:'Receita', tipoReceita:cls, tipoDespesa:'', categoria:cat, formaPagto:pay };
+    const baixa = toI ? null : { ...base, modulo:'I', natureza:'Resgate', tipoReceita:'', tipoDespesa:xRow.tipoReceita, categoria:xRow.categoria, formaPagto:pay2, descricao:`Resgate para Fluxo de caixa: ${xRow.descricao}` };
+    loading(true);
+    try {
+      await api('POST', { action:'transfer', id:xRow.id, amount:amt, mode: toI ? 'reduce' : 'baixa', rows: baixa ? [dst, baixa] : [dst] });
+      $('#xferModal').classList.add('hidden'); loading(false);
+      toast(`${brl(amt)} transferido(s) para ${dest}. Saldo da origem: ${brl(round2(left - amt))}.`); await load();
+    } catch (err) { loading(false); toast(/desconhecida/i.test(err.message) ? 'Publique a nova versão do Code.js para usar a transferência parcial.' : 'Erro: ' + err.message); }
+    return;
+  }
   const alvo = $('#xAll').checked ? xList : [xRow], nat = toI ? xNat : 'Receita';
-  if (alvo.length > 1 && !confirm(`Transferir ${alvo.length} lançamentos, somando ${brl(alvo.reduce((t,r) => t + +r.valor, 0))}, para ${dest} como ${nat}?\n\nConfira a lista: todos passam a ter a mesma classificação, categoria e forma.`)) return;
+  if (alvo.length > 1 && !confirm(`Transferir ${alvo.length} lançamentos, somando ${brl(sumVal(alvo))}, para ${dest} como ${nat}?\n\nConfira a lista: todos passam a ter a mesma classificação, categoria e forma.`)) return;
   const upd = alvo.map(r => ({ ...r, modulo: toI ? 'I' : 'F', natureza:nat, tipoReceita:cls, tipoDespesa:'', categoria:cat, formaPagto:pay, quitado:'', parcelas:'', diaVenc:'' }));
   loading(true);
   try {
@@ -1564,13 +1654,31 @@ $('#xferForm').onsubmit = async e => {
     await load();
   } catch (err) { loading(false); toast('Erro: ' + err.message); }
 };
+/* Desfazer uma transferência parcial: devolve o valor à origem (receita) ou exclui o par (Resgate ↔ Receita), que restabelece o saldo do capital. */
+function xferUndoPlan(r){
+  if (!r.origem) return null; const src = rows.find(x => x.id === r.origem); if (!src) return null;
+  if (src.modulo==='F' && natOf(src)==='R' && r.modulo==='I' && natOf(r)==='R')
+    return { del:[r.id], upd:[{ ...src, valor: round2(+src.valor + +r.valor) }], txt:`Devolver <b>${brl(+r.valor)}</b> ao saldo da receita “${esc(src.descricao)}” (de ${brl(+src.valor)} para ${brl(round2(+src.valor + +r.valor))}) e excluir este lançamento.` };
+  if (src.modulo==='I') { const mate = rows.find(x => x.id !== r.id && x.origem === r.origem && x.modulo !== r.modulo && Math.abs(x.valor - r.valor) < 0.005 && x.data === r.data);
+    if (mate) return { del:[r.id, mate.id], upd:[], txt:`Excluir também o lançamento par “${esc(mate.descricao)}” (${mate.modulo==='F' ? 'Fluxo de caixa' : 'Investimentos'}) e devolver <b>${brl(+r.valor)}</b> ao saldo do capital de “${esc(src.descricao)}”.` }; }
+  return null;
+}
 
 let delCtx = null;
 const dlFoot = html => { $('#dlFoot').innerHTML = html; };
 function openDel(r){
+  const plan = xferUndoPlan(r);
+  if (plan) {   // lançamento criado por transferência parcial: oferece desfazer
+    delCtx = { r, g:null, xplan:plan };
+    $('#dlTitle').textContent = 'Excluir lançamento transferido';
+    $('#dlBody').innerHTML = `<p><b>${esc(r.descricao)}</b><br>${brl(+r.valor)} · ocorrência ${esc(r.data)}</p><p style="margin-top:8px">Este lançamento nasceu de uma <b>transferência parcial</b>. O que deseja fazer?</p><p style="margin-top:8px"><b>Desfazer a transferência:</b> ${plan.txt}</p><p class="hint" style="margin-top:6px">“Excluir só este” remove apenas este lançamento e não ajusta o saldo da origem.</p>`;
+    dlFoot('<button type="button" class="btn" data-act="cancel">Cancelar</button><button type="button" class="btn btn-danger" data-act="xonly">Excluir só este</button><button type="button" class="btn btn-primary" data-act="xundo">Desfazer a transferência</button>');
+    $('#delModal').classList.remove('hidden'); return;
+  }
   const g = groupOf(r);
   if (!g || g.length < 2) {
-    if (!confirm(`Excluir "${r.descricao}"?\nOcorrência: ${r.data} · Previsão: ${prevOf(r)}`)) return;
+    const nk = trKids(r).length;
+    if (!confirm(`Excluir "${r.descricao}"?\nOcorrência: ${r.data} · Previsão: ${prevOf(r)}` + (nk ? `\n\nAtenção: há ${nk} lançamento(s) de transferência ligados a este. Excluí-lo não exclui os lançamentos transferidos.` : ''))) return;
     return runDelete([r.id], [], '1 registro excluído.');
   }
   delCtx = { r, g }; delStep1(); $('#delModal').classList.remove('hidden');
@@ -1597,6 +1705,8 @@ $('#delModal').addEventListener('click', e => {
   const { r, g } = delCtx;
   switch (b.dataset.act) {
     case 'cancel': $('#delModal').classList.add('hidden'); break;
+    case 'xundo': runDelete(delCtx.xplan.del, delCtx.xplan.upd, 'Transferência desfeita: o saldo da origem foi restabelecido.'); break;
+    case 'xonly': runDelete([r.id], [], '1 registro excluído.'); break;
     case 'all': runDelete(g.map(x => x.id), [], `${g.length} parcelas excluídas.`); break;
     case 'one': delStep2(); break;
     case 'back': delStep1(); break;
@@ -1733,6 +1843,8 @@ function concModel(Xin, noPrev){
   const Id = I.filter(x=>x.done), Ip = I.filter(x=>!x.done), sg = x => ({ ...x, v: x.nat==='D' ? -x.v : x.v });
   M.aportes = sumv(Id.filter(x=>x.nat==='R' && !x.y)); M.rend = sumv(Id.filter(x=>x.y)); M.resg = sumv(Id.filter(x=>x.nat==='D'));
   M.inv = M.aportes + M.rend - M.resg;
+  const evI = Id.filter(x => !x.y).map(x => ({ d:x.d, v: x.nat==='R' ? x.v : -x.v })), stI = evI.reduce((m,e) => !m || e.d < m ? e.d : m, null);
+  M.capMedio = stI ? capMedio(evI, 0, stI, X) : 0;   // capital médio aplicado desde o primeiro aporte até a data
   M.invCat = groupSum(Id.map(sg), x=>x.cat).filter(x=>x.v>0.004); M.invCls = groupSum(Id.map(sg), x=>x.cls).filter(x=>x.v>0.004);
   const apProg = Ip.filter(x=>x.nat==='R' && !x.y); M.apProg = sumv(apProg); M.apProgN = apProg.length;
   M.apProgLast = apProg.reduce((m,x)=>!m||x.p>m?x.p:m, null);
@@ -1822,7 +1934,7 @@ function concInsights(M){
   else if (M.tl.length) { const mn = M.tl.reduce((a,b)=>b.saldo<a.saldo?b:a, M.tl[0]); add('ok','Caixa projetado sustentado', `O caixa projetado permanece positivo em todo o horizonte; o ponto mais baixo é ${brl(mn.saldo)} (${mn.label}).`); }
   if (M.poup != null) add(M.poup>=20?'ok':M.poup>=10?'info':M.poup>=0?'warn':'bad','Capacidade de poupança', `Nos últimos 90 dias a taxa de poupança foi de ${fx(M.poup)}%: receitas de ${brl(M.inc90)} contra despesas de ${brl(M.exp90)}.`);
   if (M.auton != null) add(M.auton>=6?'ok':M.auton>=3?'warn':'bad','Autonomia financeira', `Caixa e investimentos cobrem cerca de ${fx(M.auton)} meses da despesa média (${brl(M.avgExp)}). ${M.auton>=6 ? 'Acima da referência de 6 meses.' : 'A referência usual para reserva de emergência é de 6 meses.'}`);
-  if (M.aportes > 0) { const rt = M.rend / M.aportes * 100; add('info','Desempenho dos investimentos', `Patrimônio investido de ${brl(M.inv)}, formado por ${brl(M.aportes)} em aportes, ${brl(M.rend)} em rendimentos (${fx(rt)}% sobre os aportes) e ${brl(M.resg)} em resgates e taxas.`); }
+  if (M.aportes > 0) { const rt = M.capMedio > 0 ? M.rend / M.capMedio * 100 : 0; add('info','Desempenho dos investimentos', `Patrimônio investido de ${brl(M.inv)}, formado por ${brl(M.aportes)} em aportes, ${brl(M.rend)} em rendimentos e ${brl(M.resg)} em resgates e taxas. Os rendimentos equivalem a ${fx(rt)}% do capital médio aplicado (${brl(M.capMedio)}, ponderado pelo tempo): o dinheiro resgatado deixa de pesar a partir da data do resgate.`); }
   if (M.invCat.length > 1) { const t = M.invCat[0], sh = t.v / sumv(M.invCat) * 100; if (sh >= 60) add('info','Concentração em investimentos', `${fx(sh,0)}% do patrimônio investido está em "${t.k}". Avalie a diversificação.`); }
   if (M.apProg > 0.004) add('info','Aportes programados', `Há ${M.apProgN} aporte(s) futuro(s), somando ${brl(M.apProg)}${M.apProgLast ? ' até '+mLbl(M.apProgLast) : ''}. Eles são compromissos voluntários e não entram no passivo, mas consomem caixa quando efetivados.`);
   if (P) { const dl = (M.caixa + M.inv) - (P.caixa + P.inv), dp = M.pagTot - P.pagTot;
