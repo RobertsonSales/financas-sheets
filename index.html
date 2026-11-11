@@ -290,6 +290,9 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
 .stepper button:focus-visible{outline:3px solid color-mix(in oklab,var(--primary) 55%,transparent);outline-offset:2px}
 .stepper button:disabled{opacity:.35;cursor:not-allowed;box-shadow:none;background:var(--border);border-color:var(--border);color:var(--muted)}
 #quickModal{z-index:70}   /* o cadastro rápido abre por cima do modal de transferência */
+#balModal .card{width:min(1080px,100%)}
+#balModal .cc-hero{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:640px){#balModal .cc-hero{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -362,6 +365,7 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
     <div class="field"><label>Categoria</label><div class="ms" id="fCat"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
     <div class="field"><label id="lblFPay">Forma pagto</label><div class="ms" id="fPay"><button type="button" class="ms-btn" aria-haspopup="listbox" aria-expanded="false"><span class="ms-lbl">Todas</span><span class="ms-arrow">▾</span></button><div class="ms-panel hidden"><input type="search" class="ms-search" placeholder="Buscar..." autocomplete="off"><label class="ms-opt ms-all"><input type="checkbox" checked> <span>Todas</span></label><div class="ms-list" role="listbox" aria-multiselectable="true"></div></div></div></div>
     <div class="field" style="align-self:end"><button class="btn" id="clearBtn" style="width:100%">Limpar filtros</button></div>
+    <div class="field" style="align-self:end"><button class="btn btn-primary" id="balBtn" style="width:100%" title="Balanço de receitas e despesas do período De/Até (ignora os demais filtros)">🧾 Balanço</button></div>
   </div>
 
   <div class="charts">
@@ -491,6 +495,23 @@ td.diff{color:color-mix(in oklab,var(--accent) 65%,var(--text));font-weight:700}
       <div class="chips" id="cQuick"><button type="button" class="chip" data-q="today">Hoje</button><button type="button" class="chip" data-q="eom">Fim do mês</button><button type="button" class="chip" data-q="p30">+30 dias</button><button type="button" class="chip" data-q="p90">+90 dias</button><button type="button" class="chip" data-q="eoy">Fim do ano</button></div>
     </div>
     <div class="cc-body" id="cBody"></div>
+  </div>
+</div>
+
+<!-- BALANÇO DO PERÍODO (antes do modal de PDF, para a pré-visualização aparecer por cima) -->
+<div class="modal wide hidden" id="balModal">
+  <div class="card">
+    <div class="cc-top">
+      <div><h3>🧾 Balanço de receitas e despesas</h3><div class="muted" id="bSub">—</div></div>
+      <div class="actions"><button class="btn btn-primary" id="bPdf">📄 Visualizar PDF</button><button class="btn" data-close>Fechar</button></div>
+    </div>
+    <div class="cc-bar" style="align-items:flex-end">
+      <div class="field" style="min-width:170px"><label for="bView">Exibir</label><select id="bView"><option value="all">Tudo (receitas e despesas)</option><option value="rec">Somente receitas</option><option value="dep">Somente despesas</option></select></div>
+      <div class="field" style="min-width:190px"><label for="bSrc">Fonte das receitas</label><select id="bSrc"></select></div>
+      <div class="field" style="min-width:210px"><label for="bPay">Tipo de pagamento das despesas</label><select id="bPay"></select></div>
+      <label for="bQuit" style="display:flex;gap:10px;align-items:center;cursor:pointer;font-weight:700;padding-bottom:10px"><input type="checkbox" id="bQuit" checked style="width:20px;height:20px;accent-color:var(--primary)"><span>Incluir despesas já quitadas no período</span></label>
+    </div>
+    <div class="cc-body" id="bBody"></div>
   </div>
 </div>
 
@@ -924,7 +945,7 @@ function paintMod(){
   document.documentElement.dataset.mod = MOD;
   document.querySelector('meta[name="theme-color"]').content = c.theme;
   $('#dTitle').textContent = c.title; $('#chT1').textContent = c.c1 + chSfx(); $('#chT2').textContent = c.c2;
-  paintDM(); $('#quick [data-q=open]').classList.toggle('hidden', MOD==='I'); $('#thSt').classList.toggle('hidden', MOD==='I'); $('#stField').classList.toggle('hidden', MOD==='I'); if (MOD==='I') $('#fSt').value = 'all';
+  paintDM(); $('#quick [data-q=open]').classList.toggle('hidden', MOD==='I'); $('#thSt').classList.toggle('hidden', MOD==='I'); $('#stField').classList.toggle('hidden', MOD==='I'); $('#balBtn').parentElement.classList.toggle('hidden', MOD==='I'); if (MOD==='I') $('#fSt').value = 'all';
   $('#lblFPay').textContent = MOD==='I' ? 'Aporte / saque' : 'Forma pagto'; $('#thPay').textContent = payLbl() + ' ↕';
   $('#lblIPay').textContent = MOD==='I' ? 'Forma de aporte ou saque' : 'Forma de pagto./receb.';
   document.querySelectorAll('.modtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.m===MOD)));
@@ -2182,6 +2203,136 @@ function buildConcPDF(M){
   const N = doc.getNumberOfPages();
   for (let i = 1; i <= N; i++) { doc.setPage(i); doc.setDrawColor(...ln); doc.setLineWidth(.2); doc.line(mx, H - 12, W - mx, H - 12); font('normal', 7.5); txt([140,140,140]);
     doc.text(`Finanças Plus · Conciliação patrimonial em ${toBR(M.X)}`, mx, H - 8); doc.text(`Página ${i} de ${N}`, W - mx, H - 8, { align:'right' }); }
+  return doc;
+}
+
+/* ===================== BALANÇO DO PERÍODO ===================== */
+// Receitas e despesas do Fluxo de caixa no período De/Até (obrigatório), com as datas escolhidas em "Período por".
+// Os demais filtros do painel (busca, natureza, classificação, categoria, forma, situação) são desprezados.
+// Dentro do modal: Exibir (tudo / só receitas / só despesas), Fonte das receitas (categoria), Tipo de pagamento das despesas (forma) e incluir quitadas.
+let balM = null;
+const balOpts = () => ({ inc:$('#bQuit').checked, view:$('#bView').value || 'all', pay:$('#bPay').value, src:$('#bSrc').value });
+function balModel(o){
+  const fd = new Date($('#fFrom').value + 'T00:00'), td = new Date($('#fTo').value + 'T23:59'); RNG = { fd, td };
+  const F = rows.filter(r => r.modulo === 'F'), sm = a => a.reduce((t, r) => t + +r.valor, 0), srcOf = r => r.categoria || '(Sem categoria)', payOf = r => r.formaPagto || '(Não informada)';
+  const inP = r => DMF.some(k => { const d = dmDate(r, k); return d >= fd && d <= td; }), bef = r => Math.max(...DMF.map(k => dmDate(r, k))) < fd;
+  const per = F.filter(inP), recP = per.filter(r => natOf(r) === 'R'), depP = per.filter(r => natOf(r) === 'D');
+  const uniq = a => [...new Set(a)].sort((x, y) => x.localeCompare(y, 'pt-BR'));
+  const showR = o.view !== 'dep', showD = o.view !== 'rec';
+  const rec = showR ? recP.filter(r => !o.src || srcOf(r) === o.src) : [], dAll = showD ? depP.filter(r => !o.pay || payOf(r) === o.pay) : [];
+  const dq = dAll.filter(isPaid), da = dAll.filter(r => !isPaid(r)), dep = o.inc ? dAll : da;
+  const prior = F.filter(r => bef(r) && isPaid(r)), open = sm(prior.filter(r => natOf(r) === 'R')) - sm(prior.filter(r => natOf(r) === 'D'));
+  const byD = (a, b) => refDate(a) - refDate(b) || String(a.descricao).localeCompare(String(b.descricao), 'pt-BR');
+  const M = { fd, td, o, showR, showD, srcOf, payOf, srcOpts:uniq(recP.map(srcOf)), payOpts:uniq(depP.map(payOf)), rec:[...rec].sort(byD), dep:[...dep].sort(byD), dq, da, open, tRec:sm(rec), tDep:sm(dep), tDq:sm(dq), tDa:sm(da) };
+  M.incQuit = o.inc; M.saldoPer = M.tRec - M.tDep; M.final = open + M.saldoPer; M.venc = da.filter(r => stTxt(r) === 'Vencido'); M.tVenc = sm(M.venc);
+  const big = a => a.reduce((m, r) => !m || +r.valor > +m.valor ? r : m, null); M.maiorR = big(M.rec); M.maiorD = big(M.dep);
+  M.fil = [o.view === 'rec' ? 'somente receitas' : o.view === 'dep' ? 'somente despesas' : '', showR && o.src ? `fonte das receitas: ${o.src}` : '', showD && o.pay ? `tipo de pagamento: ${o.pay}` : ''].filter(Boolean);
+  M.txt = balInsights(M); return M;
+}
+function balInsights(M){
+  const o = [], p = M.tRec > 0 ? M.tDep / M.tRec * 100 : null;
+  if (M.showR && M.showD) o.push(M.saldoPer >= 0 ? `Superávit de ${brl(M.saldoPer)} no período${p != null ? `: as despesas listadas consomem ${fx(p)}% das receitas` : ''}.` : `Déficit de ${brl(-M.saldoPer)} no período: as despesas listadas superam as receitas${p != null ? ` (${fx(p)}% das receitas)` : ''}.`);
+  else if (M.showR) o.push(`${M.rec.length} receita(s) listada(s), somando ${brl(M.tRec)}.`);
+  else o.push(`${M.dep.length} despesa(s) listada(s), somando ${brl(M.tDep)}.`);
+  if (M.showD && M.da.length) o.push(`${M.da.length} despesa(s) em aberto, somando ${brl(M.tDa)}${M.venc.length ? `, das quais ${M.venc.length} vencida(s), no valor de ${brl(M.tVenc)}` : ''}.`);
+  if (M.showD && !M.incQuit && M.dq.length) o.push(`${M.dq.length} despesa(s) já quitada(s), somando ${brl(M.tDq)}, não estão incluídas nos totais.`);
+  if (M.maiorD) o.push(`Maior despesa listada: ${M.maiorD.descricao} (${brl(+M.maiorD.valor)}).`);
+  if (M.maiorR) o.push(`Maior receita: ${M.maiorR.descricao} (${brl(+M.maiorR.valor)}).`);
+  if (M.fil.length) o.push(`Filtros do Balanço aplicados: ${M.fil.join(' · ')}. Os totais e o saldo final consideram apenas o que está listado.`);
+  return o;
+}
+const balPeriod = M => `${toBR(M.fd)} a ${toBR(M.td)}`;
+const stStatic = r => { const t = stTxt(r); return t ? `<span class="st ${t==='Quitado'?'ok':t==='Vencido'?'bad':'open'}">${t==='Quitado'?'✔':t==='Vencido'?'⚠':'⏳'} ${t}</span>` : ''; };
+function balFillOpts(M){   // opções de fonte e de tipo de pagamento vêm do período (sem depender dos outros filtros do modal)
+  const mk = (id, l, all) => { const el = $(id), v = el.value; el.innerHTML = `<option value="">${all}</option>` + l.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join(''); el.value = l.includes(v) ? v : ''; };
+  mk('#bSrc', M.srcOpts, 'Todas as fontes'); mk('#bPay', M.payOpts, 'Todos os tipos');
+}
+function renderBal(){
+  const o = balOpts(); $('#bSrc').disabled = o.view === 'dep'; $('#bPay').disabled = o.view === 'rec'; $('#bQuit').disabled = o.view === 'rec';
+  const M = balM = balModel(o), body = $('#bBody');
+  $('#bSub').textContent = `Período de ${balPeriod(M)} · datas consideradas: ${dmName()} · demais filtros do painel desprezados`;
+  const k = (l, v, c, h) => `<div class="cc-k" style="--c:${c}"><span>${l}</span><b style="color:${c}">${brl(v)}</b><small>${h || ''}</small></div>`;
+  const sg = v => v < -0.004 ? 'var(--expense)' : 'var(--income)';
+  const tbl = (list, isD) => list.length ? `<div class="table-wrap"><table class="cc-t" style="min-width:${isD ? 740 : 640}px"><thead><tr><th>Ocorrência</th><th>Previsão</th><th>Descrição</th><th>${isD ? 'Categoria' : 'Fonte'}</th><th>${isD ? 'Tipo de pagamento' : 'Forma de recebimento'}</th>${isD ? '<th>Situação</th>' : ''}<th class="r">Valor</th></tr></thead><tbody>`
+    + list.map(r => `<tr><td>${esc(r.data)}</td><td>${esc(prevOf(r))}</td><td>${esc(r.descricao)}</td><td>${esc(r.categoria || '—')}</td><td>${esc(r.formaPagto)}</td>${isD ? `<td>${stStatic(r)}</td>` : ''}<td class="num" style="color:${isD ? 'var(--expense)' : 'var(--income)'}">${brl(+r.valor)}</td></tr>`).join('')
+    + `<tr class="cc-tot"><td colspan="${isD ? 6 : 5}">Total (${list.length})</td><td class="num">${brl(list.reduce((t, r) => t + +r.valor, 0))}</td></tr></tbody></table></div>` : '<div class="empty">Nenhum lançamento.</div>';
+  body.innerHTML = `<div class="cc-hero">
+      ${k('Saldo inicial', M.open, sg(M.open), `Acumulado antes de ${toBR(M.fd)} (receitas − despesas quitadas)`)}
+      ${k('Receitas', M.tRec, 'var(--income)', M.showR ? `${M.rec.length} lançamento(s) listado(s)` : 'Não exibidas')}
+      ${k('Despesas', M.tDep, 'var(--expense)', !M.showD ? 'Não exibidas' : M.incQuit ? `${M.dq.length} quitada(s) + ${M.da.length} em aberto` : `${M.da.length} em aberto (quitadas ocultas)`)}
+      ${k('Despesas quitadas', M.tDq, 'var(--primary)', !M.showD ? 'Não exibidas' : M.incQuit ? `Incluídas nas despesas (${M.dq.length})` : `Não incluídas nos totais (${M.dq.length})`)}
+      ${k('Saldo do período', M.saldoPer, sg(M.saldoPer), 'Receitas − despesas listadas')}
+      ${k('Saldo final', M.final, sg(M.final), 'Saldo inicial + saldo do período')}
+    </div>
+    <p class="cc-note">O saldo final considera apenas os registros listados${M.da.length && M.showD ? '; como há despesas em aberto, é um saldo <b>projetado</b> para depois de pagá-las' : ''}.</p>
+    <div class="cc-sec"><h4>Leitura rápida</h4><div class="cc-ins">${M.txt.map(t => `<div class="cc-i" style="--c:var(--primary)"><p style="margin:0;color:var(--text)">${esc(t)}</p></div>`).join('')}</div></div>
+    ${M.showR ? `<div class="cc-sec"><h4>Receitas do período</h4>${tbl(M.rec, false)}</div>` : ''}
+    ${M.showD ? `<div class="cc-sec"><h4>Despesas do período</h4>${tbl(M.dep, true)}</div>` : ''}`;
+}
+$('#balBtn').onclick = () => {
+  const f = $('#fFrom').value, t = $('#fTo').value;
+  if (!f || !t) { toast('Selecione o período: preencha as datas De e Até para gerar o Balanço.'); (!f ? $('#fFrom') : $('#fTo')).focus(); return; }
+  if (f > t) { toast('A data inicial (De) não pode ser posterior à data final (Até).'); $('#fFrom').focus(); return; }
+  $('#bQuit').checked = true; $('#bView').value = 'all'; $('#bSrc').value = ''; $('#bPay').value = '';
+  balFillOpts(balModel({ inc:true, view:'all', pay:'', src:'' })); renderBal(); $('#balModal').classList.remove('hidden');
+};
+['#bQuit', '#bView', '#bSrc', '#bPay'].forEach(id => $(id).addEventListener('change', renderBal));
+$('#bPdf').onclick = () => {
+  if (!balM) return;
+  try { pdfDoc = buildBalPDF(balM); pdfName = `balanco-${isoDate(balM.fd)}_a_${isoDate(balM.td)}.pdf`; $('#pdfFrame').src = pdfDoc.output('bloburl'); $('#pdfModal').classList.remove('hidden'); }
+  catch (e) { console.error(e); toast('Não foi possível gerar o PDF: ' + e.message); }
+};
+function buildBalPDF(M){
+  const { jsPDF } = window.jspdf, doc = new jsPDF({ unit:'mm', format:'a4' }), W = 210, H = 297, mx = 14, cw = W - 2*mx;
+  const brand = [15,92,86], gold = [232,163,61], pos = [31,157,107], neg = [214,73,63], ink = [20,32,31], mute = [95,107,105], paper = [245,243,238], ln = [226,221,210];
+  const fill = c => doc.setFillColor(...c), txt = c => doc.setTextColor(...c), font = (st = 'normal', sz = 9) => { doc.setFont('helvetica', st); doc.setFontSize(sz); }, sgc = v => v < -0.004 ? neg : pos;
+  let y = 0; const need = h => { if (y + h > H - 18) { doc.addPage(); y = 16; } };
+  const sec = t => { need(14); fill(gold); doc.rect(mx, y, 1.6, 6, 'F'); font('bold', 12.5); txt(brand); doc.text(t, mx + 4.5, y + 4.8); y += 10; };
+  const tbl = o => { doc.autoTable({ margin:{ left:mx, right:mx, top:16, bottom:18 }, theme:'grid', showFoot:'lastPage', styles:{ fontSize:8, cellPadding:2, lineColor:ln, lineWidth:.1, textColor:ink }, headStyles:{ fillColor:brand, textColor:255, fontStyle:'bold' },
+      footStyles:{ fillColor:[240,237,230], textColor:ink, fontStyle:'bold' }, alternateRowStyles:{ fillColor:[250,249,246] }, ...o, startY:y }); y = doc.lastAutoTable.finalY + 7; };
+  const card = (x, yy, w, h, l, v, c, sub) => { fill(paper); doc.roundedRect(x, yy, w, h, 2.5, 2.5, 'F'); fill(c); doc.rect(x, yy, 1.8, h, 'F'); font('bold', 7); txt(mute); doc.text(l.toUpperCase(), x + 5, yy + 6);
+    font('bold', 12.5); txt(c); doc.text(v, x + 5, yy + 14); if (sub) { font('normal', 6.8); txt(mute); doc.text(doc.splitTextToSize(sub, w - 8)[0], x + 5, yy + h - 3); } };
+  /* cabeçalho */
+  fill(brand); doc.rect(0, 0, W, 40, 'F'); fill(gold); doc.rect(0, 40, W, 1.6, 'F');
+  txt([255,255,255]); font('bold', 21); doc.text('Balanço de Receitas e Despesas', mx, 17); font('normal', 11); doc.text(`Período de ${balPeriod(M)}`, mx, 25);
+  font('normal', 8.5); const who = demo ? 'Modo demonstração' : (sessionStorage.getItem('fp-user') || '');
+  doc.text(`${who ? who + '  ·  ' : ''}Datas consideradas: ${dmName()}${M.showD ? `  ·  Despesas quitadas: ${M.incQuit ? 'incluídas' : 'não incluídas'}` : ''}`, mx, 31);
+  if (M.fil.length) doc.text(doc.splitTextToSize('Exibição: ' + M.fil.join('  ·  '), 128)[0], mx, 36);
+  font('bold', 11); doc.text('Finanças Plus', W - mx, 17, { align:'right' }); font('normal', 8); doc.text(`Emitido em ${new Date().toLocaleString('pt-BR')}`, W - mx, 24, { align:'right' });
+  y = 49;
+  /* cards */
+  const w3 = (cw - 8) / 3;
+  card(mx, y, w3, 22, 'Saldo inicial', brl(M.open), sgc(M.open), `antes de ${toBR(M.fd)}`); card(mx + w3 + 4, y, w3, 22, 'Receitas', brl(M.tRec), pos, M.showR ? `${M.rec.length} lançamento(s)` : 'não exibidas');
+  card(mx + 2*(w3 + 4), y, w3, 22, 'Despesas', brl(M.tDep), neg, !M.showD ? 'não exibidas' : M.incQuit ? `${M.dq.length} quitada(s) + ${M.da.length} em aberto` : `${M.da.length} em aberto`); y += 26;
+  card(mx, y, w3, 22, 'Despesas quitadas', brl(M.tDq), [45,74,154], !M.showD ? 'não exibidas' : M.incQuit ? 'incluídas' : 'não incluídas nos totais'); card(mx + w3 + 4, y, w3, 22, 'Saldo do período', brl(M.saldoPer), sgc(M.saldoPer), 'receitas - despesas listadas');
+  card(mx + 2*(w3 + 4), y, w3, 22, 'Saldo final', brl(M.final), sgc(M.final), 'saldo inicial + saldo do período'); y += 28;
+  /* leitura rápida */
+  font('normal', 9); const ls = M.txt.flatMap(t => doc.splitTextToSize('•  ' + t, cw - 10)), rh = ls.length * 4.3 + 11; need(rh);
+  fill([250,249,246]); doc.roundedRect(mx, y, cw, rh, 2, 2, 'F'); fill(brand); doc.rect(mx, y, 1.4, rh, 'F'); font('bold', 8); txt(brand); doc.text('LEITURA RÁPIDA', mx + 5, y + 5); font('normal', 9); txt(ink); doc.text(ls, mx + 5, y + 10.5); y += rh + 8;
+  /* quadro-resumo */
+  sec('Quadro-resumo');
+  const resumo = [['Saldo inicial (antes do período)', brl(M.open)]]; if (M.showR) resumo.push(['(+) Receitas do período', brl(M.tRec)]);
+  if (M.showD) { if (M.incQuit) resumo.push(['(-) Despesas quitadas', brl(-M.tDq)]); resumo.push(['(-) Despesas em aberto', brl(-M.tDa)]); }
+  tbl({ head:[['Composição','Valor']], body:resumo, foot:[['Saldo final', brl(M.final)]], columnStyles:{ 1:{ halign:'right', cellWidth:44 } },
+    didParseCell:d => { if (d.column.index === 1 && String(d.cell.raw).startsWith('-')) d.cell.styles.textColor = neg; } });
+  /* receitas e despesas */
+  if (M.showR) { sec('Receitas do período'); tbl({ head:[['Ocorrência','Previsão','Descrição','Fonte','Forma de receb.','Valor']], body:M.rec.map(r => [r.data, prevOf(r), r.descricao, r.categoria || '', r.formaPagto, brl(+r.valor)]),
+    foot:[['', '', 'Total', '', '', brl(M.tRec)]], columnStyles:{ 0:{ halign:'center', cellWidth:21 }, 1:{ halign:'center', cellWidth:21 }, 5:{ halign:'right', cellWidth:27 } },
+    didParseCell:d => { if (d.section === 'body' && d.column.index === 5) d.cell.styles.textColor = pos; } }); }
+  if (M.showD) { sec('Despesas do período'); tbl({ head:[['Ocorrência','Previsão','Descrição','Categoria','Tipo de pagto.','Situação','Valor']], body:M.dep.map(r => [r.data, prevOf(r), r.descricao, r.categoria || '', r.formaPagto, stTxt(r), brl(+r.valor)]),
+    foot:[['', '', 'Total', '', '', '', brl(M.tDep)]], columnStyles:{ 0:{ halign:'center', cellWidth:20 }, 1:{ halign:'center', cellWidth:20 }, 5:{ halign:'center', cellWidth:19 }, 6:{ halign:'right', cellWidth:26 } },
+    didParseCell:d => { if (d.section === 'body' && d.column.index === 6) d.cell.styles.textColor = neg;
+      if (d.section === 'body' && d.column.index === 5) { const v = d.cell.raw; if (v === 'Vencido') { d.cell.styles.textColor = neg; d.cell.styles.fontStyle = 'bold'; } else if (v === 'Em aberto') { d.cell.styles.textColor = [200,130,20]; d.cell.styles.fontStyle = 'bold'; } else d.cell.styles.textColor = pos; } } }); }
+  /* notas */
+  need(48); sec('Notas'); font('normal', 8.4); txt(mute);
+  ['O Balanço considera as receitas e despesas do Fluxo de caixa cujo período (De/Até) contém a data escolhida em "Período por"; os demais filtros do painel foram desprezados.',
+   'Fonte da receita: categoria do lançamento. Tipo de pagamento da despesa: forma de pagamento do lançamento.',
+   'Saldo inicial: receitas menos despesas quitadas com data anterior ao início do período. Despesas em aberto ainda não saíram do caixa e, por isso, não entram no saldo inicial.',
+   M.showD ? (M.incQuit ? 'Despesas quitadas e em aberto estão incluídas; o saldo final é, portanto, um saldo projetado após o pagamento das despesas em aberto.' : 'Despesas já quitadas no período não foram incluídas; o saldo final considera somente receitas e despesas em aberto.') : 'Despesas não exibidas: o saldo final considera apenas as receitas listadas.',
+   M.fil.length ? 'Filtros do Balanço aplicados: ' + M.fil.join('; ') + '. Os totais e o saldo final consideram somente o que está listado.' : '',
+   'Despesa vencida: não quitada e com Previsão (vencimento) anterior à data de emissão.'].filter(Boolean).forEach(t => { const l = doc.splitTextToSize('•  ' + t, cw - 3); need(l.length * 3.8 + 1.5); doc.text(l, mx + 1, y); y += l.length * 3.8 + 1.8; });
+  const N = doc.getNumberOfPages();
+  for (let i = 1; i <= N; i++) { doc.setPage(i); doc.setDrawColor(...ln); doc.setLineWidth(.2); doc.line(mx, H - 12, W - mx, H - 12); font('normal', 7.5); txt([140,140,140]); doc.text(`Finanças Plus · Balanço de ${balPeriod(M)}`, mx, H - 8); doc.text(`Página ${i} de ${N}`, W - mx, H - 8, { align:'right' }); }
   return doc;
 }
 </script>
