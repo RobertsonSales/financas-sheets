@@ -112,6 +112,7 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
   <a href="#inicio">1 · Primeiros passos</a>
   <a href="#paineis">2 · Os dois painéis</a>
   <a href="#lendo">3 · Lendo o painel</a>
+  <a href="#balanco" style="padding-left:22px;font-size:.84rem">↳ Balanço do período <span class="new">NOVO</span></a>
   <a href="#lancar">4 · Novo lançamento</a>
   <a href="#parcelas">5 · Despesas parceladas <span class="new">NOVO</span></a>
   <a href="#quitado">6 · Quitado e em aberto <span class="new">NOVO</span></a>
@@ -139,6 +140,7 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
     <div class="card"><h4>⚙️ Cadastros em lista</h4><p>Os tipos ficam em listas expansíveis, com lixeira só para itens sem nenhum lançamento vinculado. <a href="#cadastros">Ver regras</a></p></div>
     <div class="card"><h4>🔢 Parcelas ajustáveis</h4><p>Na 1ª parcela você aumenta ou reduz a quantidade com os botões <b>−</b> e <b>＋</b>, e o app cria ou remove as parcelas finais. <a href="#parcelas">Detalhes</a></p></div>
     <div class="card"><h4>📅 Previsão manda no vencimento</h4><p>A data escolhida na Previsão é respeitada e vira o dia de vencimento da série; só é ajustada para dia útil ao confirmar.</p></div>
+    <div class="card"><h4>🧾 Balanço do período</h4><p>Botão novo nos filtros: um panorama simples de todas as receitas e despesas de um período, com saldo inicial e final, filtros próprios e PDF. <a href="#balanco">Ver como usar</a></p></div>
     <div class="card"><h4>➕ Incluir em sequência</h4><p>Depois de salvar uma inclusão, o app pergunta se você quer continuar incluindo: o formulário fica aberto com os dados repetidos, ou fecha e volta ao painel. <a href="#continuar">Ver detalhes</a></p></div>
     <div class="card"><h4>⇄ Transferir entre painéis, inclusive em parte</h4><p>Mova todo o valor ou só uma parte entre Fluxo de caixa e Investimentos. O saldo da origem fica registrado até se esgotar, e dá para desfazer. <a href="#transferir">Ver como fazer</a></p></div>
     <div class="card"><h4>🔎 Filtros por data e situação</h4><p><b>Período por</b> agora é uma lista de marcação: escolha Ocorrência, Previsão ou todos os eventos. E o novo filtro <b>Situação</b> separa despesas quitadas, em aberto e vencidas. <a href="#filtros-data">Ver como usar</a></p></div>
@@ -236,6 +238,39 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
   <div class="note warn"><b>Só despesas</b>A situação existe apenas em despesas do Fluxo de caixa. Ao escolher Quitadas, Em aberto ou Vencidas, as receitas saem da lista. No painel Investimentos o filtro não aparece. O relatório em PDF informa a situação e as datas usadas no filtro.</div>
   <h3>Gráficos e tabela</h3>
   <p>Fluxo de caixa mostra o <i>Fluxo mensal</i> (só o que foi pago) e <i>Despesas por forma de pagamento</i>. Investimentos mostra a <i>Evolução do patrimônio</i> e o <i>Patrimônio por categoria</i>. Na tabela, clique no cabeçalho para ordenar; use ✏️ para editar e 🗑 para excluir.</p>
+</section>
+
+<section id="balanco">
+  <h2><span class="n">★</span>Balanço do período <span class="badge-new">novo</span></h2>
+  <p class="lead">Um panorama simples e completo de receitas e despesas, para quem não precisa dos filtros detalhados.</p>
+  <ol>
+    <li>No painel <b>Fluxo de caixa</b>, preencha as datas <b>De</b> e <b>Até</b>. O período é <b>obrigatório</b>: sem as duas datas o app avisa e não abre o Balanço.</li>
+    <li>Toque em <span class="k">🧾 Balanço</span>, no quadro de filtros.</li>
+    <li>O modal mostra <b>todas</b> as receitas e despesas do período. Os outros filtros do painel (busca, natureza, classificação, categoria, forma e situação) são <u>desprezados</u>.</li>
+    <li>Para o relatório, toque em <span class="k">📄 Visualizar PDF</span> e baixe pela pré-visualização.</li>
+  </ol>
+  <div class="note"><b>Quais datas valem?</b>O Balanço respeita o <b>Período por</b> escolhido nos filtros (ocorrência, previsão ou os dois). Para incluir, por exemplo, uma fatura de cartão que vence no mês, mas cuja compra foi no mês anterior, marque <i>Previsão</i> ou <i>Todos os eventos</i>. O cabeçalho do modal informa as datas consideradas.</div>
+  <h3>Filtros do próprio Balanço</h3>
+  <div class="tw"><table>
+    <tr><th>Controle</th><th>O que faz</th></tr>
+    <tr><td><b>Exibir</b></td><td><i>Tudo</i>, <i>Somente receitas</i> ou <i>Somente despesas</i>. Ao ocultar um lado, os campos dele ficam desativados e o saldo final considera só o que está listado.</td></tr>
+    <tr><td><b>Fonte das receitas</b></td><td>Mostra só as receitas de uma fonte (a categoria da receita, como Salário ou Serviços).</td></tr>
+    <tr><td><b>Tipo de pagamento das despesas</b></td><td>Mostra só as despesas de uma forma de pagamento (Pix, Boleto, Cartão de Crédito…).</td></tr>
+    <tr><td><b>Incluir despesas já quitadas</b></td><td>Marcado: despesas quitadas e em aberto. Desmarcado: só as em aberto, o que mostra o que ainda falta pagar frente às receitas.</td></tr>
+  </table></div>
+  <p>As listas de fonte e de tipo de pagamento trazem apenas o que existe no período.</p>
+  <h3>Os cards</h3>
+  <ul>
+    <li><b>Saldo inicial:</b> tudo o que entrou e saiu <u>antes</u> do período (receitas menos despesas quitadas). Não muda com os filtros do modal.</li>
+    <li><b>Receitas</b> e <b>Despesas:</b> os totais do que está listado. Em Despesas, a dica mostra quantas são quitadas e quantas estão em aberto.</li>
+    <li><b>Despesas quitadas:</b> o valor das quitadas no período, informando se estão incluídas ou não nos totais.</li>
+    <li><b>Saldo do período:</b> receitas menos despesas listadas.</li>
+    <li><b>Saldo final:</b> saldo inicial + saldo do período, considerando <b>somente os registros listados</b>. Havendo despesas em aberto, é um saldo <b>projetado</b>, para depois de pagá-las.</li>
+  </ul>
+  <div class="note"><b>Exemplo</b>Saldo inicial R$ 700, receitas R$ 6.000, despesas quitadas R$ 2.000 e em aberto R$ 800. Com tudo marcado, o saldo final é R$ 3.900 (700 + 6.000 − 2.800). Desmarcando as quitadas, fica R$ 5.900 (700 + 6.000 − 800).</div>
+  <h3>O PDF do Balanço</h3>
+  <p>Traz cabeçalho com o período e os filtros aplicados, os cards, uma <i>Leitura rápida</i> (superávit ou déficit, despesas em aberto e vencidas, maiores valores), um quadro-resumo da composição do saldo final, as tabelas de receitas e de despesas (com a situação de cada uma) e as notas de metodologia. Ele reflete exatamente o que está na tela: filtros, quitadas incluídas ou não e saldo final.</p>
+  <div class="note warn"><b>Só Fluxo de caixa</b>O Balanço vale para receitas e despesas do Fluxo de caixa. No painel Investimentos o botão não aparece.</div>
 </section>
 
 <section id="lancar">
@@ -480,6 +515,8 @@ footer{margin-top:60px;color:var(--muted);font-size:.86rem;text-align:center}
   <details><summary>A lixeira de um item está desativada, mas eu não uso mais esse item.</summary><p>Algum lançamento (seu ou de outro usuário) ainda está vinculado a ele. Altere ou exclua esses lançamentos e tente de novo.</p></details>
   <details><summary>O saldo da Conciliação difere do saldo do painel.</summary><p>A Conciliação considera todos os lançamentos, sem filtros, e inclui as contas a pagar e a receber. O painel segue o período e os filtros escolhidos.</p></details>
   <details><summary>Transferi uma receita para Investimentos e o saldo do caixa caiu. Está certo?</summary><p>Sim. O valor deixou de ser dinheiro disponível e virou patrimônio investido. O patrimônio líquido total, na Conciliação, continua o mesmo (exceto para valores com data futura, que o modal avisa).</p></details>
+  <details><summary>O Balanço não abre. Por quê?</summary><p>O período é obrigatório. Preencha <b>De</b> e <b>Até</b> (e confira se De não é posterior a Até) e toque em <span class="k">🧾 Balanço</span> de novo.</p></details>
+  <details><summary>Uma despesa que eu esperava não aparece no Balanço.</summary><p>Confira o <b>Período por</b>: com só <i>Ocorrência</i> marcada, uma compra feita antes do período, com vencimento dentro dele, fica de fora. Marque <i>Previsão</i> ou <i>Todos os eventos</i>. Veja também se o filtro <b>Tipo de pagamento</b> do Balanço e a opção de incluir quitadas estão como você quer.</p></details>
   <details><summary>Para que serve a pergunta “Deseja continuar incluindo?”</summary><p>Para lançar vários itens sem reabrir o formulário. Respondendo <b>Sim</b>, ele permanece aberto com natureza, classificação, categoria, forma e datas já preenchidas; respondendo <b>Não</b>, volta ao painel.</p></details>
   <details><summary>Transferi por engano. Como desfaço?</summary><p>Se foi uma transferência de <b>todo o valor</b>, vá ao painel de destino, localize o lançamento e toque em <span class="k">⇄</span> para devolvê-lo. Se foi <b>parcial</b>, exclua o lançamento gerado e escolha <span class="k">Desfazer a transferência</span>.</p></details>
   <details><summary>Transferi parte de uma aplicação. Por que a aplicação original continua com o valor cheio?</summary><p>Porque o saque foi registrado como <b>Resgate</b> ligado a ela, o que preserva o histórico. O saldo aparece na linha de apoio (<i>saldo R$ ...</i>) e no card de Patrimônio, que já desconta o resgate.</p></details>
