@@ -84,7 +84,7 @@ main{padding:24px clamp(12px,4vw,40px) calc(60px + env(safe-area-inset-bottom));
 .kpi b{display:block;font-size:1.65rem;margin-top:6px;font-family:'Fraunces'}
 .kpi.inc b{color:var(--income)}.kpi.exp b{color:var(--expense)}
 .kpi .bar{height:4px;border-radius:4px;margin-top:12px;background:var(--surface-2);overflow:hidden}
-.kpi .bar i{display:block;height:100%;background:var(--grad);transition:width .6s}
+.kpi .bar i{display:block;height:100%;background:var(--grad);transition:width .2s}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
 .field label{display:block;font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
 .field input,.field select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);outline:none}
@@ -578,7 +578,8 @@ let deferredInstallPrompt = null;
 let rows = [], demo = false, sortKey = 'data', sortDir = 1, page = 1, editing = null, charts = {}, pdfDoc = null, MOD = localStorage.getItem('fp-mod')==='I' ? 'I' : 'F';
 const $ = s => document.querySelector(s);
 const brl = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const parseBR = s => { const [d,m,y] = String(s).split('/').map(Number); return new Date(y, (m||1)-1, d||1); };
+const _pbr = new Map();   // cache: o mesmo texto DD/MM/AAAA vira a mesma Date (nenhum código altera o resultado)
+const parseBR = s => { const k = String(s); let v = _pbr.get(k); if (!v) { const [d,m,y] = k.split('/').map(Number); v = new Date(y, (m||1)-1, d||1); if (_pbr.size > 20000) _pbr.clear(); _pbr.set(k, v); } return v; };
 const toBR = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 const isoToBR = iso => { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; };
 const brToISO = br => { const [d,m,y] = br.split('/'); return `${y}-${m}-${d}`; };
@@ -590,7 +591,8 @@ const addMonths = (d, n) => { const r = new Date(d.getFullYear(), d.getMonth()+n
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now()+''+Math.random());
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const toast = m => { const t = document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),3200); };
-const loading = on => $('#loader').classList.toggle('hidden', !on);
+let _ldT = null;
+const loading = on => { clearTimeout(_ldT); if (on) _ldT = setTimeout(() => $('#loader').classList.remove('hidden'), 350); else $('#loader').classList.add('hidden'); };
 function setAuthProgress(value, text){
   const box = $('#authProgress'), bar = $('#authProgressBar'), pct = $('#authProgressPct'), label = $('#authProgressText'), track = box?.querySelector('[role="progressbar"]');
   if (!box || !bar || !pct || !label || !track) return;
@@ -628,13 +630,15 @@ go(0); timer = setInterval(()=>go(cur+1), 6000);
 
 /* ===================== API ===================== */
 function headers(){ const h={'Content-Type':'application/json'}; const k=sessionStorage.getItem('fp-key'); if(k) h['x-access-key']=k; const s=sessionStorage.getItem('fp-sess'); if(s) h['x-session']=s; return h; }
+let reauthP = null;
 async function api(method, body){
   if (demo) return demoApi(method, body);
   const r = await fetch(API, { method, headers: headers(), body: body?JSON.stringify(body):undefined });
   let j; try { j = await r.json(); } catch { throw new Error(`Servidor indisponível [${r.status}]`); }
   if (r.status===401 && /acesso/i.test(j.error||'')) { const k = prompt('Informe a chave de acesso:'); if (k){ sessionStorage.setItem('fp-key',k); return api(method, body); } }
   if (j.code==='AUTH_REQUIRED' && !String(body?.action||'').startsWith('auth_')) {
-    sessionStorage.removeItem('fp-sess'); authBtns(); await ensureAuth(); loading(true); return api(method, body);
+    if (!reauthP) reauthP = (async () => { sessionStorage.removeItem('fp-sess'); authBtns(); try { await ensureAuth(); } finally { reauthP = null; } })();
+    await reauthP; loading(true); return api(method, body);
   }
   if (!r.ok || j.ok===false) throw new Error(j.error || `Erro [${r.status}]`);
   return j;
@@ -674,7 +678,7 @@ function demoApi(method, b){
   if (b?.action==='cfg_usage') return { ok:true, usage: usageFromRows((JSON.parse(localStorage.getItem('fp-demo') || 'null') || demoSeed()).map(normRow)) };
   let d = JSON.parse(localStorage.getItem('fp-demo') || 'null') || demoSeed();
   if (method==='POST'){
-    if (b.action==='create') d.push(...b.rows.map(r=>({...r,id:uid()})));
+    if (b.action==='create') d.push(...b.rows.map(r=>({...r,id:r.id||uid()})));
     if (b.action==='update') d = d.map(r=>r.id===b.row.id?b.row:r);
     if (b.action==='update_many') d = d.map(r=>b.rows.find(x=>x.id===r.id)||r);
     if (b.action==='transfer') {   // espelha a ação 'transfer' do Code.js
@@ -715,7 +719,7 @@ async function load(){
   try { await ensureAuth(); }
   catch (e) { loading(false); if (e.cancel) return false; if (offerDemo(e)) return load(); return false; }
   loading(true);
-  try { const j = await api('GET'); rows = (j.data || []).map(normRow); await loadCfg(); }
+  try { const [j] = await Promise.all([api('GET'), loadCfg()]); rows = (j.data || []).map(normRow); }
   catch (e) {
     loading(false);
     if (e.cancel) return false;
@@ -725,6 +729,20 @@ async function load(){
   loading(false);
   $('#sync').textContent = `${demo?'Dados de demonstração':'Sincronizado com Google Sheets'} · ${new Date().toLocaleString('pt-BR')}`;
   fillLists(); paintMod(); render(); return true;
+}
+
+/* Atualização LOCAL após gravar: o servidor já confirmou, então a tela é atualizada com os próprios dados
+   (sem novo GET, sem novo cfg_get). refresh() é a releitura silenciosa, usada só quando não dá para prever o resultado. */
+const stamp = () => { $('#sync').textContent = `${demo?'Dados de demonstração':'Sincronizado com Google Sheets'} · ${new Date().toLocaleString('pt-BR')}`; };
+function patchRows({ add = [], upd = [], del = [] } = {}){
+  if (del.length) { const d = new Set(del); rows = rows.filter(r => !d.has(r.id)); }
+  if (upd.length) { const m = new Map(upd.map(r => [r.id, normRow(r)])); rows = rows.map(r => m.get(r.id) || r); }
+  if (add.length) rows = rows.concat(add.map(normRow));
+  stamp(); if (add.length || upd.length) fillLists(); render();
+}
+async function refresh(){
+  try { const j = await api('GET'); rows = (j.data || []).map(normRow); stamp(); fillLists(); render(); return true; }
+  catch (e) { if (!e.cancel) toast('Não foi possível atualizar: ' + e.message); return false; }
 }
 
 /* ===================== MÁSCARA R$ ===================== */
@@ -1193,7 +1211,8 @@ function filtered(mode){   // mode='before' => lançamentos anteriores à data i
     return true;
   });
 }
-['#fText','#fFrom','#fTo'].forEach(s=>$(s).addEventListener('input',()=>{ page=1; render(); }));
+let _fT = 0; $('#fText').addEventListener('input', () => { clearTimeout(_fT); _fT = setTimeout(() => { page=1; render(); }, 150); });   // não refaz tudo a cada tecla
+['#fFrom','#fTo'].forEach(s=>$(s).addEventListener('input',()=>{ page=1; render(); }));
 $('#clearBtn').onclick = () => { resetFilters(); render(); };
 $('#fSt').addEventListener('change', () => { page = 1; render(); });
 function setChip(q){ document.querySelectorAll('#quick .chip').forEach(c=>c.classList.toggle('on',c.dataset.q===q)); }
@@ -1289,8 +1308,9 @@ function render(){
     : `<tr><td colspan="${MOD==='F' ? 11 : 10}" class="empty">Nenhum lançamento encontrado para os filtros atuais.</td></tr>`;
   $('#pgInfo').textContent = `Página ${page} de ${pages} · ${list.length} registros`;
   $('#pgPrev').disabled = page<=1; $('#pgNext').disabled = page>=pages;
-  renderCharts(list);
+  cancelAnimationFrame(chRaf); chRaf = requestAnimationFrame(() => renderCharts(list));   // tabela e KPIs aparecem primeiro
 }
+let chRaf = 0;
 $('#pgPrev').onclick=()=>{page--;render();}; $('#pgNext').onclick=()=>{page++;render();};
 
 function monthAgg(list){
@@ -1303,7 +1323,7 @@ function renderCharts(list){
   const css = getComputedStyle(document.documentElement), col = v => css.getPropertyValue(v).trim();
   Chart.defaults.color = col('--muted'); Chart.defaults.borderColor = col('--border'); Chart.defaults.font.family='Plus Jakarta Sans';
   const mo = monthAgg(list), keys = Object.keys(mo).sort(), labels = keys.map(k=>{ const [y,m]=k.split('-'); return new Date(y,m-1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}); });
-  const opts = {responsive:true,plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${brl(c.raw)}`}}},scales:{y:{ticks:{callback:v=>brl(v).replace(',00','')}}}};
+  const opts = {responsive:true,animation:false,plugins:{tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${brl(c.raw)}`}}},scales:{y:{ticks:{callback:v=>brl(v).replace(',00','')}}}};
   charts.m?.destroy();
   if (MOD==='I') {
     let run = balances(list, totals(list)).open;
@@ -1324,7 +1344,7 @@ function renderCharts(list){
   const ent = Object.entries(g).filter(([,v])=>v>0.005).sort((a,b)=>b[1]-a[1]);
   charts.p?.destroy();
   charts.p = new Chart($('#chPay'), { type:'doughnut', data:{ labels:ent.map(e=>e[0]), datasets:[{ data:ent.map(e=>e[1]), borderWidth:0, backgroundColor:ent.map((_,i)=>PALETTE[i%PALETTE.length]) }]},
-    options:{cutout:'65%',plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>`${c.label}: ${brl(c.raw)}`}}}}});
+    options:{cutout:'65%',animation:false,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>`${c.label}: ${brl(c.raw)}`}}}}});
 }
 
 /* ===================== FORM / CRUD ===================== */
@@ -1498,27 +1518,30 @@ $('#form').onsubmit = async e => {
       if (!first && isPaid(x)) return { ...x, quitado:'Sim', descricao:`${desc} (${j}/${N})`, parcelas:N };   // já quitada: preserva valor, datas e forma
       return { ...x, ...base, descricao:`${desc} (${j}/${N})`, parcelas:N, ...proj(j), diaVenc:D, quitado: first ? qv : 'Não' }; });
   }
-  let created = 0;   // quantos registros novos foram gravados (só inclusão pergunta se continua)
+  let created = 0, patch = {};   // quantos registros novos foram gravados (só inclusão pergunta se continua)
   loading(true);
   try {
     if (seqUps) {
       await updateMany(seqUps);
-      if (seqNew.length) await api('POST', { action:'create', rows:seqNew });
+      const nw = seqNew.map(o => ({ ...o, id: uid() }));
+      if (nw.length) await api('POST', { action:'create', rows:nw });
       if (seqDel.length) await api('POST', { action:'delete', ids:seqDel });
+      patch = { add:nw, upd:seqUps, del:seqDel };
       toast(`1ª parcela atualizada, ${seqUps.length-1} reprojetada(s)` + (seqNew.length ? `, ${seqNew.length} criada(s)` : '') + (seqDel.length ? `, ${seqDel.length} excluída(s)` : '') + '.');
     }
-    else if (editing) { await api('POST', { action:'update', row:{ ...editing, ...base, quitado:qv, parcelas: par ? editing.parcelas || n : '', data: isoToBR($('#iData').value), previsao: isoToBR($('#iPrev').value) } }); toast('Lançamento atualizado.'); }
+    else if (editing) { const up = { ...editing, ...base, quitado:qv, parcelas: par ? editing.parcelas || n : '', data: isoToBR($('#iData').value), previsao: isoToBR($('#iPrev').value) }; await api('POST', { action:'update', row:up }); patch = { upd:[up] }; toast('Lançamento atualizado.'); }
     else {
       const d0 = new Date($('#iData').value+'T12:00'), p0 = new Date($('#iPrev').value+'T12:00');
       const list = par && n>1 ? Array.from({length:n},(_,i)=>({ ...base, quitado: !isD ? '' : i===0 ? qv : ((seq ? projPrev(prevNom, D, i) : addMonths(p0,i)) <= todayD() ? qv : 'Não'), data:toBR(addMonths(d0,i)), previsao:toBR(seq ? projPrev(prevNom, D, i) : addMonths(p0,i)), descricao:`${desc} (${i+1}/${n})` })) : [{ ...base, quitado:qv, data:toBR(d0), previsao:toBR(p0) }];
-      await api('POST', { action:'create', rows:list }); created = list.length; toast(list.length>1?`${list.length} parcelas registradas.`:'Lançamento registrado.');
+      const ls = list.map(o => ({ ...o, id: uid() })); await api('POST', { action:'create', rows:ls }); patch = { add:ls }; created = list.length; toast(list.length>1?`${list.length} parcelas registradas.`:'Lançamento registrado.');
     }
-    loading(false); await load();
+    loading(false); patchRows(patch);
     if (created && await askMore(created)) nextEntry(); else $('#formModal').classList.add('hidden');   // continua incluindo ou volta ao painel
-  } catch (err) { loading(false); toast('Erro: '+err.message); }
+  } catch (err) { loading(false); toast('Erro: '+err.message); if (seqUps) refresh(); }   // série parcialmente gravada: relê para refletir o que valeu
 };
 /* ---- Exclusão (com opção de excluir só uma parcela e reordenar as demais) ---- */
-const parcelaInfo = r => { const m = String(r.descricao||'').match(/^(.*) \((\d+)\/(\d+)\)$/); return m ? { base:m[1], i:+m[2], n:+m[3] } : null; };
+const _pi = new Map();   // cache por descrição (isLocked/groupOf chamam isto para cada linha a cada render)
+const parcelaInfo = r => { const k = String(r.descricao||''); if (_pi.has(k)) return _pi.get(k); const m = k.match(/^(.*) \((\d+)\/(\d+)\)$/); const v = m ? { base:m[1], i:+m[2], n:+m[3] } : null; if (_pi.size > 20000) _pi.clear(); _pi.set(k, v); return v; };
 function groupOf(r){   // parcelas irmãs: mesmo painel, descrição-base, total e natureza; em ordem de parcela
   const pi = parcelaInfo(r); if (!pi) return null;
   return data().filter(x => { const q = parcelaInfo(x); return q && q.base===pi.base && q.n===pi.n && natName(x)===natName(r); })
@@ -1536,16 +1559,20 @@ async function updateMany(list){
   catch (e) { if (!/desconhecida/i.test(e.message)) throw e; for (const row of list) await api('POST', { action:'update', row }); return list.length; }   // backend antigo
 }
 async function runDelete(ids, updates, msg){
-  $('#delModal').classList.add('hidden'); loading(true); let warn = '';
+  $('#delModal').classList.add('hidden'); loading(true); let warn = '', okUpd = true;
   try { await api('POST', { action:'delete', ids }); } catch (err) { loading(false); return toast('Erro: '+err.message); }
-  try { if (updates.length) await updateMany(updates); } catch (err) { warn = ' Não foi possível reordenar as demais parcelas: '+err.message; }
-  loading(false); toast(msg + warn); await load();
+  try { if (updates.length) await updateMany(updates); } catch (err) { okUpd = false; warn = ' Não foi possível reordenar as demais parcelas: '+err.message; }
+  loading(false); toast(msg + warn);
+  patchRows(okUpd ? { del:ids, upd:updates } : { del:ids }); if (!okUpd) refresh();
 }
+const qBusy = new Set();
 async function toggleQuit(r){
-  if (!r || !isDesp(r)) return; const novo = isPaid(r) ? 'Não' : 'Sim';
-  loading(true);
-  try { await api('POST', { action:'update', row:{ ...r, quitado:novo } }); loading(false); toast(novo==='Sim' ? `“${r.descricao}” marcada como quitada.` : `“${r.descricao}” marcada como em aberto.`); await load(); }
-  catch (err) { loading(false); toast('Erro: ' + err.message); }
+  if (!r || !isDesp(r) || qBusy.has(r.id)) return; const novo = isPaid(r) ? 'Não' : 'Sim', up = { ...r, quitado:novo };
+  qBusy.add(r.id); patchRows({ upd:[up] });   // a tela muda na hora; o servidor confirma em segundo plano
+  toast(novo==='Sim' ? `“${r.descricao}” marcada como quitada.` : `“${r.descricao}” marcada como em aberto.`);
+  try { await api('POST', { action:'update', row:up }); }
+  catch (err) { patchRows({ upd:[r] }); toast('Erro: ' + err.message + ' A alteração foi desfeita.'); }
+  finally { qBusy.delete(r.id); }
 }
 /* ---- Transferência entre painéis, total ou parcial ----
    TOTAL (reclassificação): o lançamento muda de painel mantendo ID, datas e valor. Serve para corrigir um lançamento no painel errado.
@@ -1670,7 +1697,7 @@ $('#xferForm').onsubmit = async e => {
     try {
       await api('POST', { action:'transfer', id:xRow.id, amount:amt, mode: toI ? 'reduce' : 'baixa', rows: baixa ? [dst, baixa] : [dst] });
       $('#xferModal').classList.add('hidden'); loading(false);
-      toast(`${brl(amt)} transferido(s) para ${dest}. Saldo da origem: ${brl(round2(left - amt))}.`); await load();
+      toast(`${brl(amt)} transferido(s) para ${dest}. Saldo da origem: ${brl(round2(left - amt))}.`); await refresh();
     } catch (err) { loading(false); toast(/desconhecida/i.test(err.message) ? 'Publique a nova versão do Code.js para usar a transferência parcial.' : 'Erro: ' + err.message); }
     return;
   }
@@ -1681,7 +1708,7 @@ $('#xferForm').onsubmit = async e => {
   try {
     const n = await updateMany(upd); $('#xferModal').classList.add('hidden'); loading(false);
     toast(n < upd.length ? `Atenção: ${n} de ${upd.length} lançamentos foram transferidos. Atualize e confira.` : `${n} lançamento(s) transferido(s) para ${dest} (${nat}).`);
-    await load();
+    await refresh();
   } catch (err) { loading(false); toast('Erro: ' + err.message); }
 };
 /* Desfazer uma transferência parcial: devolve o valor à origem (receita) ou exclui o par (Resgate ↔ Receita), que restabelece o saldo do capital. */
